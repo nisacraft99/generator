@@ -150,7 +150,7 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 }
 
 /* labels */
-.mock-label { font-weight: 800; font-size: 20px; color: #000; margin: 12px 0 6px 40px; }
+.mock-label { font-weight: 500; font-size: 50px; color: #000; margin: 12px 0 6px 40px; }
 
 /* fixed widths so fields don't collapse */
 .field-single, .field-multi { width: 900px; margin-left: 40px; }
@@ -379,6 +379,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
