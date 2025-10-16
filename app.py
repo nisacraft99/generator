@@ -22,6 +22,76 @@ except Exception:
 
 st.set_page_config(page_title="Amazing User Story to Testcase Generator", page_icon="📝", layout="wide")
 
+import os
+import streamlit as st
+
+# Read password from Streamlit Secrets or env (works local + cloud)
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
+
+# Small state flag
+if "auth_ok" not in st.session_state:
+    st.session_state.auth_ok = False
+
+def try_login():
+    if st.session_state.get("pw_input", "") == APP_PASSWORD and APP_PASSWORD:
+        st.session_state.auth_ok = True
+        st.session_state.pop("pw_error", None)
+    else:
+        st.session_state.pw_error = "Wrong password 🫠"
+
+# Pretty login screen (Comic Sans + pastel card)
+if not st.session_state.auth_ok:
+    st.markdown("""
+    <style>
+      @font-face { font-family: "Comic Sans MS"; src: local("Comic Sans MS"); }
+      .stApp { background: #dff7f7; } /* pastel aqua page background */
+      .login-card{
+        max-width: 520px; margin: 8vh auto; padding: 28px 30px;
+        border-radius: 22px; border: 2px solid #a3d9ff;
+        background: #ffffffcc; backdrop-filter: blur(6px);
+        box-shadow: 0 12px 28px rgba(91,153,255,.25);
+        font-family: "Comic Sans MS", cursive, sans-serif;
+      }
+      .login-title{
+        background: #f8c9ea; color:#333; display:inline-block;
+        padding: 10px 18px; border-radius:16px; border:2px solid #b98db0;
+        font-size: 22px; font-weight: 700;
+      }
+      .login-note{ color:#355c7d; font-size:14px; margin-top:6px; }
+      .stTextInput>div>div>input{
+        border-radius: 16px; border:2px solid #bfe1ff;
+        background:#f9ffff; font-family: "Comic Sans MS", cursive;
+      }
+      .stButton>button{
+        font-family: "Comic Sans MS", cursive;
+        border:none; border-radius: 999px; padding:.6rem 1.3rem; font-weight:700;
+        background: linear-gradient(135deg,#bfe1ff,#9fd2ff);
+        box-shadow:0 8px 18px rgba(159,210,255,.45); color:#123;
+      }
+      .stButton>button:hover{ filter:brightness(1.05); }
+    </style>
+    <div class="login-card">
+      <div class="login-title">User Story to Testcase Generator</div>
+      <p class="login-note">🔒 This app is private. Please enter the password to continue.</p>
+    """, unsafe_allow_html=True)
+
+    st.text_input("Password", type="password", key="pw_input")
+    col1, col2 = st.columns([1,3])
+    with col1:
+        st.button("Let me in ✨", on_click=try_login)
+
+    if st.session_state.get("pw_error"):
+        st.error(st.session_state["pw_error"])
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+# Optional: a cute logout in the sidebar
+if st.sidebar.button("🚪 Logout"):
+    st.session_state.auth_ok = False
+    st.experimental_rerun()
+# --- end password gate ---
+
 # ======================= CSS (Comic Sans + fixed heights) =======================
 st.markdown("""
 <style>
@@ -267,3 +337,4 @@ if st.button("Export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
