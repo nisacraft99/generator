@@ -20,9 +20,9 @@ try:
 except Exception:
     OpenAI = None
 
-st.set_page_config(page_title="Amazing User Story to Testcase Generator", page_icon="📝", layout="wide")
+st.set_page_config(page_title="Amazing User Story → Testcase Generator", page_icon="📝", layout="wide")
 
-# --- Kawaii Password Gate (updated sizing + centering) ---
+# --- Kawaii Password Gate (bigger button + bigger field) ---
 import os
 import streamlit as st
 
@@ -44,7 +44,7 @@ if not st.session_state.auth_ok:
     <style>
       @font-face { font-family:"Comic Sans MS"; src: local("Comic Sans MS"); }
 
-      .stApp { background:#dff7f7; } /* pastel aqua */
+      .stApp { background:#dff7f7; }
 
       .login-card{
         max-width: 640px; margin: 10vh auto; padding: 28px 30px;
@@ -55,40 +55,37 @@ if not st.session_state.auth_ok:
         text-align:center;
       }
 
-      /* BIG centered pink title */
       .login-title{
         display:block;
-        width: fit-content;
-        margin: 0 auto 12px auto;
+        margin: 0 auto 18px auto;
         padding: 12px 24px;
         border-radius:18px; border:2px solid #b98db0;
         background:#f8c9ea; color:#333;
-        font-size: 36px; font-weight: 800;   /* << bigger */
-        line-height:1.1;
+        font-size: 42px; font-weight: 800;
       }
 
-      .login-note{ color:#355c7d; font-size:16px; margin:6px 0 16px; }
+      .login-note{ color:#355c7d; font-size:16px; margin:6px 0 20px; }
 
-      /* keep styles inside card only */
-      .login-card .stTextInput { 
-        max-width: 320px;  /* << shorter field */
-        margin: 0 auto 10px auto;
-      }
+      /* make text input wider + bigger font */
       .login-card .stTextInput > div > div > input{
         border-radius: 16px; border:2px solid #bfe1ff;
         background:#f9ffff;
         font-family: "Comic Sans MS", cursive, sans-serif;
-        font-size: 24px;   /* << bigger password characters */
-        height: 54px; padding: 6px 16px;
-        letter-spacing: 0.08em;  /* cute, readable */
+        font-size: 28px;   /* bigger characters */
+        height: 70px;      /* taller field */
+        width: 100% !important; /* full width inside card */
+        padding: 10px 20px;
       }
 
-      .login-card .stButton { display:flex; justify-content:center; }
+      /* center and enlarge button */
+      .login-card .stButton { text-align:center; margin-top:16px; }
       .login-card .stButton>button{
         font-family:"Comic Sans MS", cursive;
-        border:none; border-radius:999px; padding:.7rem 1.4rem; font-weight:700;
+        border:none; border-radius:999px; padding:1rem 2rem; font-weight:700;
+        font-size: 24px;  /* bigger text */
         background: linear-gradient(135deg,#bfe1ff,#9fd2ff);
         box-shadow:0 8px 18px rgba(159,210,255,.45); color:#123;
+        min-width: 200px; /* wider button */
       }
       .login-card .stButton>button:hover{ filter:brightness(1.05); }
     </style>
@@ -99,7 +96,7 @@ if not st.session_state.auth_ok:
     """, unsafe_allow_html=True)
 
     st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed")
-    st.button("Let me in ✨", on_click=try_login)
+    st.button("✨ Let me in ✨", on_click=try_login)
 
     if st.session_state.get("pw_error"):
         st.error(st.session_state["pw_error"])
@@ -359,5 +356,6 @@ if st.button("Export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
