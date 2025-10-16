@@ -1,0 +1,11 @@
+[
+  {
+    "id": "US-1",
+    "story": "As a user, I want to log in with email/password so I can access my account.",
+    "acceptance_criteria": [
+      "Login succeeds with valid credentials",
+      "Account locks after 5 failed attempts",
+      "Password must be at least 12 characters"
+    ]
+  }
+]
