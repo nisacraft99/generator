@@ -130,10 +130,7 @@ if not st.session_state.auth_ok:
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# optional logout
-if st.sidebar.button("🚪 Logout"):
-    st.session_state.auth_ok = False
-    st.experimental_rerun()
+
 # --- end gate ---
 
 
@@ -382,6 +379,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
