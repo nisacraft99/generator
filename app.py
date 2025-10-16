@@ -206,7 +206,7 @@ user_story = st.text_area(
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Acceptance Criteria (big multi-line box)
-st.markdown('<div class="mock-label">enter the acceptance criteria (1 criteria per line):</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-label">enter the acceptance criteria (1 criteria per line)</div>', unsafe_allow_html=True)
 st.markdown('<div class="field-multi">', unsafe_allow_html=True)
 ac_text = st.text_area(
     "", key="ac_lines", label_visibility="hidden",
@@ -379,6 +379,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
