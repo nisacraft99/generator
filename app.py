@@ -14,6 +14,15 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
+import streamlit as st
+
+st.set_page_config(
+    page_title="💖 User Story → Testcase Generator",
+    page_icon="✨",
+    layout="wide"
+)
+
+
 # --- OpenAI (optional for test design) ---
 try:
     from openai import OpenAI
@@ -373,6 +382,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
