@@ -96,7 +96,7 @@ if not st.session_state.auth_ok:
     """, unsafe_allow_html=True)
 
     st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed")
-    st.button("✨ Let me in ✨", on_click=try_login)
+    st.button("Let me in! ✨", on_click=try_login)
 
     if st.session_state.get("pw_error"):
         st.error(st.session_state["pw_error"])
@@ -170,7 +170,7 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 """, unsafe_allow_html=True)
 
 # --- UI ---
-st.markdown('<div class="mock-title">Amazing User Story to Testcase Generator</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-title">Amazing User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
 # User Story (single line style; real single-line look via textarea to avoid clipping)
 st.markdown('<div class="mock-label">Enter your User Story here</div>', unsafe_allow_html=True)
@@ -356,6 +356,7 @@ if st.button("Export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
