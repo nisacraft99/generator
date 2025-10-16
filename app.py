@@ -196,7 +196,7 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
 # User Story (single line style; real single-line look via textarea to avoid clipping)
-st.markdown('<div class="mock-label">enter your user story here:</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True)
 st.markdown('<div class="field-single singleline">', unsafe_allow_html=True)
 user_story = st.text_area(
     "", key="us_one", label_visibility="hidden",
@@ -379,6 +379,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
