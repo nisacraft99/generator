@@ -92,11 +92,11 @@ if not st.session_state.auth_ok:
 
     <div class="login-card">
       <div class="login-title">User Story to Testcase Generator</div>
-      <p class="login-note">🔒 Private app — please enter the password to continue.</p>
+      <p class="login-note">🔒 private app! please enter the password to continue.</p>
     """, unsafe_allow_html=True)
 
     st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed")
-    st.button("Let me in! ✨", on_click=try_login)
+    st.button("let me in! ✨", on_click=try_login)
 
     if st.session_state.get("pw_error"):
         st.error(st.session_state["pw_error"])
@@ -345,17 +345,18 @@ def build_pdf(story_text: str, ac_blob: str, cases: list) -> bytes:
 pdf_ready = bool(user_story.strip() or ac_text.strip())
 st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
 
-if st.button("Export to PDF!", disabled=not pdf_ready):
+if st.button("export to PDF!", disabled=not pdf_ready):
     st.info("📄 generating PDF… please be patient!! **this can take up to 2 minutes**. "
             "when it’s ready, a **download** button will appear below.")
     with st.spinner("creating test design…"):
         cases = generate_cases(user_story, ac_text)   # [] if no API key / blocked
         pdf_bytes = build_pdf(user_story, ac_text, cases)
         time.sleep(0.2)
-    st.download_button("Download!", data=pdf_bytes, file_name="testcases.pdf",
+    st.download_button("download!", data=pdf_bytes, file_name="testcases.pdf",
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
