@@ -146,11 +146,11 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 .mock-title {
   margin: 20px auto 26px auto; width: 520px;
   background: #f7d8ef; border: 3px solid #000; border-radius: 14px;
-  text-align: center; font-weight: 800; font-size: 26px; padding: 10px 16px;
+  text-align: center; font-weight: 800; font-size: 40px; padding: 10px 16px;
 }
 
 /* labels */
-.mock-label { font-weight: 500; font-size: 30px; color: #000; margin: 12px 0 6px 40px; }
+.mock-label { font-weight: 500; font-size: 25px; color: #000; margin: 12px 0 6px 40px; }
 
 /* fixed widths so fields don't collapse */
 .field-single, .field-multi { width: 900px; margin-left: 40px; }
@@ -379,6 +379,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
