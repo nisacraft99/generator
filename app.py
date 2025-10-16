@@ -144,7 +144,7 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 
 /* title pill */
 .mock-title {
-  margin: 20px auto 26px auto; width: 520px;
+  margin: 20px auto 26px auto; width: 700px;
   background: #f7d8ef; border: 3px solid #000; border-radius: 14px;
   text-align: center; font-weight: 800; font-size: 40px; padding: 10px 16px;
 }
@@ -379,6 +379,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
