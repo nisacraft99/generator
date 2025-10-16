@@ -20,7 +20,24 @@ try:
 except Exception:
     OpenAI = None
 
-st.set_page_config(page_title="Amazing User Story → Testcase Generator", page_icon="📝", layout="wide")
+st.set_page_config(page_title="User Story → Testcase Generator", page_icon="📝", layout="wide")
+
+# ---- Force Comic Sans globally (add after the password gate) ----
+st.markdown("""
+<style>
+:root { --comic: "Comic Sans MS","Comic Sans",cursive; }
+
+/* Hit all major Streamlit containers + common widgets */
+html, body, .stApp, .stAppViewContainer, .main, .block-container,
+.stMarkdown, .stAlert, .stDataFrame, .stForm,
+.stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput,
+.stButton > button, .stDownloadButton > button,
+label, p, span, div {
+  font-family: var(--comic) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # --- Kawaii Password Gate (bigger button + bigger field) ---
 import os
@@ -170,7 +187,7 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 """, unsafe_allow_html=True)
 
 # --- UI ---
-st.markdown('<div class="mock-title">Amazing User Story → Testcase Generator</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
 # User Story (single line style; real single-line look via textarea to avoid clipping)
 st.markdown('<div class="mock-label">Enter your User Story here</div>', unsafe_allow_html=True)
@@ -356,6 +373,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
