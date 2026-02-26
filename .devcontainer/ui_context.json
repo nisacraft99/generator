@@ -1,0 +1,20 @@
+{
+  "app": "TOPS",
+  "nodes": [
+    {"id":"CONSOLE-OM","type":"console","name":"OM Console","parent":null},
+    {"id":"OM-OPT-M3-REVIEW","type":"nav_option","name":"M3 Review","parent":"CONSOLE-OM"},
+
+    {"id":"SCR-M3-DASHBOARD","type":"screen","name":"M3 Dashboard","parent":"OM-OPT-M3-REVIEW"},
+    {"id":"COMP-M3-LIST","type":"component","name":"List of M3","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-IDENT-LINK","type":"element","name":"M3 Ident","parent":"COMP-M3-LIST"},
+
+    {"id":"EL-M3-CREATE","type":"element","name":"Create M3","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-FILTER","type":"element","name":"Filter","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-EXPORT","type":"element","name":"Export Excel","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-REFRESH","type":"element","name":"Refresh","parent":"SCR-M3-DASHBOARD"},
+
+    {"id":"SCR-M3-OVERVIEW","type":"screen","name":"M3 Overview","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-BACK","type":"element","name":"Back Button","parent":"SCR-M3-OVERVIEW"},
+    {"id":"EL-M3-ADD-ACTION","type":"element","name":"Add Action","parent":"SCR-M3-OVERVIEW"}
+  ]
+}
