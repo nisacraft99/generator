@@ -1,4 +1,8 @@
-# app.py  (READY VERSION WITH UI CONTEXT SUPPORT)
+# app.py — Aqua + Comic Sans, cut-off fix, tall AC box, and PDF with pretty Step/Action/Expected tables
+# Run:
+#   conda activate thesis
+#   pip install streamlit python-dotenv reportlab openai
+#   streamlit run app.py
 
 import os, io, json, re, time
 import streamlit as st
@@ -10,43 +14,231 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# ======================= NEW: LOAD UI CONTEXT =======================
-UI_CONTEXT = {}
-if os.path.exists("ui_context.json"):
-    with open("ui_context.json","r",encoding="utf-8") as f:
-        UI_CONTEXT = json.load(f)
+import streamlit as st
 
-# ======================= PAGE CONFIG =======================
+# ======================= UI CONTEXT (optional) =======================
+UI_CONTEXT = {}
+_UI_CONTEXT_PATH = os.getenv("UI_CONTEXT_PATH", "ui_context.json")
+if os.path.exists(_UI_CONTEXT_PATH):
+    try:
+        with open(_UI_CONTEXT_PATH, "r", encoding="utf-8") as f:
+            UI_CONTEXT = json.load(f)
+    except Exception:
+        UI_CONTEXT = {}
+
 st.set_page_config(
-    page_title="User Story → Testcase Generator",
+    page_title="💖 User Story → Testcase Generator",
     page_icon="✨",
     layout="wide"
 )
 
-# --- OpenAI ---
-from openai import OpenAI
 
-# ======================= SIMPLE UI =======================
-st.title("User Story → Testcase Generator")
+# --- OpenAI (optional for test design) ---
+try:
+    from openai import OpenAI
+except Exception:
+    OpenAI = None
 
-user_story = st.text_input("User Story")
-ac_text = st.text_area("Acceptance Criteria (one per line)", height=200)
+st.set_page_config(page_title="User Story → Testcase Generator", page_icon="📝", layout="wide")
 
-# ======================= OPENAI =======================
+# ---- Force Comic Sans globally (add after the password gate) ----
+st.markdown("""
+<style>
+:root { --comic: "Comic Sans MS","Comic Sans",cursive; }
+
+/* Hit all major Streamlit containers + common widgets */
+html, body, .stApp, .stAppViewContainer, .main, .block-container,
+.stMarkdown, .stAlert, .stDataFrame, .stForm,
+.stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput,
+.stButton > button, .stDownloadButton > button,
+label, p, span, div {
+  font-family: var(--comic) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# --- Kawaii Password Gate (bigger button + bigger field) ---
+import os
+import streamlit as st
+
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
+
+if "auth_ok" not in st.session_state:
+    st.session_state.auth_ok = False
+
+def try_login():
+    if st.session_state.get("pw_input", "") == APP_PASSWORD and APP_PASSWORD:
+        st.session_state.auth_ok = True
+        st.session_state.pop("pw_error", None)
+    else:
+        st.session_state.pw_error = "Wrong password 🫠"
+
+# Pretty login screen
+if not st.session_state.auth_ok:
+    st.markdown("""
+    <style>
+      @font-face { font-family:"Comic Sans MS"; src: local("Comic Sans MS"); }
+
+      .stApp { background:#dff7f7; }
+
+      .login-card{
+        max-width: 640px; margin: 10vh auto; padding: 28px 30px;
+        border-radius: 22px; border: 2px solid #a3d9ff;
+        background:#ffffffcc; backdrop-filter: blur(6px);
+        box-shadow: 0 12px 28px rgba(91,153,255,.25);
+        font-family: "Comic Sans MS", cursive, sans-serif;
+        text-align:center;
+      }
+
+      .login-title{
+        display:block;
+        margin: 0 auto 18px auto;
+        padding: 12px 24px;
+        border-radius:18px; border:2px solid #b98db0;
+        background:#f8c9ea; color:#333;
+        font-size: 42px; font-weight: 800;
+      }
+
+      .login-note{ color:#355c7d; font-size:16px; margin:6px 0 20px; }
+
+      /* make text input wider + bigger font */
+      .login-card .stTextInput > div > div > input{
+        border-radius: 16px; border:2px solid #bfe1ff;
+        background:#f9ffff;
+        font-family: "Comic Sans MS", cursive, sans-serif;
+        font-size: 28px;   /* bigger characters */
+        height: 70px;      /* taller field */
+        width: 100% !important; /* full width inside card */
+        padding: 10px 20px;
+      }
+
+      /* center and enlarge button */
+      .login-card .stButton { text-align:center; margin-top:16px; }
+      .login-card .stButton>button{
+        font-family:"Comic Sans MS", cursive;
+        border:none; border-radius:999px; padding:1rem 2rem; font-weight:700;
+        font-size: 24px;  /* bigger text */
+        background: linear-gradient(135deg,#bfe1ff,#9fd2ff);
+        box-shadow:0 8px 18px rgba(159,210,255,.45); color:#123;
+        min-width: 200px; /* wider button */
+      }
+      .login-card .stButton>button:hover{ filter:brightness(1.05); }
+    </style>
+
+    <div class="login-card">
+      <div class="login-title">User Story to Testcase Generator</div>
+      <p class="login-note">🔒 private app! please enter the password to continue.</p>
+    """, unsafe_allow_html=True)
+
+    st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed")
+    st.button("let me in! ✨", on_click=try_login)
+
+    if st.session_state.get("pw_error"):
+        st.error(st.session_state["pw_error"])
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+
+# --- end gate ---
+
+
+# ======================= CSS (Comic Sans + fixed heights) =======================
+st.markdown("""
+<style>
+html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !important; }
+
+/* full aqua background */
+.stApp { background: #ccf4f4 !important; }
+
+/* title pill */
+.mock-title {
+  margin: 25px auto 30px auto; width: 800px;
+  background: #f7d8ef; border: 3px solid #000; border-radius: 14px;
+  text-align: center; font-weight: 800; font-size: 40px; padding: 10px 16px;
+}
+
+/* labels */
+.mock-label { font-weight: 500; font-size: 25px; color: #000; margin: 12px 0 6px 40px; }
+
+/* fixed widths so fields don't collapse */
+.field-single, .field-multi { width: 900px; margin-left: 40px; }
+
+/* cartoon rounded inputs (textarea-based to avoid clipping) */
+.stTextArea textarea {
+  background: #fff4c7 !important;
+  border: 3px solid #000 !important;
+  border-radius: 16px !important;
+  color: #000 !important;
+  font-size: 18px !important;
+  padding: 12px 16px !important;
+  box-shadow: none !important;
+  line-height: 1.45 !important;
+}
+
+/* "single-line" textarea look for the User Story field */
+.singleline textarea {
+  min-height: 64px !important;
+  max-height: 64px !important;
+  resize: none !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;   /* looks like a single line */
+}
+
+/* export button */
+.export-wrap { margin: 28px 40px; }
+.export-wrap .stButton > button {
+  background: #e6f1a6; color:#000; border:3px solid #000;
+  border-radius: 10px; font-weight:800; font-size: 20px; padding: 12px 24px;
+}
+.export-wrap .stButton > button:disabled { background:#e6e6e6; color:#777; border-color:#999; }
+
+/* keep download button in same cute style */
+.stDownloadButton > button {
+  background: #ffffff; color:#000; border:3px solid #000;
+  border-radius: 10px; font-weight:800; font-size: 18px; padding: 10px 20px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- UI ---
+st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
+
+# User Story (single line style; real single-line look via textarea to avoid clipping)
+st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True)
+st.markdown('<div class="field-single singleline">', unsafe_allow_html=True)
+user_story = st.text_area(
+    "", key="us_one", label_visibility="hidden",
+    placeholder="As a <role>, I want ..., so that ...",
+    height=200  # keep this compact to look like a single line
+)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Acceptance Criteria (big multi-line box)
+st.markdown('<div class="mock-label">enter the acceptance criteria (1 criteria per line)</div>', unsafe_allow_html=True)
+st.markdown('<div class="field-multi">', unsafe_allow_html=True)
+ac_text = st.text_area(
+    "", key="ac_lines", label_visibility="hidden",
+    placeholder="• Criterion 1\n• Criterion 2\n• Criterion 3",
+    height=400   # nice and tall
+)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ======================= OpenAI setup =======================
 load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=API_KEY) if API_KEY else None
+client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
 
 SYSTEM_PROMPT = """
 You are a senior test engineer.
+Return ONLY valid JSON (no markdown, no prose).
 
-You also receive a UI structure (ui_context).
-Use it to derive navigation paths.
-
-Rules:
-- Use ONLY nodes that exist in ui_context.
-- Generate realistic navigation steps.
-- Return ONLY JSON.
+You may also receive a UI structure as 'ui_context' (a JSON with nodes/screens/menus).
+If ui_context is provided:
+- Use it to make navigation steps concrete (e.g., open OM Console -> M3 Review -> M3 Dashboard).
+- Do NOT invent menus/screens that are not present in ui_context.
+- If the correct navigation cannot be determined from ui_context, keep steps generic (do not hallucinate).
 
 Schema:
 {
@@ -55,95 +247,158 @@ Schema:
       "id":"TC-1",
       "title":"string",
       "priority":"High|Medium|Low",
-      "type":"Functional",
+      "type":"Functional|Negative|Boundary|Security|Performance|Usability",
       "steps":[
-        {"step":"action","expected":"result"}
+        {"step":"concise action", "expected":"concise observable result"}
       ]
     }
   ]
 }
+
+Rules:
+- Provide 3–6 focused test cases.
+- Each test case MUST have at least 3 steps, each with 'step' and 'expected'.
+- Be concise and testable. No Gherkin.
+- Ensure acceptance criteria are covered across the set of test cases.
 """
 
-def _json_from_text(txt):
+def _json_from_text(txt: str):
     txt = txt.strip()
+    if txt.startswith("```"):
+        txt = re.sub(r"^```(json)?\\s*|\\s*```$", "", txt, flags=re.S)
     try:
         return json.loads(txt)
-    except:
-        m = re.search(r"\{.*\}", txt, flags=re.S)
-        if m:
-            return json.loads(m.group(0))
+    except Exception:
+        m = re.search(r"\\{.*\\}", txt, flags=re.S)
+        if m: return json.loads(m.group(0))
         return {"test_cases":[]}
 
-# ======================= GENERATOR =======================
-def generate_cases(story, ac_blob):
+def generate_cases(story: str, ac_blob: str):
+    """Return list of test case dicts; [] if no API or failure."""
     if not client or not story.strip():
         return []
-
     payload = {
-        "story": story,
-        "acceptance_criteria":[l.strip() for l in ac_blob.splitlines() if l.strip()],
-        "ui_context": UI_CONTEXT      # ⭐ NEW PART
+        "story": story.strip(),
+        "acceptance_criteria": [l.strip() for l in ac_blob.splitlines() if l.strip()],
+        "ui_context": UI_CONTEXT
     }
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini", temperature=0.2,
+            messages=[{"role":"system","content":SYSTEM_PROMPT},
+                      {"role":"user","content":json.dumps(payload, ensure_ascii=False)}]
+        )
+        data = _json_from_text(resp.choices[0].message.content)
+        tcs = data.get("test_cases", [])
+        # normalize steps structure
+        fixed=[]
+        for tc in tcs:
+            steps=[]
+            for s in tc.get("steps", []):
+                if isinstance(s, dict):
+                    steps.append({"step": s.get("step","").strip(), "expected": s.get("expected","").strip()})
+                else:
+                    steps.append({"step": str(s), "expected": ""})
+            tc["steps"]=steps
+            fixed.append(tc)
+        return fixed
+    except Exception:
+        return []
 
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        temperature=0.2,
-        messages=[
-            {"role":"system","content":SYSTEM_PROMPT},
-            {"role":"user","content":json.dumps(payload, ensure_ascii=False)}
-        ]
-    )
-
-    data = _json_from_text(resp.choices[0].message.content)
-    return data.get("test_cases",[])
-
-# ======================= PDF BUILDER =======================
-def build_pdf(story_text, ac_blob, cases):
+# ======================= PDF builder (pretty Step/Action/Expected tables) =======================
+def build_pdf(story_text: str, ac_blob: str, cases: list) -> bytes:
     buf = io.BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4)
-
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=36, rightMargin=36, topMargin=40, bottomMargin=36)
     styles = getSampleStyleSheet()
-    flow=[]
+    title = ParagraphStyle("t", parent=styles["Title"], fontSize=22)
+    head  = ParagraphStyle("h", parent=styles["Heading2"], fontSize=14)
+    body  = ParagraphStyle("b", parent=styles["Normal"], fontSize=11, leading=14)
+    cell  = ParagraphStyle("cell", parent=styles["Normal"], fontSize=10, leading=13, wordWrap="CJK")
 
-    flow.append(Paragraph("User Story", styles["Heading2"]))
-    flow.append(Paragraph(story_text, styles["Normal"]))
-    flow.append(Spacer(1,10))
+    flow = []
+    flow.append(Paragraph(" User Story to Testcase Generator", title)); flow.append(Spacer(1, 10))
 
-    flow.append(Paragraph("Acceptance Criteria", styles["Heading2"]))
-    lines=[l for l in ac_blob.splitlines() if l.strip()]
-    flow.append(ListFlowable([ListItem(Paragraph(l, styles["Normal"])) for l in lines]))
-    flow.append(Spacer(1,10))
+    flow.append(Paragraph("<b>User Story</b>", head))
+    flow.append(Paragraph(story_text.strip() or "—", body)); flow.append(Spacer(1, 8))
 
-    for tc in cases:
-        flow.append(Paragraph(tc.get("title",""), styles["Heading3"]))
-        for s in tc.get("steps",[]):
-            flow.append(Paragraph(f"{s.get('step','')} — {s.get('expected','')}", styles["Normal"]))
-        flow.append(Spacer(1,8))
+    flow.append(Paragraph("<b>Acceptance Criteria</b>", head))
+    lines = [l.strip() for l in ac_blob.splitlines() if l.strip()]
+    if lines:
+        flow.append(ListFlowable([ListItem(Paragraph(l, body), leftIndent=6) for l in lines],
+                                 bulletType="bullet", leftPadding=12))
+    else:
+        flow.append(Paragraph("—", body))
+    flow.append(Spacer(1, 12))
+
+    if cases:
+        flow.append(Paragraph("<b>Generated Test Design</b>", head)); flow.append(Spacer(1, 6))
+        # Summary table
+        trows = [["ID","Title","Priority","Type"]]
+        for tc in cases:
+            trows.append([Paragraph(tc.get("id",""), cell),
+                          Paragraph(tc.get("title",""), cell),
+                          Paragraph(tc.get("priority",""), cell),
+                          Paragraph(tc.get("type",""), cell)])
+        tbl = Table(trows, colWidths=[55, 300, 80, 80], repeatRows=1, splitByRow=1)
+        tbl.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#9fd2ff")),
+            ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+            ("GRID",(0,0),(-1,-1),0.25,colors.grey),
+            ("VALIGN",(0,0),(-1,-1),"TOP"),
+            ("FONTSIZE",(0,0),(-1,-1),9),
+        ]))
+        flow.append(tbl); flow.append(Spacer(1, 10))
+
+        # One PRETTY table per test case: Step | Action | Expected Result
+        for tc in cases:
+            flow.append(Paragraph(f"<b>{tc.get('id','')}</b> — {tc.get('title','')}", styles["Heading3"]))
+            steps = tc.get("steps", []) or []
+            srows = [[Paragraph("Step", styles["Heading5"]),
+                      Paragraph("Action", styles["Heading5"]),
+                      Paragraph("Expected Result", styles["Heading5"])]]
+            if steps:
+                for i, s in enumerate(steps, start=1):
+                    srows.append([Paragraph(str(i), cell),
+                                  Paragraph(s.get("step",""), cell),
+                                  Paragraph(s.get("expected",""), cell)])
+            else:
+                srows.append([Paragraph("—", cell), Paragraph("—", cell), Paragraph("—", cell)])
+
+            # Wider Expected column, zebra rows, and page-splitting
+            step_tbl = Table(srows, colWidths=[40, 230, 255], repeatRows=1, splitByRow=1)
+            step_tbl.setStyle(TableStyle([
+                ("GRID",(0,0),(-1,-1),0.3,colors.grey),
+                ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#b8d7ff")),
+                ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+                ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+                ("VALIGN",(0,0),(-1,-1),"TOP"),
+                ("LEFTPADDING",(0,0),(-1,-1),6),
+                ("RIGHTPADDING",(0,0),(-1,-1),6),
+                ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.whitesmoke, colors.HexColor("#eef7ff")]),
+                ("FONTSIZE",(0,1),(-1,-1),10),
+            ]))
+            flow.append(step_tbl)
+            flow.append(Spacer(1, 8))
 
     doc.build(flow)
-    buf.seek(0)
-    return buf.getvalue()
+    buf.seek(0); return buf.getvalue()
 
-# ======================= EXPORT =======================
-if st.button("Generate PDF"):
-    with st.spinner("Generating test design..."):
-        cases = generate_cases(user_story, ac_text)
+# ======================= Export =======================
+pdf_ready = bool(user_story.strip() or ac_text.strip())
+st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
+
+if st.button("export to PDF!", disabled=not pdf_ready):
+    st.info("📄 generating PDF… please be patient!! **this can take up to 2 minutes**. "
+            "when it’s ready, a **download** button will appear below.")
+    with st.spinner("creating test design…"):
+        cases = generate_cases(user_story, ac_text)   # [] if no API key / blocked
         pdf_bytes = build_pdf(user_story, ac_text, cases)
+        time.sleep(0.2)
+    st.download_button("download!", data=pdf_bytes, file_name="testcases.pdf",
+                       mime="application/pdf", key="dl_pdf_btn")
 
-    st.download_button("Download PDF", data=pdf_bytes, file_name="testcases.pdf")
-
-
-
-
-
-
-
-
-
-
-
-
-
+st.markdown('</div>', unsafe_allow_html=True)
 
 
 
