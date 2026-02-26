@@ -2,7 +2,16 @@
   "app": "TOPS",
   "nodes": [
     {"id":"CONSOLE-OM","type":"console","name":"OM Console","parent":null},
+    {"id":"CONSOLE-OAM","type":"console","name":"OAM Console","parent":null},
+    {"id":"CONSOLE-SUP","type":"console","name":"Supervisor Console","parent":null},
+
+    
     {"id":"OM-OPT-M3-REVIEW","type":"nav_option","name":"M3 Review","parent":"CONSOLE-OM"},
+    {"id":"OM-OPT-M3-ACTIONS","type":"nav_option","name":"M3 Actions","parent":"CONSOLE-OM"},
+    {"id":"OM-OPT-CES","type":"nav_option","name":"CES","parent":"CONSOLE-OM"},
+    {"id":"OM-OPT-OAM-TEAM-DASHBOARD","type":"nav_option","name":"OAM Team Dashboard","parent":"CONSOLE-OM"},
+    {"id":"OM-OPT-OAM-MPR","type":"nav_option","name":"OAM MPR","parent":"CONSOLE-OM"},
+    {"id":"OM-OPT-MID-MONTH-OAM","type":"nav_option","name":"Mid-Month OAM Review","parent":"CONSOLE-OM"},
 
     {"id":"SCR-M3-DASHBOARD","type":"screen","name":"M3 Dashboard","parent":"OM-OPT-M3-REVIEW"},
     {"id":"COMP-M3-LIST","type":"component","name":"List of M3","parent":"SCR-M3-DASHBOARD"},
