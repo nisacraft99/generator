@@ -229,6 +229,21 @@ STRICT UI RULES (MANDATORY):
 - Navigation must be explicit and beginner-friendly (click path through menus/screens).
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
+
+NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
+- For EVERY test case, the first navigation steps MUST start from a Console node (type="console"),
+  then click the corresponding nav_option, then reach the target screen.
+- You MUST express navigation using the ui_context parent chain.
+- Generic navigation phrases are NOT allowed (e.g., "Navigate to MAP Dashboard" is forbidden).
+- Each navigation step MUST reference a concrete ui_node_id.
+
+EXAMPLE FORMAT (must follow this style):
+1) Open "OAM Console" (CONSOLE-OAM)
+2) Select "MAP Review" (OAM-OPT-MAP-REVIEW)
+3) Verify "MAP Dashboard" is displayed (SCR-MAP-DASHBOARD)
+
+
+
 OUTPUT SCHEMA:
 {
   "test_cases":[
@@ -249,10 +264,11 @@ OUTPUT SCHEMA:
 }
 
 RULES:
-- Provide 3–6 focused test cases.
+- Provide focused test cases.
 - Each test case must contain navigation_steps (if ui_context is provided).
 - Each test case MUST have at least 3 steps total (navigation_steps + steps).
 - Ensure acceptance criteria are covered across the set.
+- Test cases are divided by menu, not by functionality. So for example you test several fields and their functionality in one test case
 - Be concise and testable. No Gherkin.
 """
 
@@ -482,3 +498,4 @@ if st.session_state.last_pdf:
         file_name="test_design.pdf",
         mime="application/pdf",
     )
+
