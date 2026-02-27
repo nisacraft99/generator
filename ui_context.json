@@ -1,68 +1,74 @@
 {
   "app": "TOPS",
   "nodes": [
-    {"id":"CONSOLE-OM","type":"console","name":"OM Console","parent":null},
-    {"id":"CONSOLE-OAM","type":"console","name":"OAM Console","parent":null},
-    {"id":"CONSOLE-SUP","type":"console","name":"Supervisor Console","parent":null},
+    { "id": "CONSOLE-OM", "type": "console", "name": "OM Console", "parent": null },
+    { "id": "CONSOLE-OAM", "type": "console", "name": "OAM Console", "parent": null },
+    { "id": "CONSOLE-SUP", "type": "console", "name": "Supervisor Console", "parent": null },
 
-    {"id":"OM-OPT-M3-REVIEW","type":"nav_option","name":"M3 Review","parent":"CONSOLE-OM"},
-    {"id":"OM-OPT-M3-ACTIONS","type":"nav_option","name":"M3 Actions","parent":"CONSOLE-OM"},
-    {"id":"OM-OPT-CES","type":"nav_option","name":"CES","parent":"CONSOLE-OM"},
-    {"id":"OM-OPT-OAM-TEAM-DASHBOARD","type":"nav_option","name":"OAM Team Dashboard","parent":"CONSOLE-OM"},
-    {"id":"OM-OPT-OAM-MPR","type":"nav_option","name":"OAM MPR","parent":"CONSOLE-OM"},
-    {"id":"OM-OPT-MID-MONTH-OAM","type":"nav_option","name":"Mid-Month OAM Review","parent":"CONSOLE-OM"},
+    { "id": "OM-OPT-M3-REVIEW", "type": "nav_option", "name": "M3 Review", "parent": "CONSOLE-OM" },
+    { "id": "OM-OPT-M3-ACTIONS", "type": "nav_option", "name": "M3 Actions", "parent": "CONSOLE-OM" },
+    { "id": "OM-OPT-CES", "type": "nav_option", "name": "CES", "parent": "CONSOLE-OM" },
+    { "id": "OM-OPT-OAM-TEAM-DASHBOARD", "type": "nav_option", "name": "OAM Team Dashboard", "parent": "CONSOLE-OM" },
+    { "id": "OM-OPT-OAM-MPR", "type": "nav_option", "name": "OAM MPR", "parent": "CONSOLE-OM" },
+    { "id": "OM-OPT-MID-MONTH-OAM", "type": "nav_option", "name": "Mid-Month OAM Review", "parent": "CONSOLE-OM" },
 
-    {"id":"OAM-OPT-MAP-REVIEW","type":"nav_option","name":"MAP Review","parent":"CONSOLE-OAM"},
-    {"id":"OAM-OPT-MAP-ACTIONS","type":"nav_option","name":"MAP Actions","parent":"CONSOLE-OAM"},
-    {"id":"OAM-OPT-SUP-TEAM-DASHBOARD","type":"nav_option","name":"SUP Team Dashboard","parent":"CONSOLE-OAM"},
-    {"id":"OAM-OPT-DSM","type":"nav_option","name":"Daily Supervisor Meeting","parent":"CONSOLE-OAM"},
-    {"id":"OAM-OPT-SOF","type":"nav_option","name":"SOF-SSOF","parent":"CONSOLE-OAM"},
-    {"id":"OAM-OPT-SUP-MPR","type":"nav_option","name":"SUP MPR","parent":"CONSOLE-OAM"},
-    {"id":"OAM-OPT-MID-MONTH-SUP","type":"nav_option","name":"Mid-Month Review","parent":"CONSOLE-OAM"},
+    { "id": "OAM-OPT-MAP-REVIEW", "type": "nav_option", "name": "MAP Review", "parent": "CONSOLE-OAM" },
+    { "id": "OAM-OPT-MAP-ACTIONS", "type": "nav_option", "name": "MAP Actions", "parent": "CONSOLE-OAM" },
+    { "id": "OAM-OPT-SUP-TEAM-DASHBOARD", "type": "nav_option", "name": "SUP Team Dashboard", "parent": "CONSOLE-OAM" },
+    { "id": "OAM-OPT-DSM", "type": "nav_option", "name": "Daily Supervisor Meeting", "parent": "CONSOLE-OAM" },
+    { "id": "OAM-OPT-SOF", "type": "nav_option", "name": "SOF-SSOF", "parent": "CONSOLE-OAM" },
+    { "id": "OAM-OPT-SUP-MPR", "type": "nav_option", "name": "SUP MPR", "parent": "CONSOLE-OAM" },
+    { "id": "OAM-OPT-MID-MONTH-SUP", "type": "nav_option", "name": "Mid-Month Review", "parent": "CONSOLE-OAM" },
 
-    {"id":"SUP-OPT-GAME-PLAN","type":"nav_option","name":"Game Plan","parent":"CONSOLE-SUP"},
-    {"id":"SUP-OPT-CE-DP","type":"nav_option","name":"CE Development Plan","parent":"CONSOLE-SUP"},
-    {"id":"SUP-OPT-SUP-TPP","type":"nav_option","name":"Touch Point Portal","parent":"CONSOLE-SUP"},
-    {"id":"SUP-OPT-COACHING-SESSION","type":"nav_option","name":"Coaching Session","parent":"CONSOLE-SUP"},
-    {"id":"SUP-OPT-CE-MPR","type":"nav_option","name":"CE MPR","parent":"CONSOLE-SUP"},
+    { "id": "SUP-OPT-GAME-PLAN", "type": "nav_option", "name": "Game Plan", "parent": "CONSOLE-SUP" },
+    { "id": "SUP-OPT-CE-DP", "type": "nav_option", "name": "CE Development Plan", "parent": "CONSOLE-SUP" },
+    { "id": "SUP-OPT-SUP-TPP", "type": "nav_option", "name": "Touch Point Portal", "parent": "CONSOLE-SUP" },
+    { "id": "SUP-OPT-COACHING-SESSION", "type": "nav_option", "name": "Coaching Session", "parent": "CONSOLE-SUP" },
+    { "id": "SUP-OPT-CE-MPR", "type": "nav_option", "name": "CE MPR", "parent": "CONSOLE-SUP" },
 
-    {"id":"SCR-M3-DASHBOARD","type":"screen","name":"M3 Dashboard","parent":"OM-OPT-M3-REVIEW"},
-    {"id":"COMP-M3-LIST","type":"component","name":"List of created M3","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-IDENT-LINK","type":"element","name":"M3 Ident","parent":"COMP-M3-LIST"},
+    { "id": "SCR-M3-DASHBOARD", "type": "screen", "name": "M3 Dashboard", "parent": "OM-OPT-M3-REVIEW" },
+    { "id": "COMP-M3-LIST", "type": "component", "name": "List of created M3", "parent": "SCR-M3-DASHBOARD" },
+    { "id": "EL-M3-IDENT-LINK", "type": "element", "name": "M3 Ident", "parent": "COMP-M3-LIST" },
 
-    {"id":"EL-M3-CREATE","type":"element","name":"Create M3 Button","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-FILTER","type":"element","name":"Filter","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-EXPORT","type":"element","name":"Export to Excel","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-REFRESH","type":"element","name":"Refresh","parent":"SCR-M3-DASHBOARD"},
+    { "id": "EL-M3-CREATE", "type": "element", "name": "Create M3 Button", "parent": "SCR-M3-DASHBOARD" },
+    { "id": "EL-M3-FILTER", "type": "element", "name": "Filter", "parent": "SCR-M3-DASHBOARD" },
+    { "id": "EL-M3-EXPORT", "type": "element", "name": "Export to Excel", "parent": "SCR-M3-DASHBOARD" },
+    { "id": "EL-M3-REFRESH", "type": "element", "name": "Refresh", "parent": "SCR-M3-DASHBOARD" },
 
-    {"id":"MOD-M3-CREATE","type":"modal","name":"Create M3 Popup","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-CREATE-CONFIRM","type":"element","name":"Create Button","parent":"MOD-M3-CREATE"},
-    {"id":"EL-M3-CREATE-CANCEL","type":"element","name":"Cancel Button","parent":"MOD-M3-CREATE"},
+    { "id": "MOD-M3-CREATE", "type": "modal", "name": "Create M3 Popup", "parent": "SCR-M3-DASHBOARD" },
+    { "id": "FIELD-M3-DATE", "type": "input", "name": "Date", "required": true, "parent": "MOD-M3-CREATE" },
+    { "id": "FIELD-M3-CLIENT", "type": "select", "name": "Client", "required": true, "parent": "MOD-M3-CREATE" },
+    { "id": "FIELD-M3-SUBSIDIARY", "type": "select", "name": "Subsidiary", "required": true, "parent": "MOD-M3-CREATE" },
+    { "id": "FIELD-M3-PROGRAM", "type": "select", "name": "Program", "required": false, "parent": "MOD-M3-CREATE" },
+    { "id": "EL-M3-CREATE-CONFIRM", "type": "element", "name": "Create Button", "parent": "MOD-M3-CREATE" },
+    { "id": "EL-M3-CREATE-CANCEL", "type": "element", "name": "Cancel Button", "parent": "MOD-M3-CREATE" },
 
-    {"id":"SCR-M3-OVERVIEW","type":"screen","name":"M3 Overview","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-BACK","type":"element","name":"Back Button","parent":"SCR-M3-OVERVIEW"},
-    {"id":"COMP-M3-ACTIONS-LIST","type":"component","name":"List of created M3 Actions","parent":"SCR-M3-OVERVIEW"},
-    {"id":"EL-M3-ADD-ACTION","type":"element","name":"Add Action Button","parent":"SCR-M3-OVERVIEW"},
+    { "id": "SCR-M3-OVERVIEW", "type": "screen", "name": "M3 Overview", "parent": "SCR-M3-DASHBOARD" },
+    { "id": "EL-M3-BACK", "type": "element", "name": "Back Button", "parent": "SCR-M3-OVERVIEW" },
+    { "id": "COMP-M3-ACTIONS-LIST", "type": "component", "name": "List of created M3 Actions", "parent": "SCR-M3-OVERVIEW" },
+    { "id": "EL-M3-ADD-ACTION", "type": "element", "name": "Add Action Button", "parent": "SCR-M3-OVERVIEW" },
 
-    {"id":"MOD-M3-ADD-ACTION","type":"modal","name":"Add Action Popup","parent":"SCR-M3-OVERVIEW"},
-    {"id":"EL-ACTION-CREATE","type":"element","name":"Create Action Button","parent":"MOD-M3-ADD-ACTION"},
-    {"id":"EL-ACTION-CANCEL","type":"element","name":"Cancel Action Button","parent":"MOD-M3-ADD-ACTION"}
+    { "id": "MOD-M3-ADD-ACTION", "type": "modal", "name": "Add Action Popup", "parent": "SCR-M3-OVERVIEW" },
 
+    { "id": "FIELD-ACTION-MARKET-LOB", "type": "select", "name": "Market/LoB", "required": true, "parent": "MOD-M3-ADD-ACTION" },
+    { "id": "FIELD-ACTION-ISSUES", "type": "input", "name": "Issues", "required": true, "parent": "MOD-M3-ADD-ACTION" },
+    { "id": "FIELD-ACTION-ROOT-CAUSE", "type": "input", "name": "Root Cause", "required": true, "parent": "MOD-M3-ADD-ACTION" },
+    { "id": "FIELD-ACTION-OWNER", "type": "select", "name": "Action Owner", "required": false, "parent": "MOD-M3-ADD-ACTION" },
+    { "id": "FIELD-ACTION-PROGRESS-UPDATE", "type": "input", "name": "Progress Update", "required": false, "parent": "MOD-M3-ADD-ACTION" },
 
-    {"id":"SCR-M3-ACTIONS-DASHBOARD","type":"screen","name":"M3 Actions Dashboard","parent":"OM-OPT-M3-ACTIONS"},
-    {"id":"COMP-M3-ACTIONS-LIST","type":"component","name":"List of created M3 Actions","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-ACTIONS-IDENT-LINK","type":"element","name":"M3 Action Ident","parent":"COMP-M3-ACTIONS-LIST"},
+    { "id": "EL-ACTION-CREATE", "type": "element", "name": "Create Action Button", "parent": "MOD-M3-ADD-ACTION" },
+    { "id": "EL-ACTION-CANCEL", "type": "element", "name": "Cancel Action Button", "parent": "MOD-M3-ADD-ACTION" }
+  ],
+  "relationships": [
+    { "type": "navigation", "from": "SCR-M3-DASHBOARD", "via": "EL-M3-IDENT-LINK", "to": "SCR-M3-OVERVIEW" },
+    { "type": "navigation", "from": "SCR-M3-OVERVIEW", "via": "EL-M3-BACK", "to": "SCR-M3-DASHBOARD" },
 
-    {"id":"EL-M3-ACTIONS-FILTER","type":"element","name":"Filter Actions","parent":"SCR-M3-ACTIONS-DASHBOARD"},
-    {"id":"EL-M3-ACTIONS-EXPORT","type":"element","name":"Export Actions to Excel","parent":"SCR-M3-ACTIONS-DASHBOARD"},
-    {"id":"EL-M3-ACTIONS-REFRESH","type":"element","name":"Refresh Actions","parent":"SCR-M3-ACTIONS-DASHBOARD"},
-    {"id":"EL-M3-ACTIONS-VIEW","type":"element","name":"View Actions Button","parent":"SCR-M3-ACTIONS-DASHBOARD"},
+    { "type": "modal_open", "from": "SCR-M3-DASHBOARD", "via": "EL-M3-CREATE", "to": "MOD-M3-CREATE" },
+    { "type": "modal_confirm", "from": "MOD-M3-CREATE", "via": "EL-M3-CREATE-CONFIRM", "to": "SCR-M3-OVERVIEW" },
+    { "type": "modal_cancel", "from": "MOD-M3-CREATE", "via": "EL-M3-CREATE-CANCEL", "to": "SCR-M3-DASHBOARD" },
 
-     {"id":"SCR-M3-ACTIONS-OVERVIEW","type":"screen","name":"M3 Actions Overview","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-ACTIONS-BACK","type":"element","name":"Back Button","parent":"SCR-M3-ACTIONS-OVERVIEW"},
-    
+    { "type": "modal_open", "from": "SCR-M3-OVERVIEW", "via": "EL-M3-ADD-ACTION", "to": "MOD-M3-ADD-ACTION" },
+    { "type": "modal_confirm", "from": "MOD-M3-ADD-ACTION", "via": "EL-ACTION-CREATE", "to": "SCR-M3-OVERVIEW" },
+    { "type": "modal_cancel", "from": "MOD-M3-ADD-ACTION", "via": "EL-ACTION-CANCEL", "to": "SCR-M3-OVERVIEW" }
   ]
-
-
-  
 }
