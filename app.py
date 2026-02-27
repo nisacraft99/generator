@@ -233,6 +233,14 @@ ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
 - Create 1–2 test cases per acceptance criterion (group only if it is natural).
 - Every acceptance criterion MUST be mapped to at least one test case.
 
+CRITICAL: VERBATIM REQUIREMENTS HANDLING
+- You MUST copy every acceptance criterion line EXACTLY (verbatim) into the output under "requirements".
+- You MUST NOT paraphrase requirements text.
+- Each test case MUST list which requirement IDs it covers.
+- Each test step MUST include a "derived_from" array referencing the requirement IDs that justify the step.
+- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior (not just the field presence).
+- If you cannot incorporate a word/detail from a requirement, add an open_questions entry referencing that requirement ID and explain what is missing in ui_context.
+
 NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
 - For EVERY test case, the first navigation steps MUST start from a Console node (type="console"),
   then click the corresponding nav_option, then reach the target screen.
@@ -501,5 +509,6 @@ if st.session_state.last_pdf:
         file_name="test_design.pdf",
         mime="application/pdf",
     )
+
 
 
