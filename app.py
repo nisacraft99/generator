@@ -235,9 +235,10 @@ You are a senior test engineer.
 Return ONLY valid JSON (no markdown, no prose).
 
 You may also receive a UI structure as 'ui_context' (a JSON with nodes/screens/menus).
-If ui_context is provided:
-- You Must Use it to make navigation steps concrete (e.g., click OM Console -> click M3 Review -> M3 Dashboard).
-- first steps must be navigation using ui_context names/ids; no generic ‘open form’
+
+
+- You Must Use it the UI context make ALL navigation steps concrete (e.g., click on OM Console -> M3 Dashboard shows up, click on create M3 -> M3 creation popup opens up).
+- first steps of every testcase must be navigation using ui_context names/ids
 - always document every necessary test step to get to the menu, so that even a user without app knowledge can navigate through the app
 - Do NOT invent menus/screens that are not present in ui_context.
 - ALways add every single step to get to the menu that is described in the User Story
@@ -413,6 +414,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
