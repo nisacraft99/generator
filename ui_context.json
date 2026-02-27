@@ -47,17 +47,22 @@
     {"id":"MOD-M3-ADD-ACTION","type":"modal","name":"Add Action Popup","parent":"SCR-M3-OVERVIEW"},
     {"id":"EL-ACTION-CREATE","type":"element","name":"Create Action Button","parent":"MOD-M3-ADD-ACTION"},
     {"id":"EL-ACTION-CANCEL","type":"element","name":"Cancel Action Button","parent":"MOD-M3-ADD-ACTION"}
-  ],
-  "relationships": [
-    {"type":"navigation","from":"SCR-M3-DASHBOARD","via":"EL-M3-IDENT-LINK","to":"SCR-M3-OVERVIEW"},
-    {"type":"navigation","from":"SCR-M3-OVERVIEW","via":"EL-M3-BACK","to":"SCR-M3-DASHBOARD"},
 
-    {"type":"modal_open","from":"SCR-M3-DASHBOARD","via":"EL-M3-CREATE","to":"MOD-M3-CREATE"},
-    {"type":"modal_confirm","from":"MOD-M3-CREATE","via":"EL-M3-CREATE-CONFIRM","to":"SCR-M3-OVERVIEW"},
-    {"type":"modal_cancel","from":"MOD-M3-CREATE","via":"EL-M3-CREATE-CANCEL","to":"SCR-M3-DASHBOARD"},
 
-    {"type":"modal_open","from":"SCR-M3-OVERVIEW","via":"EL-M3-ADD-ACTION","to":"MOD-M3-ADD-ACTION"},
-    {"type":"modal_confirm","from":"MOD-M3-ADD-ACTION","via":"EL-ACTION-CREATE","to":"SCR-M3-OVERVIEW"},
-    {"type":"modal_cancel","from":"MOD-M3-ADD-ACTION","via":"EL-ACTION-CANCEL","to":"SCR-M3-OVERVIEW"}
+    {"id":"SCR-M3-ACTIONS-DASHBOARD","type":"screen","name":"M3 Actions Dashboard","parent":"OM-OPT-M3-ACTIONS"},
+    {"id":"COMP-M3-ACTIONS-LIST","type":"component","name":"List of created M3 Actions","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-ACTIONS-IDENT-LINK","type":"element","name":"M3 Action Ident","parent":"COMP-M3-ACTIONS-LIST"},
+
+    {"id":"EL-M3-ACTIONS-FILTER","type":"element","name":"Filter Actions","parent":"SCR-M3-ACTIONS-DASHBOARD"},
+    {"id":"EL-M3-ACTIONS-EXPORT","type":"element","name":"Export Actions to Excel","parent":"SCR-M3-ACTIONS-DASHBOARD"},
+    {"id":"EL-M3-ACTIONS-REFRESH","type":"element","name":"Refresh Actions","parent":"SCR-M3-ACTIONS-DASHBOARD"},
+    {"id":"EL-M3-ACTIONS-VIEW","type":"element","name":"View Actions Button","parent":"SCR-M3-ACTIONS-DASHBOARD"},
+
+     {"id":"SCR-M3-ACTIONS-OVERVIEW","type":"screen","name":"M3 Actions Overview","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-ACTIONS-BACK","type":"element","name":"Back Button","parent":"SCR-M3-ACTIONS-OVERVIEW"},
+    
   ]
+
+
+  
 }
