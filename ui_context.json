@@ -29,18 +29,16 @@
 
 
     
+ {
+  "nodes": [
     {"id":"SCR-M3-DASHBOARD","type":"screen","name":"M3 Dashboard","parent":"OM-OPT-M3-REVIEW"},
     {"id":"COMP-M3-LIST","type":"component","name":"List of created M3","parent":"SCR-M3-DASHBOARD"},
     {"id":"EL-M3-IDENT-LINK","type":"element","name":"M3 Ident","parent":"COMP-M3-LIST"},
+
     {"id":"EL-M3-CREATE","type":"element","name":"Create M3 Button","parent":"SCR-M3-DASHBOARD"},
     {"id":"EL-M3-FILTER","type":"element","name":"Filter","parent":"SCR-M3-DASHBOARD"},
-    {"id":"EL-M3-EXPORT","type":"element","name":"Export Excel","parent":"SCR-M3-DASHBOARD"},
+    {"id":"EL-M3-EXPORT","type":"element","name":"Export to Excel","parent":"SCR-M3-DASHBOARD"},
     {"id":"EL-M3-REFRESH","type":"element","name":"Refresh","parent":"SCR-M3-DASHBOARD"},
-
-
-    {"id":"SCR-M3-OVERVIEW","type":"screen","name":"M3 Overview","parent":"EL-M3-IDENT-LINK"}
-    {"id":"COMP-M3-ACTIONS-LIST","type":"component","name":"List of created M3 Actions for the M3","parent":"SCR-M3-OVERVIEW"},
-    {"id":"EL-M3-ACTIONS-EDIT","type":"element","name":"Edit Button for M3 Action","parent":"COMP-M3-ACTIONS-LIST"},
 
     {"id":"MOD-M3-CREATE","type":"modal","name":"Create M3 Popup","parent":"SCR-M3-DASHBOARD"},
     {"id":"FIELD-M3-DATE","type":"input","name":"Date","required":true,"parent":"MOD-M3-CREATE"},
@@ -50,23 +48,21 @@
     {"id":"EL-M3-CREATE-CONFIRM","type":"element","name":"Create Button","parent":"MOD-M3-CREATE"},
     {"id":"EL-M3-CREATE-CANCEL","type":"element","name":"Cancel Button","parent":"MOD-M3-CREATE"},
 
-
     {"id":"SCR-M3-OVERVIEW","type":"screen","name":"M3 Overview","parent":"SCR-M3-DASHBOARD"},
     {"id":"EL-M3-BACK","type":"element","name":"Back Button","parent":"SCR-M3-OVERVIEW"},
     {"id":"COMP-M3-ACTIONS-LIST","type":"component","name":"List of created Actions","parent":"SCR-M3-OVERVIEW"},
     {"id":"EL-M3-ADD-ACTION","type":"element","name":"Add Action Button","parent":"SCR-M3-OVERVIEW"},
-    {"id":"EL-M3-CREATE-FROM-OVERVIEW","type":"element","name":"Create M3 Button (Overview)","parent":"SCR-M3-OVERVIEW"},
 
-     {"id":"MOD-M3-ADD-ACTION","type":"modal","name":"Add Action Popup","parent":"SCR-M3-OVERVIEW"},
-    {"id":"FIELD-ACTION-TITLE","type":"input","name":"Action Title","required":true,"parent":"MOD-M3-ADD-ACTION"},
-    {"id":"FIELD-ACTION-OWNER","type":"select","name":"Owner","required":true,"parent":"MOD-M3-ADD-ACTION"},
-    {"id":"FIELD-ACTION-DUEDATE","type":"input","name":"Due Date","required":true,"parent":"MOD-M3-ADD-ACTION"},
+    {"id":"MOD-M3-ADD-ACTION","type":"modal","name":"Add Action Popup","parent":"SCR-M3-OVERVIEW"},
+    {"id":"FIELD-ACTION-MARKET-LOB","type":"select","name":"Market/LoB","required":true,"parent":"MOD-M3-ADD-ACTION"},
+    {"id":"FIELD-ACTION-ISSUES","type":"input","name":"Issues","required":true,"parent":"MOD-M3-ADD-ACTION"},
+    {"id":"FIELD-ACTION-ROOT-CAUSE","type":"input","name":"Root Cause","required":true,"parent":"MOD-M3-ADD-ACTION"},
+    {"id":"FIELD-ACTION-OWNER","type":"select","name":"Action Owner","required":false,"parent":"MOD-M3-ADD-ACTION"},
+    {"id":"FIELD-ACTION-PROGRESS-UPDATE","type":"input","name":"Progress Update","required":false,"parent":"MOD-M3-ADD-ACTION"},
     {"id":"EL-ACTION-CREATE","type":"element","name":"Create Action Button","parent":"MOD-M3-ADD-ACTION"},
     {"id":"EL-ACTION-CANCEL","type":"element","name":"Cancel Action Button","parent":"MOD-M3-ADD-ACTION"}
   ],
-
   "relationships": [
-
     {"type":"navigation","from":"SCR-M3-DASHBOARD","via":"EL-M3-IDENT-LINK","to":"SCR-M3-OVERVIEW"},
     {"type":"navigation","from":"SCR-M3-OVERVIEW","via":"EL-M3-BACK","to":"SCR-M3-DASHBOARD"},
 
