@@ -236,10 +236,11 @@ Return ONLY valid JSON (no markdown, no prose).
 
 You may also receive a UI structure as 'ui_context' (a JSON with nodes/screens/menus).
 If ui_context is provided:
-- Use it to make navigation steps concrete (e.g., open OM Console -> M3 Review -> M3 Dashboard).
+- You Must Use it to make navigation steps concrete (e.g., open OM Console -> M3 Review -> M3 Dashboard).
 - first steps must be navigation using ui_context names/ids; no generic ‘open form’
 - always document every necessary test step to get to the menu, so that even a user without app knowledge can navigate through the app
 - Do NOT invent menus/screens that are not present in ui_context.
+- ALways add every single step to get to the menu that is described in the User Story
 
 
 Each step MUST include ui_node_id referencing an existing node id from ui_context.
@@ -408,6 +409,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
