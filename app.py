@@ -245,6 +245,11 @@ STRICT UI RULES:
 - You MUST use only UI names that exist in ui_context.nodes[].name (e.g., "Add Action Button", "Create M3 Button", "M3 Ident").
 - Do NOT invent UI labels such as "Create M3 Action button". If not found, write a generic step and add it to open_questions.
 - For any "create m3 action" story, you MUST navigate to "M3 Overview" and use "Add Action Button" to open "Add Action Popup".
+- For EACH test case, you MUST output a field "navigation_steps" with 3–6 steps that navigate from CONSOLE-OM to SCR-M3-OVERVIEW using ONLY node names from ui_context.
+- Each navigation step MUST include ui_node_id that matches an existing ui_context.nodes[].id.
+- Do NOT write generic navigation like "Navigate to M3 Overview". You MUST specify the concrete path:
+  OM Console -> M3 Review -> M3 Dashboard -> M3 Ident -> M3 Overview.
+- If you cannot determine a step from ui_context, set ui_node_id to null and add an entry to "open_questions".
 
 Each step MUST include ui_node_id referencing an existing node id from ui_context.
 If you cannot reference an existing node id, set ui_node_id to null and add an open_questions entry.
@@ -256,12 +261,16 @@ Schema:
       "id":"TC-1",
       "title":"string",
       "priority":"High|Medium|Low",
-      "type":"Functional|Negative|Boundary|Security|Performance|Usability",
+      "type":"Functional|Negative|Boundary",
+      "navigation_steps":[
+        {"step":"...", "expected":"...", "ui_node_id":"..."}
+      ],
       "steps":[
-        {"step":"concise action", "expected":"concise observable result"}
+        {"step":"...", "expected":"...", "ui_node_id":"..."}
       ]
     }
-  ]
+  ],
+  "open_questions":[]
 }
 
 Rules:
@@ -408,6 +417,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
