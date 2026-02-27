@@ -266,10 +266,11 @@ Schema:
 }
 
 Rules:
-- Provide not more than 15 test cases.
+- Provide as little test cases as you can, while covering all acceptance criteria.
 - Each test case MUST have at least 3 steps, each with 'step' and 'expected'.
+- do not divide test cases by function, but by the menu. for example, one testcase for an entire page that has several fields on it
 - Be concise and testable. No Gherkin.
-- Ensure acceptance criteria are covered across the set of test cases.
+- Ensure all acceptance criteria are covered across the set of test cases.
 """
 
 def _json_from_text(txt: str):
@@ -409,6 +410,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
