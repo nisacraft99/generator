@@ -269,6 +269,7 @@ Rules:
 - Provide enough test cases to ensure you are covering all acceptance criteria and assumptions.
 - do not leave out a single aspect of the input you are given, and everything MUST be covered through your test cases
 - cover every single thing that i gave as context in your test cases. do not leave out anything at all
+- always add every step you need to do to execute the test case. this includes navigation, buttons to click, and fields to enter. do not leave out any step at all. 
 - Each test case MUST have at least 3 steps, each with 'step' and 'expected'.
 - do not divide test cases by function, but by the menu. for example, one testcase for an entire page that has several fields on it
 - Be concise and testable. No Gherkin.
@@ -412,6 +413,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
