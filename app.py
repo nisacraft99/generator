@@ -266,7 +266,7 @@ Schema:
 }
 
 Rules:
-- Provide as little test cases as you can, while still covering all acceptance criteria and assumptions.
+- Provide enough test cases to ensure you are covering all acceptance criteria and assumptions.
 - do not leave out a single aspect of the input you are given, and everything MUST be covered through your test cases
 - Each test case MUST have at least 3 steps, each with 'step' and 'expected'.
 - do not divide test cases by function, but by the menu. for example, one testcase for an entire page that has several fields on it
@@ -411,6 +411,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
