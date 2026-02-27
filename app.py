@@ -241,6 +241,14 @@ If ui_context is provided:
 - always document every necessary test step to get to the menu, so that even a user without app knowledge can navigate through the app
 - Do NOT invent menus/screens that are not present in ui_context.
 
+STRICT UI RULES:
+- You MUST use only UI names that exist in ui_context.nodes[].name (e.g., "Add Action Button", "Create M3 Button", "M3 Ident").
+- Do NOT invent UI labels such as "Create M3 Action button". If not found, write a generic step and add it to open_questions.
+- For any "create m3 action" story, you MUST navigate to "M3 Overview" and use "Add Action Button" to open "Add Action Popup".
+
+Each step MUST include ui_node_id referencing an existing node id from ui_context.
+If you cannot reference an existing node id, set ui_node_id to null and add an open_questions entry.
+
 Schema:
 {
   "test_cases":[
@@ -400,6 +408,7 @@ if st.button("export to PDF!", disabled=not pdf_ready):
                        mime="application/pdf", key="dl_pdf_btn")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
