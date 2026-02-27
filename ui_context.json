@@ -5,7 +5,6 @@
     {"id":"CONSOLE-OAM","type":"console","name":"OAM Console","parent":null},
     {"id":"CONSOLE-SUP","type":"console","name":"Supervisor Console","parent":null},
 
-    
     {"id":"OM-OPT-M3-REVIEW","type":"nav_option","name":"M3 Review","parent":"CONSOLE-OM"},
     {"id":"OM-OPT-M3-ACTIONS","type":"nav_option","name":"M3 Actions","parent":"CONSOLE-OM"},
     {"id":"OM-OPT-CES","type":"nav_option","name":"CES","parent":"CONSOLE-OM"},
@@ -27,10 +26,6 @@
     {"id":"SUP-OPT-COACHING-SESSION","type":"nav_option","name":"Coaching Session","parent":"CONSOLE-SUP"},
     {"id":"SUP-OPT-CE-MPR","type":"nav_option","name":"CE MPR","parent":"CONSOLE-SUP"},
 
-
-    
- {
-  "nodes": [
     {"id":"SCR-M3-DASHBOARD","type":"screen","name":"M3 Dashboard","parent":"OM-OPT-M3-REVIEW"},
     {"id":"COMP-M3-LIST","type":"component","name":"List of created M3","parent":"SCR-M3-DASHBOARD"},
     {"id":"EL-M3-IDENT-LINK","type":"element","name":"M3 Ident","parent":"COMP-M3-LIST"},
@@ -54,7 +49,6 @@
     {"id":"EL-M3-ADD-ACTION","type":"element","name":"Add Action Button","parent":"SCR-M3-OVERVIEW"},
 
     {"id":"MOD-M3-ADD-ACTION","type":"modal","name":"Add Action Popup","parent":"SCR-M3-OVERVIEW"},
-
     {"id":"EL-ACTION-CREATE","type":"element","name":"Create Action Button","parent":"MOD-M3-ADD-ACTION"},
     {"id":"EL-ACTION-CANCEL","type":"element","name":"Cancel Action Button","parent":"MOD-M3-ADD-ACTION"}
   ],
