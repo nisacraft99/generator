@@ -249,7 +249,9 @@ RULES:
 - Provide 3–6 focused test cases.
 - Each test case must contain navigation_steps (if ui_context is provided).
 - Each test case MUST have at least 3 steps total (navigation_steps + steps).
-- Ensure acceptance criteria are covered across the set.
+- Ensure every single acceptance criteria is covered across the set.
+- Do not leave out any acceptance criteria that was given to you as input. Everything the user enters is important, and must be covered in the test cases
+- Divide the testcases by menu, not by case. So make one testcase where you test a popup and valid entries, etc.
 - Be concise and testable. No Gherkin.
 """
 
@@ -428,3 +430,4 @@ if clicked:
         file_name="test_design.pdf",
         mime="application/pdf"
     )
+
