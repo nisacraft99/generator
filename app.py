@@ -229,6 +229,9 @@ STRICT UI RULES (MANDATORY):
 - Navigation must be explicit and beginner-friendly (click path through menus/screens).
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
+ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
+- Create 1–2 test cases per acceptance criterion (group only if it is natural).
+- Every acceptance criterion MUST be mapped to at least one test case.
 
 NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
 - For EVERY test case, the first navigation steps MUST start from a Console node (type="console"),
@@ -498,4 +501,5 @@ if st.session_state.last_pdf:
         file_name="test_design.pdf",
         mime="application/pdf",
     )
+
 
