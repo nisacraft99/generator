@@ -4,7 +4,7 @@
 #   pip install streamlit python-dotenv reportlab openai
 #   streamlit run app.py
 
-import os, io, json, re, time
+import os, io, json, re
 import streamlit as st
 from dotenv import load_dotenv
 from reportlab.platypus import (
@@ -14,32 +14,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-import streamlit as st
-
-# ======================= UI CONTEXT (optional) =======================
-UI_CONTEXT = {}
-_UI_CONTEXT_PATH = os.getenv("UI_CONTEXT_PATH", "ui_context.json")
-if os.path.exists(_UI_CONTEXT_PATH):
-    try:
-        with open(_UI_CONTEXT_PATH, "r", encoding="utf-8") as f:
-            UI_CONTEXT = json.load(f)
-    except Exception:
-        UI_CONTEXT = {}
-
-st.set_page_config(
-    page_title="💖 User Story → Testcase Generator",
-    page_icon="✨",
-    layout="wide"
-)
-
-
 # --- OpenAI (optional for test design) ---
 try:
     from openai import OpenAI
 except Exception:
     OpenAI = None
 
-st.set_page_config(page_title="User Story → Testcase Generator", page_icon="📝", layout="wide")
+st.set_page_config(
+    page_title="💖 User Story → Testcase Generator",
+    page_icon="✨",
+    layout="wide"
+)
 
 # ---- Force Comic Sans globally (add after the password gate) ----
 st.markdown("""
@@ -57,11 +42,7 @@ label, p, span, div {
 </style>
 """, unsafe_allow_html=True)
 
-
 # --- Kawaii Password Gate (bigger button + bigger field) ---
-import os
-import streamlit as st
-
 APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
 
 if "auth_ok" not in st.session_state:
@@ -74,7 +55,6 @@ def try_login():
     else:
         st.session_state.pw_error = "Wrong password 🫠"
 
-# Pretty login screen
 if not st.session_state.auth_ok:
     st.markdown("""
     <style>
@@ -102,26 +82,24 @@ if not st.session_state.auth_ok:
 
       .login-note{ color:#355c7d; font-size:16px; margin:6px 0 20px; }
 
-      /* make text input wider + bigger font */
       .login-card .stTextInput > div > div > input{
         border-radius: 16px; border:2px solid #bfe1ff;
         background:#f9ffff;
         font-family: "Comic Sans MS", cursive, sans-serif;
-        font-size: 28px;   /* bigger characters */
-        height: 70px;      /* taller field */
-        width: 100% !important; /* full width inside card */
+        font-size: 28px;
+        height: 70px;
+        width: 100% !important;
         padding: 10px 20px;
       }
 
-      /* center and enlarge button */
       .login-card .stButton { text-align:center; margin-top:16px; }
       .login-card .stButton>button{
         font-family:"Comic Sans MS", cursive;
         border:none; border-radius:999px; padding:1rem 2rem; font-weight:700;
-        font-size: 24px;  /* bigger text */
+        font-size: 24px;
         background: linear-gradient(135deg,#bfe1ff,#9fd2ff);
         box-shadow:0 8px 18px rgba(159,210,255,.45); color:#123;
-        min-width: 200px; /* wider button */
+        min-width: 200px;
       }
       .login-card .stButton>button:hover{ filter:brightness(1.05); }
     </style>
@@ -140,32 +118,21 @@ if not st.session_state.auth_ok:
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-
-# --- end gate ---
-
-
 # ======================= CSS (Comic Sans + fixed heights) =======================
 st.markdown("""
 <style>
 html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !important; }
-
-/* full aqua background */
 .stApp { background: #ccf4f4 !important; }
 
-/* title pill */
 .mock-title {
   margin: 25px auto 30px auto; width: 800px;
   background: #f7d8ef; border: 3px solid #000; border-radius: 14px;
   text-align: center; font-weight: 800; font-size: 40px; padding: 10px 16px;
 }
 
-/* labels */
 .mock-label { font-weight: 500; font-size: 25px; color: #000; margin: 12px 0 6px 40px; }
-
-/* fixed widths so fields don't collapse */
 .field-single, .field-multi { width: 900px; margin-left: 40px; }
 
-/* cartoon rounded inputs (textarea-based to avoid clipping) */
 .stTextArea textarea {
   background: #fff4c7 !important;
   border: 3px solid #000 !important;
@@ -177,16 +144,14 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
   line-height: 1.45 !important;
 }
 
-/* "single-line" textarea look for the User Story field */
 .singleline textarea {
   min-height: 64px !important;
   max-height: 64px !important;
   resize: none !important;
   overflow: hidden !important;
-  white-space: nowrap !important;   /* looks like a single line */
+  white-space: nowrap !important;
 }
 
-/* export button */
 .export-wrap { margin: 28px 40px; }
 .export-wrap .stButton > button {
   background: #e6f1a6; color:#000; border:3px solid #000;
@@ -194,7 +159,6 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 }
 .export-wrap .stButton > button:disabled { background:#e6e6e6; color:#777; border-color:#999; }
 
-/* keep download button in same cute style */
 .stDownloadButton > button {
   background: #ffffff; color:#000; border:3px solid #000;
   border-radius: 10px; font-weight:800; font-size: 18px; padding: 10px 20px;
@@ -205,25 +169,44 @@ html, body, [class*="css"] { font-family: "Comic Sans MS","Comic Sans",cursive !
 # --- UI ---
 st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
-# User Story (single line style; real single-line look via textarea to avoid clipping)
 st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True)
 st.markdown('<div class="field-single singleline">', unsafe_allow_html=True)
 user_story = st.text_area(
     "", key="us_one", label_visibility="hidden",
     placeholder="As a <role>, I want ..., so that ...",
-    height=200  # keep this compact to look like a single line
+    height=200
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Acceptance Criteria (big multi-line box)
 st.markdown('<div class="mock-label">enter the acceptance criteria (1 criteria per line)</div>', unsafe_allow_html=True)
 st.markdown('<div class="field-multi">', unsafe_allow_html=True)
 ac_text = st.text_area(
     "", key="ac_lines", label_visibility="hidden",
     placeholder="• Criterion 1\n• Criterion 2\n• Criterion 3",
-    height=400   # nice and tall
+    height=400
 )
 st.markdown('</div>', unsafe_allow_html=True)
+
+# ======================= UI CONTEXT loader =======================
+UI_CONTEXT_PATH = "ui_context.json"
+
+def load_ui_context(path: str) -> dict:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            ctx = json.load(f)
+        if not isinstance(ctx.get("nodes", None), list):
+            return {}
+        if not isinstance(ctx.get("relationships", []), list):
+            ctx["relationships"] = []
+        return ctx
+    except Exception as e:
+        st.error(f"UI context could not be loaded: {e}")
+        return {}
+
+UI_CONTEXT = load_ui_context(UI_CONTEXT_PATH)
+
+# (debug – keep, helps you see instantly if it's loaded)
+st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', []))}")
 
 # ======================= OpenAI setup =======================
 load_dotenv()
@@ -234,20 +217,16 @@ SYSTEM_PROMPT = """
 You are a senior test engineer.
 Return ONLY valid JSON (no markdown, no prose).
 
-You may also receive a UI structure as 'ui_context' (a JSON with nodes/screens/menus).
+You may receive a UI structure as 'ui_context' (JSON with nodes and relationships).
+If ui_context is provided, you MUST use it to generate concrete navigation.
 
+STRICT UI RULES (MANDATORY):
+- Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
+- Every step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id.
+- Navigation must be explicit and beginner-friendly (click path through menus/screens).
+- Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
-- You Must Use it the UI context make ALL navigation steps concrete (e.g., click on OM Console -> M3 Dashboard shows up, click on create M3 -> M3 creation popup opens up).
-- first steps of every testcase must be navigation using ui_context names/ids
-- always document every necessary test step to get to the menu, so that even a user without app knowledge can navigate through the app
-- Do NOT invent menus/screens that are not present in ui_context.
-- ALways add every single step to get to the menu that is described in the User Story
-
-
-Each step MUST include ui_node_id referencing an existing node id from ui_context.
-If you cannot reference an existing node id, set ui_node_id to null and add an open_questions entry.
-
-Schema:
+OUTPUT SCHEMA:
 {
   "test_cases":[
     {
@@ -256,72 +235,98 @@ Schema:
       "priority":"High|Medium|Low",
       "type":"Functional|Negative|Boundary",
       "navigation_steps":[
-        {"step":"...", "expected":"...", "ui_node_id":"..."}
+        {"step":"string","expected":"string","ui_node_id":"string"}
       ],
       "steps":[
-        {"step":"...", "expected":"...", "ui_node_id":"..."}
+        {"step":"string","expected":"string","ui_node_id":"string"}
       ]
     }
   ],
   "open_questions":[]
 }
 
-Rules:
-- Provide enough test cases to ensure you are covering all acceptance criteria and assumptions.
-- do not leave out a single aspect of the input you are given, and everything MUST be covered through your test cases
-- cover every single thing that i gave as context in your test cases. do not leave out anything at all
-- always add every step you need to do to execute the test case. this includes navigation, buttons to click, and fields to enter. do not leave out any step at all. 
-- Each test case MUST have at least 3 steps, each with 'step' and 'expected'.
-- do not divide test cases by function, but by the menu. for example, one testcase for an entire page that has several fields on it
+RULES:
+- Provide 3–6 focused test cases.
+- Each test case must contain navigation_steps (if ui_context is provided).
+- Each test case MUST have at least 3 steps total (navigation_steps + steps).
+- Ensure acceptance criteria are covered across the set.
 - Be concise and testable. No Gherkin.
-- Ensure all acceptance criteria are covered across the set of test cases.
 """
 
 def _json_from_text(txt: str):
-    txt = txt.strip()
+    txt = (txt or "").strip()
     if txt.startswith("```"):
-        txt = re.sub(r"^```(json)?\\s*|\\s*```$", "", txt, flags=re.S)
+        txt = re.sub(r"^```(json)?\\s*|\\s*```$", "", txt, flags=re.S).strip()
     try:
         return json.loads(txt)
     except Exception:
         m = re.search(r"\\{.*\\}", txt, flags=re.S)
-        if m: return json.loads(m.group(0))
-        return {"test_cases":[]}
+        if m:
+            try:
+                return json.loads(m.group(0))
+            except Exception:
+                pass
+        return {"test_cases": [], "open_questions": ["Model response was not valid JSON."]}
+
+def _normalize_step(step_obj):
+    if isinstance(step_obj, dict):
+        return {
+            "step": (step_obj.get("step", "") or "").strip(),
+            "expected": (step_obj.get("expected", "") or "").strip(),
+            "ui_node_id": step_obj.get("ui_node_id", None)
+        }
+    return {"step": str(step_obj), "expected": "", "ui_node_id": None}
 
 def generate_cases(story: str, ac_blob: str):
-    """Return list of test case dicts; [] if no API or failure."""
     if not client or not story.strip():
-        return []
+        return [], ["No OpenAI client or empty story."]
+
     payload = {
         "story": story.strip(),
         "acceptance_criteria": [l.strip() for l in ac_blob.splitlines() if l.strip()],
         "ui_context": UI_CONTEXT
     }
+
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o-mini", temperature=0.2,
-            messages=[{"role":"system","content":SYSTEM_PROMPT},
-                      {"role":"user","content":json.dumps(payload, ensure_ascii=False)}]
+            model="gpt-4o-mini",
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}
+            ]
         )
         data = _json_from_text(resp.choices[0].message.content)
-        tcs = data.get("test_cases", [])
-        # normalize steps structure
-        fixed=[]
-        for tc in tcs:
-            steps=[]
-            for s in tc.get("steps", []):
-                if isinstance(s, dict):
-                    steps.append({"step": s.get("step","").strip(), "expected": s.get("expected","").strip()})
-                else:
-                    steps.append({"step": str(s), "expected": ""})
-            tc["steps"]=steps
-            fixed.append(tc)
-        return fixed
-    except Exception:
-        return []
 
-# ======================= PDF builder (pretty Step/Action/Expected tables) =======================
-def build_pdf(story_text: str, ac_blob: str, cases: list) -> bytes:
+        tcs = data.get("test_cases", []) or []
+        open_q = data.get("open_questions", []) or []
+
+        fixed = []
+        for tc in tcs:
+            nav = [_normalize_step(s) for s in (tc.get("navigation_steps", []) or [])]
+            steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
+
+            # IMPORTANT: merge navigation into steps so the PDF (which prints steps only) shows navigation too
+            merged_steps = nav + steps
+
+            # minimal safety: ensure at least 3 rows exist
+            while len(merged_steps) < 3:
+                merged_steps.append({"step": "—", "expected": "—", "ui_node_id": None})
+
+            fixed.append({
+                "id": (tc.get("id", "") or "").strip(),
+                "title": (tc.get("title", "") or "").strip(),
+                "priority": (tc.get("priority", "") or "").strip(),
+                "type": (tc.get("type", "") or "").strip(),
+                "steps": merged_steps
+            })
+
+        return fixed, open_q
+    except Exception as e:
+        return [], [f"OpenAI call failed: {e}"]
+
+# ======================= PDF builder =======================
+def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) -> bytes:
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=36, rightMargin=36, topMargin=40, bottomMargin=36)
     styles = getSampleStyleSheet()
@@ -331,10 +336,12 @@ def build_pdf(story_text: str, ac_blob: str, cases: list) -> bytes:
     cell  = ParagraphStyle("cell", parent=styles["Normal"], fontSize=10, leading=13, wordWrap="CJK")
 
     flow = []
-    flow.append(Paragraph(" User Story to Testcase Generator", title)); flow.append(Spacer(1, 10))
+    flow.append(Paragraph(" User Story to Testcase Generator", title))
+    flow.append(Spacer(1, 10))
 
     flow.append(Paragraph("<b>User Story</b>", head))
-    flow.append(Paragraph(story_text.strip() or "—", body)); flow.append(Spacer(1, 8))
+    flow.append(Paragraph(story_text.strip() or "—", body))
+    flow.append(Spacer(1, 8))
 
     flow.append(Paragraph("<b>Acceptance Criteria</b>", head))
     lines = [l.strip() for l in ac_blob.splitlines() if l.strip()]
@@ -345,88 +352,79 @@ def build_pdf(story_text: str, ac_blob: str, cases: list) -> bytes:
         flow.append(Paragraph("—", body))
     flow.append(Spacer(1, 12))
 
-    if cases:
-        flow.append(Paragraph("<b>Generated Test Design</b>", head)); flow.append(Spacer(1, 6))
-        # Summary table
-        trows = [["ID","Title","Priority","Type"]]
-        for tc in cases:
-            trows.append([Paragraph(tc.get("id",""), cell),
-                          Paragraph(tc.get("title",""), cell),
-                          Paragraph(tc.get("priority",""), cell),
-                          Paragraph(tc.get("type",""), cell)])
-        tbl = Table(trows, colWidths=[55, 300, 80, 80], repeatRows=1, splitByRow=1)
-        tbl.setStyle(TableStyle([
-            ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#9fd2ff")),
-            ("TEXTCOLOR",(0,0),(-1,0),colors.white),
-            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
-            ("GRID",(0,0),(-1,-1),0.25,colors.grey),
-            ("VALIGN",(0,0),(-1,-1),"TOP"),
-            ("FONTSIZE",(0,0),(-1,-1),9),
-        ]))
-        flow.append(tbl); flow.append(Spacer(1, 10))
+    if open_questions:
+        flow.append(Paragraph("<b>Open Questions</b>", head))
+        flow.append(ListFlowable([ListItem(Paragraph(q, body), leftIndent=6) for q in open_questions],
+                                 bulletType="bullet", leftPadding=12))
+        flow.append(Spacer(1, 12))
 
-        # One PRETTY table per test case: Step | Action | Expected Result
+    if cases:
+        flow.append(Paragraph("<b>Generated Test Design</b>", head))
+        flow.append(Spacer(1, 6))
+
+        # Summary table
+        trows = [["ID", "Title", "Priority", "Type"]]
+        for tc in cases:
+            trows.append([
+                Paragraph(tc.get("id", ""), cell),
+                Paragraph(tc.get("title", ""), cell),
+                Paragraph(tc.get("priority", ""), cell),
+                Paragraph(tc.get("type", ""), cell),
+            ])
+
+        t = Table(trows, colWidths=[50, 300, 70, 70])
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightblue),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ]))
+        flow.append(t)
+        flow.append(Spacer(1, 12))
+
+        # One table per test case
         for tc in cases:
             flow.append(Paragraph(f"<b>{tc.get('id','')}</b> — {tc.get('title','')}", styles["Heading3"]))
             steps = tc.get("steps", []) or []
-            srows = [[Paragraph("Step", styles["Heading5"]),
-                      Paragraph("Action", styles["Heading5"]),
-                      Paragraph("Expected Result", styles["Heading5"])]]
-            if steps:
-                for i, s in enumerate(steps, start=1):
-                    srows.append([Paragraph(str(i), cell),
-                                  Paragraph(s.get("step",""), cell),
-                                  Paragraph(s.get("expected",""), cell)])
-            else:
-                srows.append([Paragraph("—", cell), Paragraph("—", cell), Paragraph("—", cell)])
 
-            # Wider Expected column, zebra rows, and page-splitting
-            step_tbl = Table(srows, colWidths=[40, 230, 255], repeatRows=1, splitByRow=1)
-            step_tbl.setStyle(TableStyle([
-                ("GRID",(0,0),(-1,-1),0.3,colors.grey),
-                ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#b8d7ff")),
-                ("TEXTCOLOR",(0,0),(-1,0),colors.white),
-                ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
-                ("VALIGN",(0,0),(-1,-1),"TOP"),
-                ("LEFTPADDING",(0,0),(-1,-1),6),
-                ("RIGHTPADDING",(0,0),(-1,-1),6),
-                ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.whitesmoke, colors.HexColor("#eef7ff")]),
-                ("FONTSIZE",(0,1),(-1,-1),10),
+            step_rows = [[
+                Paragraph("Step", styles["Heading5"]),
+                Paragraph("Action", styles["Heading5"]),
+                Paragraph("Expected Result", styles["Heading5"])
+            ]]
+
+            for i, s in enumerate(steps, start=1):
+                step_rows.append([
+                    Paragraph(str(i), cell),
+                    Paragraph(s.get("step", "") or "—", cell),
+                    Paragraph(s.get("expected", "") or "—", cell)
+                ])
+
+            st_table = Table(step_rows, colWidths=[35, 230, 255])
+            st_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.lightblue),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ]))
-            flow.append(step_tbl)
-            flow.append(Spacer(1, 8))
+            flow.append(st_table)
+            flow.append(Spacer(1, 10))
+    else:
+        flow.append(Paragraph("<b>No test cases were generated.</b>", styles["Normal"]))
 
     doc.build(flow)
-    buf.seek(0); return buf.getvalue()
+    return buf.getvalue()
 
-# ======================= Export =======================
-pdf_ready = bool(user_story.strip() or ac_text.strip())
+# ======================= Export button =======================
 st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
-
-if st.button("export to PDF!", disabled=not pdf_ready):
-    st.info("📄 generating PDF… please be patient!! **this can take up to 2 minutes**. "
-            "when it’s ready, a **download** button will appear below.")
-    with st.spinner("creating test design…"):
-        cases = generate_cases(user_story, ac_text)   # [] if no API key / blocked
-        pdf_bytes = build_pdf(user_story, ac_text, cases)
-        time.sleep(0.2)
-    st.download_button("download!", data=pdf_bytes, file_name="testcases.pdf",
-                       mime="application/pdf", key="dl_pdf_btn")
-
+clicked = st.button("export test cases ✨", disabled=not (user_story.strip() and ac_text.strip()))
 st.markdown('</div>', unsafe_allow_html=True)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if clicked:
+    cases, open_questions = generate_cases(user_story, ac_text)
+    pdf_bytes = build_pdf(user_story, ac_text, cases, open_questions)
+    st.download_button(
+        "download PDF 🧾",
+        data=pdf_bytes,
+        file_name="test_design.pdf",
+        mime="application/pdf"
+    )
