@@ -36,10 +36,6 @@
     {"id":"EL-M3-REFRESH","type":"element","name":"Refresh","parent":"SCR-M3-DASHBOARD"},
 
     {"id":"MOD-M3-CREATE","type":"modal","name":"Create M3 Popup","parent":"SCR-M3-DASHBOARD"},
-    {"id":"FIELD-M3-DATE","type":"input","name":"Date","required":true,"parent":"MOD-M3-CREATE"},
-    {"id":"FIELD-M3-CLIENT","type":"select","name":"Client","required":true,"parent":"MOD-M3-CREATE"},
-    {"id":"FIELD-M3-SUBSIDIARY","type":"select","name":"Subsidiary","required":true,"parent":"MOD-M3-CREATE"},
-    {"id":"FIELD-M3-PROGRAM","type":"select","name":"Program","required":false,"parent":"MOD-M3-CREATE"},
     {"id":"EL-M3-CREATE-CONFIRM","type":"element","name":"Create Button","parent":"MOD-M3-CREATE"},
     {"id":"EL-M3-CREATE-CANCEL","type":"element","name":"Cancel Button","parent":"MOD-M3-CREATE"},
 
