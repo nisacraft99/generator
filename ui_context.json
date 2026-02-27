@@ -26,6 +26,8 @@
     { "id": "SUP-OPT-COACHING-SESSION", "type": "nav_option", "name": "Coaching Session", "parent": "CONSOLE-SUP" },
     { "id": "SUP-OPT-CE-MPR", "type": "nav_option", "name": "CE MPR", "parent": "CONSOLE-SUP" },
 
+    
+
     { "id": "SCR-M3-DASHBOARD", "type": "screen", "name": "M3 Dashboard", "parent": "OM-OPT-M3-REVIEW" },
     { "id": "COMP-M3-LIST", "type": "component", "name": "List of created M3", "parent": "SCR-M3-DASHBOARD" },
     { "id": "EL-M3-IDENT-LINK", "type": "element", "name": "M3 Ident", "parent": "COMP-M3-LIST" },
@@ -57,7 +59,42 @@
     { "id": "FIELD-ACTION-PROGRESS-UPDATE", "type": "input", "name": "Progress Update", "required": false, "parent": "MOD-M3-ADD-ACTION" },
 
     { "id": "EL-ACTION-CREATE", "type": "element", "name": "Create Action Button", "parent": "MOD-M3-ADD-ACTION" },
-    { "id": "EL-ACTION-CANCEL", "type": "element", "name": "Cancel Action Button", "parent": "MOD-M3-ADD-ACTION" }
+    { "id": "EL-ACTION-CANCEL", "type": "element", "name": "Cancel Action Button", "parent": "MOD-M3-ADD-ACTION" },
+
+
+
+    { "id": "SCR-MAP-DASHBOARD", "type": "screen", "name": "MAP Dashboard", "parent": "OAM-OPT-MAP-REVIEW" },
+    { "id": "COMP-MAP-LIST", "type": "component", "name": "List of created MAP", "parent": "SCR-MAP-DASHBOARD" },
+    { "id": "EL-MAP-IDENT-LINK", "type": "element", "name": "MAP Ident", "parent": "COMP-MAP-LIST" },
+
+    { "id": "EL-MAP-CREATE", "type": "element", "name": "Create MAP Button", "parent": "SCR-MAP-DASHBOARD" },
+    { "id": "EL-MAP-FILTER", "type": "element", "name": "Filter", "parent": "SCR-MAP-DASHBOARD" },
+    { "id": "EL-MAP-EXPORT", "type": "element", "name": "Export to Excel", "parent": "SCR-MAP-DASHBOARD" },
+    { "id": "EL-MAP-REFRESH", "type": "element", "name": "Refresh", "parent": "SCR-MAP-DASHBOARD" },
+
+    { "id": "MOD-MAP-CREATE", "type": "modal", "name": "Create MAP Popup", "parent": "SCR-MAP-DASHBOARD" },
+    { "id": "FIELD-MAP-DATE", "type": "input", "name": "Date", "required": true, "parent": "MOD-MAP-CREATE" },
+    { "id": "FIELD-MAP-CLIENT", "type": "select", "name": "Client", "required": true, "parent": "MOD-MAP-CREATE" },
+    { "id": "FIELD-MAP-SUBSIDIARY", "type": "select", "name": "Subsidiary", "required": true, "parent": "MOD-MAP-CREATE" },
+    { "id": "FIELD-MAP-PROGRAM", "type": "select", "name": "Program", "required": false, "parent": "MOD-MAP-CREATE" },
+    { "id": "EL-MAP-CREATE-CONFIRM", "type": "element", "name": "Create Button", "parent": "MOD-MAP-CREATE" },
+    { "id": "EL-MAP-CREATE-CANCEL", "type": "element", "name": "Cancel Button", "parent": "MOD-MAP-CREATE" },
+
+    { "id": "SCR-MAP-OVERVIEW", "type": "screen", "name": "MAP Overview", "parent": "SCR-MAP-DASHBOARD" },
+    { "id": "EL-MAP-BACK", "type": "element", "name": "Back Button", "parent": "SCR-MAP-OVERVIEW" },
+    { "id": "COMP-MAP-ACTIONS-LIST", "type": "component", "name": "List of created MAP Actions", "parent": "SCR-MAP-OVERVIEW" },
+    { "id": "EL-MAP-ADD-ACTION", "type": "element", "name": "Add Action Button", "parent": "SCR-MAP-OVERVIEW" },
+
+    { "id": "MOD-MAP-ADD-ACTION", "type": "modal", "name": "Add Action Popup", "parent": "SCR-MAP-OVERVIEW" },
+
+    { "id": "FIELD-MAP-ACTION-MARKET-LOB", "type": "select", "name": "Market/LoB", "required": true, "parent": "MOD-MAP-ADD-ACTION" },
+    { "id": "FIELD-MAP-ACTION-ISSUES", "type": "input", "name": "Issues", "required": true, "parent": "MOD-MAP-ADD-ACTION" },
+    { "id": "FIELD-MAP-ACTION-ROOT-CAUSE", "type": "input", "name": "Root Cause", "required": true, "parent": "MOD-MAP-ADD-ACTION" },
+    { "id": "FIELD-MAP-ACTION-OWNER", "type": "select", "name": "Action Owner", "required": false, "parent": "MOD-MAP-ADD-ACTION" },
+    { "id": "FIELD-MAP-ACTION-PROGRESS-UPDATE", "type": "input", "name": "Progress Update", "required": false, "parent": "MOD-MAP-ADD-ACTION" },
+
+    { "id": "EL-MAP-ACTION-CREATE", "type": "element", "name": "Create Action Button", "parent": "MOD-MAP-ADD-ACTION" },
+    { "id": "EL-MAP-ACTION-CANCEL", "type": "element", "name": "Cancel Action Button", "parent": "MOD-MAP-ADD-ACTION" }
   ],
   "relationships": [
     { "type": "navigation", "from": "SCR-M3-DASHBOARD", "via": "EL-M3-IDENT-LINK", "to": "SCR-M3-OVERVIEW" },
@@ -69,6 +106,17 @@
 
     { "type": "modal_open", "from": "SCR-M3-OVERVIEW", "via": "EL-M3-ADD-ACTION", "to": "MOD-M3-ADD-ACTION" },
     { "type": "modal_confirm", "from": "MOD-M3-ADD-ACTION", "via": "EL-ACTION-CREATE", "to": "SCR-M3-OVERVIEW" },
-    { "type": "modal_cancel", "from": "MOD-M3-ADD-ACTION", "via": "EL-ACTION-CANCEL", "to": "SCR-M3-OVERVIEW" }
+    { "type": "modal_cancel", "from": "MOD-M3-ADD-ACTION", "via": "EL-ACTION-CANCEL", "to": "SCR-M3-OVERVIEW" },
+
+    { "type": "navigation", "from": "SCR-MAP-DASHBOARD", "via": "EL-MAP-IDENT-LINK", "to": "SCR-MAP-OVERVIEW" },
+    { "type": "navigation", "from": "SCR-MAP-OVERVIEW", "via": "EL-MAP-BACK", "to": "SCR-MAP-DASHBOARD" },
+
+    { "type": "modal_open", "from": "SCR-MAP-DASHBOARD", "via": "EL-MAP-CREATE", "to": "MOD-MAP-CREATE" },
+    { "type": "modal_confirm", "from": "MOD-MAP-CREATE", "via": "EL-MAP-CREATE-CONFIRM", "to": "SCR-MAP-OVERVIEW" },
+    { "type": "modal_cancel", "from": "MOD-MAP-CREATE", "via": "EL-MAP-CREATE-CANCEL", "to": "SCR-MAP-DASHBOARD" },
+
+    { "type": "modal_open", "from": "SCR-MAP-OVERVIEW", "via": "EL-MAP-ADD-ACTION", "to": "MOD-MAP-ADD-ACTION" },
+    { "type": "modal_confirm", "from": "MOD-MAP-ADD-ACTION", "via": "EL-MAP-ACTION-CREATE", "to": "SCR-MAP-OVERVIEW" },
+    { "type": "modal_cancel", "from": "MOD-MAP-ADD-ACTION", "via": "EL-MAP-ACTION-CANCEL", "to": "SCR-MAP-OVERVIEW" }
   ]
 }
