@@ -216,7 +216,7 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
 
-SYSTEM_PROMPT = """
+SYSTEM_PROMPT_WITH_UI = """
 You are a senior test engineer.
 Return ONLY valid JSON (no markdown, no prose).
 
@@ -238,20 +238,14 @@ CRITICAL: VERBATIM REQUIREMENTS HANDLING
 - You MUST NOT paraphrase requirements text.
 - Each test case MUST list which requirement IDs it covers.
 - Each test step MUST include a "derived_from" array referencing the requirement IDs that justify the step.
-- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior (not just the field presence).
-- If you cannot incorporate a word/detail from a requirement, add an open_questions entry referencing that requirement ID and explain what is missing in ui_context.
+- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
+- If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
 
 NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
 - For EVERY test case, the first navigation steps MUST start from a Console node (type="console"),
   then click the corresponding nav_option, then reach the target screen.
 - You MUST express navigation using the ui_context parent chain.
-- Generic navigation phrases are NOT allowed (e.g., "Navigate to MAP Dashboard" is forbidden).
 - Each navigation step MUST reference a concrete ui_node_id.
-
-EXAMPLE FORMAT (must follow this style):
-1) Open "OAM Console" (CONSOLE-OAM)
-2) Select "MAP Review" (OAM-OPT-MAP-REVIEW)
-3) Verify "MAP Dashboard" is displayed (SCR-MAP-DASHBOARD)
 
 OUTPUT SCHEMA:
 {
@@ -274,10 +268,55 @@ OUTPUT SCHEMA:
 
 RULES:
 - Provide focused test cases.
-- Each test case must contain navigation_steps (if ui_context is provided).
+- Each test case must contain navigation_steps.
 - Each test case MUST have at least 3 steps total (navigation_steps + steps).
 - Ensure acceptance criteria are covered across the set.
-- Test cases are divided by menu, not by functionality. So for example you test several fields and their functionality in one test case.
+- Be concise and testable. No Gherkin.
+"""
+
+SYSTEM_PROMPT_NO_UI = """
+You are a senior test engineer.
+Return ONLY valid JSON (no markdown, no prose).
+
+Generate test cases based ONLY on the provided user story and acceptance criteria.
+
+IMPORTANT RULES:
+- Do NOT assume any UI structure.
+- Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
+- Do NOT include ui_node_id values.
+- Do NOT force explicit navigation.
+- Focus on functional behavior derived from the requirements only.
+
+ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
+- Create 1–2 test cases per acceptance criterion (group only if it is natural).
+- Every acceptance criterion MUST be mapped to at least one test case.
+
+CRITICAL REQUIREMENTS HANDLING:
+- You MUST use every acceptance criterion as input.
+- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
+- If some detail cannot be translated into a test step, add an open_questions entry.
+
+OUTPUT SCHEMA:
+{
+  "test_cases":[
+    {
+      "id":"TC-1",
+      "title":"string",
+      "priority":"High|Medium|Low",
+      "type":"Functional|Negative|Boundary",
+      "steps":[
+        {"step":"string","expected":"string","ui_node_id":null}
+      ]
+    }
+  ],
+  "open_questions":[]
+}
+
+RULES:
+- Provide focused test cases.
+- Each test case MUST have at least 3 steps.
+- Ensure acceptance criteria are covered across the set.
+- Use generic functional steps only.
 - Be concise and testable. No Gherkin.
 """
 
@@ -318,13 +357,16 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 
     if use_ui_context:
         payload["ui_context"] = UI_CONTEXT
+        system_prompt = SYSTEM_PROMPT_WITH_UI
+    else:
+        system_prompt = SYSTEM_PROMPT_NO_UI
 
     try:
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             temperature=0.2,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
             ],
         )
@@ -338,7 +380,6 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
             nav = [_normalize_step(s) for s in (tc.get("navigation_steps", []) or [])]
             steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
 
-            # Merge nav into main steps so PDF always shows the navigation
             merged_steps = nav + steps
 
             while len(merged_steps) < 3:
