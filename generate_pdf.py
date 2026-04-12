@@ -57,7 +57,7 @@ Return ONLY valid JSON with this schema:
 }
 
 Rules:
-- Provide 3–6 focused test cases.
+- Provide as many test cases as needed to cover ALL acceptance criteria.
 - Each test case MUST have at least 3 steps; every step has both 'step' and 'expected'.
 - Be concise and testable. No Gherkin. No markdown. No code fences.
 """
