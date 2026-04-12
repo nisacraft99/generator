@@ -1,12 +1,14 @@
-# app.py — UI unchanged (Aqua + Comic Sans + Password Gate) + ui_context + spinner + persistent download
+# app.py
 # Run:
 #   pip install streamlit python-dotenv reportlab openai
 #   streamlit run app.py
 
 import os
 import io
-import json
 import re
+import json
+from datetime import datetime
+from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -30,7 +32,6 @@ try:
 except Exception:
     OpenAI = None
 
-
 # ======================= PAGE CONFIG =======================
 st.set_page_config(
     page_title="💖 User Story → Testcase Generator",
@@ -38,12 +39,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# ======================= GLOBAL FONT (Comic Sans everywhere) =======================
+# ======================= GLOBAL FONT =======================
 st.markdown("""
 <style>
 :root { --comic: "Comic Sans MS","Comic Sans",cursive; }
 
-/* Hit all major Streamlit containers + common widgets */
 html, body, .stApp, .stAppViewContainer, .main, .block-container,
 .stMarkdown, .stAlert, .stDataFrame, .stForm,
 .stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput,
@@ -54,7 +54,7 @@ label, p, span, div {
 </style>
 """, unsafe_allow_html=True)
 
-# ======================= PASSWORD GATE (same vibe) =======================
+# ======================= PASSWORD GATE =======================
 APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
 
 if "auth_ok" not in st.session_state:
@@ -125,7 +125,7 @@ if not st.session_state.auth_ok:
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# ======================= MAIN UI (keep original look) =======================
+# ======================= MAIN UI =======================
 st.markdown("""
 <style>
 .stApp { background: #ccf4f4 !important; }
@@ -216,42 +216,45 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
 
+# ======================= PROMPTS =======================
 SYSTEM_PROMPT_WITH_UI = """
 You are a senior test engineer.
 Return ONLY valid JSON (no markdown, no prose).
 
-You may receive a UI structure as 'ui_context' (JSON with nodes and relationships).
+You will receive:
+- a user story
+- acceptance criteria
+- a UI structure as 'ui_context' (JSON with nodes and relationships)
+
 If ui_context is provided, you MUST use it to generate concrete navigation.
 
-STRICT UI RULES (MANDATORY):
-- Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
-- Every step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id.
-- Navigation must be explicit and beginner-friendly (click path through menus/screens).
-- Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
+STRICT UI RULES:
+- Do NOT invent menus/screens/buttons/fields not present in ui_context.nodes.
+- Every navigation step MUST include 'ui_node_id' matching an existing ui_context.nodes[].id.
+- Navigation must be explicit and beginner-friendly.
+- Use the parent chain / available UI structure for navigation.
+- Generic steps like "Navigate to dashboard" are forbidden when concrete UI elements exist.
 
-COVERAGE IS THE TOP PRIORITY.
+COVERAGE IS THE TOP PRIORITY:
 - Every acceptance criterion MUST be covered explicitly.
 - If needed, create additional test cases to cover uncovered acceptance criteria.
-- Do not stop after producing a few navigation-focused test cases.
-- Before finishing, verify that every acceptance criterion is covered at least once.
 - Prefer adding an extra test case over leaving an acceptance criterion uncovered.
 
-CRITICAL: VERBATIM REQUIREMENTS HANDLING
-- You MUST copy every acceptance criterion line EXACTLY (verbatim) into the output under "requirements".
-- You MUST NOT paraphrase requirements text.
-- Each test case MUST list which requirement IDs it covers.
-- Each test step MUST include a "derived_from" array referencing the requirement IDs that justify the step.
-- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
-- If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
-
-NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
-- For EVERY test case, the first navigation steps MUST start from a Console node (type="console"),
-  then click the corresponding nav_option, then reach the target screen.
-- You MUST express navigation using the ui_context parent chain.
-- Each navigation step MUST reference a concrete ui_node_id.
+REQUIREMENTS RULES:
+- Copy every acceptance criterion EXACTLY into "requirements".
+- Do NOT paraphrase requirement text in "requirements".
+- Each test case MUST contain "covers_ac" with requirement IDs.
+- If a requirement mentions UI control behavior (e.g. multiselect, disabled, becomes active, max 2 owners), the test cases MUST explicitly test that behavior.
+- If some detail cannot be tested because ui_context is insufficient, add an open_questions entry.
 
 OUTPUT SCHEMA:
 {
+  "requirements": [
+    {"id":"AC-1","text":"exact acceptance criterion text"}
+  ],
+  "ac_coverage": [
+    {"ac_text":"exact acceptance criterion text","covered_by":["TC-1","TC-3"]}
+  ],
   "test_cases":[
     {
       "id":"TC-1",
@@ -263,16 +266,12 @@ OUTPUT SCHEMA:
       ],
       "steps":[
         {"step":"string","expected":"string","ui_node_id":"string"}
-      ]
+      ],
+      "covers_ac":["AC-1","AC-2"]
     }
   ],
   "open_questions":[]
 }
-
-You MUST output:
-"ac_coverage": [
-  {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
-]
 
 RULES:
 - Provide focused test cases.
@@ -291,21 +290,21 @@ Generate test cases based ONLY on the provided user story and acceptance criteri
 IMPORTANT RULES:
 - Do NOT assume any UI structure.
 - Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
-- Do NOT include ui_node_id values.
-- Do NOT force explicit navigation.
+- Do NOT include ui_node_id values except null.
 - Focus on functional behavior derived from the requirements only.
 
-ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
-- Create 1–2 test cases per acceptance criterion (group only if it is natural).
-- Every acceptance criterion MUST be mapped to at least one test case.
-
-CRITICAL REQUIREMENTS HANDLING:
-- You MUST use every acceptance criterion as input.
-- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
-- If some detail cannot be translated into a test step, add an open_questions entry.
+COVERAGE IS THE TOP PRIORITY:
+- Every acceptance criterion MUST be covered explicitly.
+- Prefer adding an extra test case over leaving an acceptance criterion uncovered.
 
 OUTPUT SCHEMA:
 {
+  "requirements": [
+    {"id":"AC-1","text":"exact acceptance criterion text"}
+  ],
+  "ac_coverage": [
+    {"ac_text":"exact acceptance criterion text","covered_by":["TC-1","TC-3"]}
+  ],
   "test_cases":[
     {
       "id":"TC-1",
@@ -314,20 +313,64 @@ OUTPUT SCHEMA:
       "type":"Functional|Negative|Boundary",
       "steps":[
         {"step":"string","expected":"string","ui_node_id":null}
-      ]
+      ],
+      "covers_ac":["AC-1","AC-2"]
     }
   ],
   "open_questions":[]
 }
 
 RULES:
-- Provide focused test cases.
 - Each test case MUST have at least 3 steps.
 - Ensure acceptance criteria are covered across the set.
 - Use generic functional steps only.
 - Be concise and testable. No Gherkin.
 """
 
+REPAIR_PROMPT_WITH_UI = """
+You are a senior test engineer.
+Return ONLY valid JSON (no markdown, no prose).
+
+Task:
+You will receive:
+- the original user story
+- all acceptance criteria
+- the ui_context
+- a list of missing acceptance criteria
+
+Generate ONLY additional test cases for the missing acceptance criteria.
+Do NOT repeat already covered test cases.
+Use explicit navigation based on ui_context.
+Each additional test case must include:
+- navigation_steps
+- steps
+- covers_ac
+
+OUTPUT SCHEMA:
+{
+  "test_cases":[
+    {
+      "id":"TC-X",
+      "title":"string",
+      "priority":"High|Medium|Low",
+      "type":"Functional|Negative|Boundary",
+      "navigation_steps":[
+        {"step":"string","expected":"string","ui_node_id":"string"}
+      ],
+      "steps":[
+        {"step":"string","expected":"string","ui_node_id":"string"}
+      ],
+      "covers_ac":["AC-1"]
+    }
+  ],
+  "ac_coverage": [
+    {"ac_text":"exact acceptance criterion text","covered_by":["TC-X"]}
+  ],
+  "open_questions":[]
+}
+"""
+
+# ======================= HELPERS =======================
 def _json_from_text(txt: str) -> dict:
     txt = (txt or "").strip()
     if txt.startswith("```"):
@@ -352,15 +395,87 @@ def _normalize_step(step_obj):
         }
     return {"step": str(step_obj), "expected": "", "ui_node_id": None}
 
-def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
-    if not client:
-        return [], ["OpenAI client not initialized (missing OPENAI_API_KEY or openai package)."]
-    if not story.strip():
-        return [], ["User story is empty."]
+def _build_requirements(ac_blob: str):
+    ac_lines = [l.strip() for l in ac_blob.splitlines() if l.strip()]
+    return [{"id": f"AC-{i+1}", "text": line} for i, line in enumerate(ac_lines)]
 
+def _coverage_from_model(requirements, ac_coverage_rows):
+    req_texts = [r["text"] for r in requirements]
+    covered = set()
+
+    for row in ac_coverage_rows or []:
+        ac_text = row.get("ac_text", "").strip()
+        covered_by = row.get("covered_by", [])
+        if ac_text in req_texts and covered_by:
+            covered.add(ac_text)
+
+    missing = [text for text in req_texts if text not in covered]
+    ratio = len(covered) / len(req_texts) if req_texts else 0.0
+    return ratio, missing
+
+def _normalize_test_cases(raw_test_cases):
+    fixed = []
+    for tc in raw_test_cases:
+        nav = [_normalize_step(s) for s in (tc.get("navigation_steps", []) or [])]
+        steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
+        merged_steps = nav + steps
+
+        while len(merged_steps) < 3:
+            merged_steps.append({"step": "—", "expected": "—", "ui_node_id": None})
+
+        fixed.append(
+            {
+                "id": (tc.get("id", "") or "").strip(),
+                "title": (tc.get("title", "") or "").strip(),
+                "priority": (tc.get("priority", "") or "").strip(),
+                "type": (tc.get("type", "") or "").strip(),
+                "covers_ac": tc.get("covers_ac", []) or [],
+                "steps": merged_steps,
+            }
+        )
+    return fixed
+
+def _save_result_json(result_obj: dict, variant: str):
+    results_dir = Path("results")
+    results_dir.mkdir(exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_path = results_dir / f"result_{variant}_{ts}.json"
+    with file_path.open("w", encoding="utf-8") as f:
+        json.dump(result_obj, f, indent=2, ensure_ascii=False)
+    return str(file_path)
+
+# ======================= MODEL CALLS =======================
+def call_model(system_prompt: str, payload: dict):
+    if not client:
+        raise RuntimeError("OpenAI client not initialized (missing OPENAI_API_KEY or openai package).")
+
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0.2,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        ],
+    )
+    return _json_from_text(resp.choices[0].message.content)
+
+def repair_missing_acs(story: str, requirements: list, missing_ac_texts: list):
     payload = {
         "story": story.strip(),
-        "acceptance_criteria": [l.strip() for l in ac_blob.splitlines() if l.strip()],
+        "acceptance_criteria": [r["text"] for r in requirements],
+        "missing_acceptance_criteria": missing_ac_texts,
+        "ui_context": UI_CONTEXT,
+    }
+    return call_model(REPAIR_PROMPT_WITH_UI, payload)
+
+def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
+    if not story.strip():
+        return [], [], 0.0, [], {}
+
+    requirements = _build_requirements(ac_blob)
+    payload = {
+        "story": story.strip(),
+        "acceptance_criteria": [r["text"] for r in requirements],
     }
 
     if use_ui_context:
@@ -370,45 +485,47 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
         system_prompt = SYSTEM_PROMPT_NO_UI
 
     try:
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-            ],
-        )
-        data = _json_from_text(resp.choices[0].message.content)
+        data = call_model(system_prompt, payload)
 
-        tcs = data.get("test_cases", []) or []
+        raw_test_cases = data.get("test_cases", []) or []
         open_q = data.get("open_questions", []) or []
+        ac_coverage = data.get("ac_coverage", []) or []
 
-        fixed = []
-        for tc in tcs:
-            nav = [_normalize_step(s) for s in (tc.get("navigation_steps", []) or [])]
-            steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
+        coverage_ratio, missing_ac_texts = _coverage_from_model(requirements, ac_coverage)
 
-            merged_steps = nav + steps
+        # Repair pass only in UI mode
+        if use_ui_context and missing_ac_texts:
+            repair_data = repair_missing_acs(story, requirements, missing_ac_texts)
+            repair_cases = repair_data.get("test_cases", []) or []
+            repair_cov = repair_data.get("ac_coverage", []) or []
+            repair_open_q = repair_data.get("open_questions", []) or []
 
-            while len(merged_steps) < 3:
-                merged_steps.append({"step": "—", "expected": "—", "ui_node_id": None})
+            raw_test_cases.extend(repair_cases)
+            ac_coverage.extend(repair_cov)
+            open_q.extend(repair_open_q)
 
-            fixed.append(
-                {
-                    "id": (tc.get("id", "") or "").strip(),
-                    "title": (tc.get("title", "") or "").strip(),
-                    "priority": (tc.get("priority", "") or "").strip(),
-                    "type": (tc.get("type", "") or "").strip(),
-                    "steps": merged_steps,
-                }
-            )
+            coverage_ratio, missing_ac_texts = _coverage_from_model(requirements, ac_coverage)
 
-        return fixed, open_q
+        fixed_cases = _normalize_test_cases(raw_test_cases)
+
+        raw_result = {
+            "variant": "with_json" if use_ui_context else "without_json",
+            "story": story.strip(),
+            "requirements": requirements,
+            "ac_coverage": ac_coverage,
+            "missing_acceptance_criteria": missing_ac_texts,
+            "coverage_ratio": coverage_ratio,
+            "open_questions": open_q,
+            "test_cases": fixed_cases,
+        }
+
+        return fixed_cases, open_q, coverage_ratio, missing_ac_texts, raw_result
+
     except Exception as e:
-        return [], [f"OpenAI call failed: {e}"]
+        return [], [f"OpenAI call failed: {e}"], 0.0, [], {}
 
 # ======================= PDF BUILDER =======================
-def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) -> bytes:
+def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list, variant: str, coverage_ratio: float, missing_acs: list) -> bytes:
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
@@ -424,6 +541,10 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
     flow = []
     flow.append(Paragraph("User Story to Testcase Generator", title))
     flow.append(Spacer(1, 10))
+
+    flow.append(Paragraph("<b>Generation Mode</b>", head))
+    flow.append(Paragraph(variant, body))
+    flow.append(Spacer(1, 8))
 
     flow.append(Paragraph("<b>User Story</b>", head))
     flow.append(Paragraph(story_text.strip() or "—", body))
@@ -442,6 +563,21 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
     else:
         flow.append(Paragraph("—", body))
     flow.append(Spacer(1, 12))
+
+    flow.append(Paragraph("<b>Acceptance Criteria Coverage</b>", head))
+    flow.append(Paragraph(f"{round(coverage_ratio * 100, 2)}%", body))
+    flow.append(Spacer(1, 6))
+
+    if missing_acs:
+        flow.append(Paragraph("<b>Missing Acceptance Criteria</b>", head))
+        flow.append(
+            ListFlowable(
+                [ListItem(Paragraph(ac, body), leftIndent=6) for ac in missing_acs],
+                bulletType="bullet",
+                leftPadding=12,
+            )
+        )
+        flow.append(Spacer(1, 12))
 
     if open_questions:
         flow.append(Paragraph("<b>Open Questions</b>", head))
@@ -521,7 +657,7 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
     doc.build(flow)
     return buf.getvalue()
 
-# ======================= EXPORT (spinner + persistent download) =======================
+# ======================= SESSION STATE =======================
 if "last_pdf" not in st.session_state:
     st.session_state.last_pdf = None
 if "last_open_questions" not in st.session_state:
@@ -530,7 +666,14 @@ if "last_cases_count" not in st.session_state:
     st.session_state.last_cases_count = 0
 if "last_variant" not in st.session_state:
     st.session_state.last_variant = None
+if "last_coverage_ratio" not in st.session_state:
+    st.session_state.last_coverage_ratio = 0.0
+if "last_missing_acs" not in st.session_state:
+    st.session_state.last_missing_acs = []
+if "last_json_path" not in st.session_state:
+    st.session_state.last_json_path = None
 
+# ======================= EXPORT =======================
 st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
@@ -551,24 +694,54 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 if clicked_without or clicked_with:
     use_ui = clicked_with
+    variant = "with_json" if use_ui else "without_json"
 
     with st.spinner("Generating test cases and building PDF..."):
-        cases, open_q = generate_cases(user_story, ac_text, use_ui_context=use_ui)
-        pdf_bytes = build_pdf(user_story, ac_text, cases, open_q)
+        cases, open_q, coverage_ratio, missing_acs, raw_result = generate_cases(
+            user_story,
+            ac_text,
+            use_ui_context=use_ui
+        )
+
+        pdf_bytes = build_pdf(
+            user_story,
+            ac_text,
+            cases,
+            open_q,
+            variant,
+            coverage_ratio,
+            missing_acs
+        )
+
+        json_path = _save_result_json(raw_result, variant) if raw_result else None
 
         st.session_state.last_pdf = pdf_bytes
         st.session_state.last_open_questions = open_q
         st.session_state.last_cases_count = len(cases)
-        st.session_state.last_variant = "with_json" if use_ui else "without_json"
+        st.session_state.last_variant = variant
+        st.session_state.last_coverage_ratio = coverage_ratio
+        st.session_state.last_missing_acs = missing_acs
+        st.session_state.last_json_path = json_path
 
 if st.session_state.last_variant:
     st.info(f"Generated with: {st.session_state.last_variant}")
 
+if st.session_state.last_variant is not None:
+    st.success(
+        f"AC coverage: {round(st.session_state.last_coverage_ratio * 100, 2)}% | "
+        f"test cases: {st.session_state.last_cases_count}"
+    )
+
+if st.session_state.last_missing_acs:
+    st.warning("Missing ACs:\n- " + "\n- ".join(st.session_state.last_missing_acs))
+
 if st.session_state.last_open_questions:
     st.warning("Notes / Open Questions:\n- " + "\n- ".join(st.session_state.last_open_questions))
 
+if st.session_state.last_json_path:
+    st.caption(f"Saved JSON result to: {st.session_state.last_json_path}")
+
 if st.session_state.last_pdf:
-    st.success(f"PDF ready ✅ (test cases: {st.session_state.last_cases_count})")
     st.download_button(
         "download PDF 🧾",
         data=st.session_state.last_pdf,
