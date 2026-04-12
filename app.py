@@ -1,8 +1,337 @@
-# app.py — UI unchanged (Aqua + Comic Sans + Password Gate) + ui_context + spinner + persistent download # Run: # pip install streamlit python-dotenv reportlab openai # streamlit run app.py import os import io import json import re import streamlit as st from dotenv import load_dotenv from reportlab.platypus import ( SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem, Table, TableStyle, ) from reportlab.lib.pagesizes import A4 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle from reportlab.lib import colors # --- OpenAI --- try: from openai import OpenAI except Exception: OpenAI = None # ======================= PAGE CONFIG ======================= st.set_page_config( page_title="💖 User Story → Testcase Generator", page_icon="✨", layout="wide" ) # ======================= GLOBAL FONT (Comic Sans everywhere) ======================= st.markdown(""" <style> :root { --comic: "Comic Sans MS","Comic Sans",cursive; } /* Hit all major Streamlit containers + common widgets */ html, body, .stApp, .stAppViewContainer, .main, .block-container, .stMarkdown, .stAlert, .stDataFrame, .stForm, .stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput, .stButton > button, .stDownloadButton > button, label, p, span, div { font-family: var(--comic) !important; } </style> """, unsafe_allow_html=True) # ======================= PASSWORD GATE (same vibe) ======================= APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", "")) if "auth_ok" not in st.session_state: st.session_state.auth_ok = False def try_login(): if st.session_state.get("pw_input", "") == APP_PASSWORD and APP_PASSWORD: st.session_state.auth_ok = True st.session_state.pop("pw_error", None) else: st.session_state.pw_error = "Wrong password 🫠" if not st.session_state.auth_ok: st.markdown(""" <style> .stApp { background:#dff7f7; } .login-card{ max-width: 640px; margin: 10vh auto; padding: 28px 30px; border-radius: 22px; border: 2px solid #a3d9ff; background:#ffffffcc; backdrop-filter: blur(6px); box-shadow: 0 12px 28px rgba(91,153,255,.25); text-align:center; } .login-title{ display:block; margin: 0 auto 18px auto; padding: 12px 24px; border-radius:18px; border:2px solid #b98db0; background:#f8c9ea; color:#333; font-size: 42px; font-weight: 800; } .login-note{ color:#355c7d; font-size:16px; margin:6px 0 20px; } .login-card .stTextInput > div > div > input{ border-radius: 16px; border:2px solid #bfe1ff; background:#f9ffff; font-size: 28px; height: 70px; width: 100% !important; padding: 10px 20px; } .login-card .stButton { text-align:center; margin-top:16px; } .login-card .stButton>button{ border:none; border-radius:999px; padding:1rem 2rem; font-weight:700; font-size: 24px; background: linear-gradient(135deg,#bfe1ff,#9fd2ff); box-shadow:0 8px 18px rgba(159,210,255,.45); color:#123; min-width: 200px; } .login-card .stButton>button:hover{ filter:brightness(1.05); } </style> <div class="login-card"> <div class="login-title">User Story to Testcase Generator</div> <p class="login-note">🔒 private app! please enter the password to continue.</p> """, unsafe_allow_html=True) st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed") st.button("let me in! ✨", on_click=try_login) if st.session_state.get("pw_error"): st.error(st.session_state["pw_error"]) st.markdown("</div>", unsafe_allow_html=True) st.stop() # ======================= MAIN UI (keep original look) ======================= st.markdown(""" <style> .stApp { background: #ccf4f4 !important; } .mock-title { margin: 25px auto 30px auto; width: 800px; background: #f7d8ef; border: 3px solid #000; border-radius: 14px; text-align: center; font-weight: 800; font-size: 40px; padding: 10px 16px; } .mock-label { font-weight: 500; font-size: 25px; color: #000; margin: 12px 0 6px 40px; } .field-single, .field-multi { width: 900px; margin-left: 40px; } .stTextArea textarea { background: #fff4c7 !important; border: 3px solid #000 !important; border-radius: 16px !important; color: #000 !important; font-size: 18px !important; padding: 12px 16px !important; box-shadow: none !important; line-height: 1.45 !important; } .singleline textarea { min-height: 64px !important; max-height: 64px !important; resize: none !important; overflow: hidden !important; white-space: nowrap !important; } .export-wrap { margin: 28px 40px; } .export-wrap .stButton > button { background: #e6f1a6; color:#000; border:3px solid #000; border-radius: 10px; font-weight:800; font-size: 20px; padding: 12px 24px; } .export-wrap .stButton > button:disabled { background:#e6e6e6; color:#777; border-color:#999; } .stDownloadButton > button { background: #ffffff; color:#000; border:3px solid #000; border-radius: 10px; font-weight:800; font-size: 18px; padding: 10px 20px; } </style> """, unsafe_allow_html=True) st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True) st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True) st.markdown('<div class="field-single singleline">', unsafe_allow_html=True) user_story = st.text_area( "", key="us_one", label_visibility="hidden", placeholder="As a <role>, I want ..., so that ...", height=200 ) st.markdown('</div>', unsafe_allow_html=True) st.markdown('<div class="mock-label">enter the acceptance criteria (1 criteria per line)</div>', unsafe_allow_html=True) st.markdown('<div class="field-multi">', unsafe_allow_html=True) ac_text = st.text_area( "", key="ac_lines", label_visibility="hidden", placeholder="• Criterion 1\n• Criterion 2\n• Criterion 3", height=400 ) st.markdown('</div>', unsafe_allow_html=True) # ======================= UI CONTEXT LOADER ======================= UI_CONTEXT_PATH = "ui_context.json" def load_ui_context(path: str) -> dict: try: with open(path, "r", encoding="utf-8") as f: ctx = json.load(f) if not isinstance(ctx.get("nodes", None), list): return {} if not isinstance(ctx.get("relationships", []), list): ctx["relationships"] = [] return ctx except Exception as e: st.error(f"UI context could not be loaded: {e}") return {} UI_CONTEXT = load_ui_context(UI_CONTEXT_PATH) st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', []))}") # ======================= OPENAI SETUP ======================= load_dotenv() API_KEY = os.getenv("OPENAI_API_KEY") client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None SYSTEM_PROMPT_WITH_UI = """ You are a senior test engineer. Return ONLY valid JSON (no markdown, no prose). You may receive a UI structure as 'ui_context' (JSON with nodes and relationships). If ui_context is provided, you MUST use it to generate concrete navigation. STRICT UI RULES (MANDATORY): - Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes. - Every step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id. - Navigation must be explicit and beginner-friendly (click path through menus/screens). - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements. COVERAGE IS THE TOP PRIORITY. - Every acceptance criterion MUST be covered explicitly. - If needed, create additional test cases to cover uncovered acceptance criteria. - Do not stop after producing a few navigation-focused test cases. - Before finishing, verify that every acceptance criterion is covered at least once. - Prefer adding an extra test case over leaving an acceptance criterion uncovered. CRITICAL: VERBATIM REQUIREMENTS HANDLING - You MUST copy every acceptance criterion line EXACTLY (verbatim) into the output under "requirements". - You MUST NOT paraphrase requirements text. - Each test case MUST list which requirement IDs it covers. - Each test step MUST include a "derived_from" array referencing the requirement IDs that justify the step. - If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior. - If you cannot incorporate a word/detail from a requirement, add an open_questions entry. NAVIGATION IS MANDATORY AND MUST BE EXPLICIT: - For EVERY test case, the first navigation steps MUST start from a Console node (type="console"), then click the corresponding nav_option, then reach the target screen. - You MUST express navigation using the ui_context parent chain. - Each navigation step MUST reference a concrete ui_node_id. OUTPUT SCHEMA: { "test_cases":[ { "id":"TC-1", "title":"string", "priority":"High|Medium|Low", "type":"Functional|Negative|Boundary", "navigation_steps":[ {"step":"string","expected":"string","ui_node_id":"string"} ], "steps":[ {"step":"string","expected":"string","ui_node_id":"string"} ] } ], "open_questions":[] } You MUST output: "ac_coverage": [ {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]} ] RULES: - Provide focused test cases. - Each test case must contain navigation_steps. - Each test case MUST have at least 3 steps total (navigation_steps + steps). - Ensure acceptance criteria are covered across the set. - Be concise and testable. No Gherkin. """ SYSTEM_PROMPT_NO_UI = """ You are a senior test engineer. Return ONLY valid JSON (no markdown, no prose). Generate test cases based ONLY on the provided user story and acceptance criteria. IMPORTANT RULES: - Do NOT assume any UI structure. - Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths. - Do NOT include ui_node_id values. - Do NOT force explicit navigation. - Focus on functional behavior derived from the requirements only. ACCEPTANCE CRITERIA COVERAGE IS MANDATORY: - Create 1–2 test cases per acceptance criterion (group only if it is natural). - Every acceptance criterion MUST be mapped to at least one test case. CRITICAL REQUIREMENTS HANDLING: - You MUST use every acceptance criterion as input. - If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior. - If some detail cannot be translated into a test step, add an open_questions entry. OUTPUT SCHEMA: { "test_cases":[ { "id":"TC-1", "title":"string", "priority":"High|Medium|Low", "type":"Functional|Negative|Boundary", "steps":[ {"step":"string","expected":"string","ui_node_id":null} ] } ], "open_questions":[] } RULES: - Provide focused test cases. - Each test case MUST have at least 3 steps. - Ensure acceptance criteria are covered across the set. - Use generic functional steps only. - Be concise and testable. No Gherkin. """ def _json_from_text(txt: str) -> dict: txt = (txt or "").strip() if txt.startswith("
-"):
-        txt = re.sub(r"^
-(json)?\s*|\s*
-$", "", txt, flags=re.S).strip()
+# app.py — UI unchanged (Aqua + Comic Sans + Password Gate) + ui_context + spinner + persistent download
+# Run:
+#   pip install streamlit python-dotenv reportlab openai
+#   streamlit run app.py
+
+import os
+import io
+import json
+import re
+
+import streamlit as st
+from dotenv import load_dotenv
+
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    ListFlowable,
+    ListItem,
+    Table,
+    TableStyle,
+)
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
+# --- OpenAI ---
+try:
+    from openai import OpenAI
+except Exception:
+    OpenAI = None
+
+
+# ======================= PAGE CONFIG =======================
+st.set_page_config(
+    page_title="💖 User Story → Testcase Generator",
+    page_icon="✨",
+    layout="wide"
+)
+
+# ======================= GLOBAL FONT (Comic Sans everywhere) =======================
+st.markdown("""
+<style>
+:root { --comic: "Comic Sans MS","Comic Sans",cursive; }
+
+/* Hit all major Streamlit containers + common widgets */
+html, body, .stApp, .stAppViewContainer, .main, .block-container,
+.stMarkdown, .stAlert, .stDataFrame, .stForm,
+.stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput,
+.stButton > button, .stDownloadButton > button,
+label, p, span, div {
+  font-family: var(--comic) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ======================= PASSWORD GATE (same vibe) =======================
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
+
+if "auth_ok" not in st.session_state:
+    st.session_state.auth_ok = False
+
+def try_login():
+    if st.session_state.get("pw_input", "") == APP_PASSWORD and APP_PASSWORD:
+        st.session_state.auth_ok = True
+        st.session_state.pop("pw_error", None)
+    else:
+        st.session_state.pw_error = "Wrong password 🫠"
+
+if not st.session_state.auth_ok:
+    st.markdown("""
+    <style>
+      .stApp { background:#dff7f7; }
+
+      .login-card{
+        max-width: 640px; margin: 10vh auto; padding: 28px 30px;
+        border-radius: 22px; border: 2px solid #a3d9ff;
+        background:#ffffffcc; backdrop-filter: blur(6px);
+        box-shadow: 0 12px 28px rgba(91,153,255,.25);
+        text-align:center;
+      }
+
+      .login-title{
+        display:block;
+        margin: 0 auto 18px auto;
+        padding: 12px 24px;
+        border-radius:18px; border:2px solid #b98db0;
+        background:#f8c9ea; color:#333;
+        font-size: 42px; font-weight: 800;
+      }
+
+      .login-note{ color:#355c7d; font-size:16px; margin:6px 0 20px; }
+
+      .login-card .stTextInput > div > div > input{
+        border-radius: 16px; border:2px solid #bfe1ff;
+        background:#f9ffff;
+        font-size: 28px;
+        height: 70px;
+        width: 100% !important;
+        padding: 10px 20px;
+      }
+
+      .login-card .stButton { text-align:center; margin-top:16px; }
+      .login-card .stButton>button{
+        border:none; border-radius:999px; padding:1rem 2rem; font-weight:700;
+        font-size: 24px;
+        background: linear-gradient(135deg,#bfe1ff,#9fd2ff);
+        box-shadow:0 8px 18px rgba(159,210,255,.45); color:#123;
+        min-width: 200px;
+      }
+      .login-card .stButton>button:hover{ filter:brightness(1.05); }
+    </style>
+
+    <div class="login-card">
+      <div class="login-title">User Story to Testcase Generator</div>
+      <p class="login-note">🔒 private app! please enter the password to continue.</p>
+    """, unsafe_allow_html=True)
+
+    st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed")
+    st.button("let me in! ✨", on_click=try_login)
+
+    if st.session_state.get("pw_error"):
+        st.error(st.session_state["pw_error"])
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+# ======================= MAIN UI (keep original look) =======================
+st.markdown("""
+<style>
+.stApp { background: #ccf4f4 !important; }
+
+.mock-title {
+  margin: 25px auto 30px auto; width: 800px;
+  background: #f7d8ef; border: 3px solid #000; border-radius: 14px;
+  text-align: center; font-weight: 800; font-size: 40px; padding: 10px 16px;
+}
+
+.mock-label { font-weight: 500; font-size: 25px; color: #000; margin: 12px 0 6px 40px; }
+.field-single, .field-multi { width: 900px; margin-left: 40px; }
+
+.stTextArea textarea {
+  background: #fff4c7 !important;
+  border: 3px solid #000 !important;
+  border-radius: 16px !important;
+  color: #000 !important;
+  font-size: 18px !important;
+  padding: 12px 16px !important;
+  box-shadow: none !important;
+  line-height: 1.45 !important;
+}
+
+.singleline textarea {
+  min-height: 64px !important;
+  max-height: 64px !important;
+  resize: none !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+}
+
+.export-wrap { margin: 28px 40px; }
+.export-wrap .stButton > button {
+  background: #e6f1a6; color:#000; border:3px solid #000;
+  border-radius: 10px; font-weight:800; font-size: 20px; padding: 12px 24px;
+}
+.export-wrap .stButton > button:disabled { background:#e6e6e6; color:#777; border-color:#999; }
+
+.stDownloadButton > button {
+  background: #ffffff; color:#000; border:3px solid #000;
+  border-radius: 10px; font-weight:800; font-size: 18px; padding: 10px 20px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True)
+st.markdown('<div class="field-single singleline">', unsafe_allow_html=True)
+user_story = st.text_area(
+    "", key="us_one", label_visibility="hidden",
+    placeholder="As a <role>, I want ..., so that ...",
+    height=200
+)
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="mock-label">enter the acceptance criteria (1 criteria per line)</div>', unsafe_allow_html=True)
+st.markdown('<div class="field-multi">', unsafe_allow_html=True)
+ac_text = st.text_area(
+    "", key="ac_lines", label_visibility="hidden",
+    placeholder="• Criterion 1\n• Criterion 2\n• Criterion 3",
+    height=400
+)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ======================= UI CONTEXT LOADER =======================
+UI_CONTEXT_PATH = "ui_context.json"
+
+def load_ui_context(path: str) -> dict:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            ctx = json.load(f)
+        if not isinstance(ctx.get("nodes", None), list):
+            return {}
+        if not isinstance(ctx.get("relationships", []), list):
+            ctx["relationships"] = []
+        return ctx
+    except Exception as e:
+        st.error(f"UI context could not be loaded: {e}")
+        return {}
+
+UI_CONTEXT = load_ui_context(UI_CONTEXT_PATH)
+st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', []))}")
+
+# ======================= OPENAI SETUP =======================
+load_dotenv()
+API_KEY = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
+
+SYSTEM_PROMPT_WITH_UI = """
+You are a senior test engineer.
+Return ONLY valid JSON (no markdown, no prose).
+
+You may receive a UI structure as 'ui_context' (JSON with nodes and relationships).
+If ui_context is provided, you MUST use it to generate concrete navigation.
+
+STRICT UI RULES (MANDATORY):
+- Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
+- Every step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id.
+- Navigation must be explicit and beginner-friendly (click path through menus/screens).
+- Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
+
+COVERAGE IS THE TOP PRIORITY.
+- Every acceptance criterion MUST be covered explicitly.
+- If needed, create additional test cases to cover uncovered acceptance criteria.
+- Do not stop after producing a few navigation-focused test cases.
+- Before finishing, verify that every acceptance criterion is covered at least once.
+- Prefer adding an extra test case over leaving an acceptance criterion uncovered.
+
+CRITICAL: VERBATIM REQUIREMENTS HANDLING
+- You MUST copy every acceptance criterion line EXACTLY (verbatim) into the output under "requirements".
+- You MUST NOT paraphrase requirements text.
+- Each test case MUST list which requirement IDs it covers.
+- Each test step MUST include a "derived_from" array referencing the requirement IDs that justify the step.
+- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
+- If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
+
+NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
+- For EVERY test case, the first navigation steps MUST start from a Console node (type="console"),
+  then click the corresponding nav_option, then reach the target screen.
+- You MUST express navigation using the ui_context parent chain.
+- Each navigation step MUST reference a concrete ui_node_id.
+
+OUTPUT SCHEMA:
+{
+  "test_cases":[
+    {
+      "id":"TC-1",
+      "title":"string",
+      "priority":"High|Medium|Low",
+      "type":"Functional|Negative|Boundary",
+      "navigation_steps":[
+        {"step":"string","expected":"string","ui_node_id":"string"}
+      ],
+      "steps":[
+        {"step":"string","expected":"string","ui_node_id":"string"}
+      ]
+    }
+  ],
+  "open_questions":[]
+}
+
+You MUST output:
+"ac_coverage": [
+  {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
+]
+
+RULES:
+- Provide focused test cases.
+- Each test case must contain navigation_steps.
+- Each test case MUST have at least 3 steps total (navigation_steps + steps).
+- Ensure acceptance criteria are covered across the set.
+- Be concise and testable. No Gherkin.
+"""
+
+SYSTEM_PROMPT_NO_UI = """
+You are a senior test engineer.
+Return ONLY valid JSON (no markdown, no prose).
+
+Generate test cases based ONLY on the provided user story and acceptance criteria.
+
+IMPORTANT RULES:
+- Do NOT assume any UI structure.
+- Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
+- Do NOT include ui_node_id values.
+- Do NOT force explicit navigation.
+- Focus on functional behavior derived from the requirements only.
+
+ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
+- Create 1–2 test cases per acceptance criterion (group only if it is natural).
+- Every acceptance criterion MUST be mapped to at least one test case.
+
+CRITICAL REQUIREMENTS HANDLING:
+- You MUST use every acceptance criterion as input.
+- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
+- If some detail cannot be translated into a test step, add an open_questions entry.
+
+OUTPUT SCHEMA:
+{
+  "test_cases":[
+    {
+      "id":"TC-1",
+      "title":"string",
+      "priority":"High|Medium|Low",
+      "type":"Functional|Negative|Boundary",
+      "steps":[
+        {"step":"string","expected":"string","ui_node_id":null}
+      ]
+    }
+  ],
+  "open_questions":[]
+}
+
+RULES:
+- Provide focused test cases.
+- Each test case MUST have at least 3 steps.
+- Ensure acceptance criteria are covered across the set.
+- Use generic functional steps only.
+- Be concise and testable. No Gherkin.
+"""
+
+def _json_from_text(txt: str) -> dict:
+    txt = (txt or "").strip()
+    if txt.startswith("```"):
+        txt = re.sub(r"^```(json)?\s*|\s*```$", "", txt, flags=re.S).strip()
     try:
         return json.loads(txt)
     except Exception:
@@ -245,4 +574,4 @@ if st.session_state.last_pdf:
         data=st.session_state.last_pdf,
         file_name=f"test_design_{st.session_state.last_variant or 'result'}.pdf",
         mime="application/pdf",
-    ) 
+    )
