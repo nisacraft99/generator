@@ -253,8 +253,6 @@ EXAMPLE FORMAT (must follow this style):
 2) Select "MAP Review" (OAM-OPT-MAP-REVIEW)
 3) Verify "MAP Dashboard" is displayed (SCR-MAP-DASHBOARD)
 
-
-
 OUTPUT SCHEMA:
 {
   "test_cases":[
@@ -279,7 +277,7 @@ RULES:
 - Each test case must contain navigation_steps (if ui_context is provided).
 - Each test case MUST have at least 3 steps total (navigation_steps + steps).
 - Ensure acceptance criteria are covered across the set.
-- Test cases are divided by menu, not by functionality. So for example you test several fields and their functionality in one test case
+- Test cases are divided by menu, not by functionality. So for example you test several fields and their functionality in one test case.
 - Be concise and testable. No Gherkin.
 """
 
@@ -307,7 +305,7 @@ def _normalize_step(step_obj):
         }
     return {"step": str(step_obj), "expected": "", "ui_node_id": None}
 
-def generate_cases(story: str, ac_blob: str):
+def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
     if not client:
         return [], ["OpenAI client not initialized (missing OPENAI_API_KEY or openai package)."]
     if not story.strip():
@@ -316,8 +314,10 @@ def generate_cases(story: str, ac_blob: str):
     payload = {
         "story": story.strip(),
         "acceptance_criteria": [l.strip() for l in ac_blob.splitlines() if l.strip()],
-        "ui_context": UI_CONTEXT,
     }
+
+    if use_ui_context:
+        payload["ui_context"] = UI_CONTEXT
 
     try:
         resp = client.chat.completions.create(
@@ -409,7 +409,6 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
         flow.append(Paragraph("<b>Generated Test Design</b>", head))
         flow.append(Spacer(1, 6))
 
-        # Summary table
         trows = [["ID", "Title", "Priority", "Type"]]
         for tc in cases:
             trows.append(
@@ -434,7 +433,6 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
         flow.append(t)
         flow.append(Spacer(1, 12))
 
-        # One table per test case
         for tc in cases:
             flow.append(Paragraph(f"<b>{tc.get('id','')}</b> — {tc.get('title','')}", styles["Heading3"]))
             steps = tc.get("steps", []) or []
@@ -481,22 +479,41 @@ if "last_open_questions" not in st.session_state:
     st.session_state.last_open_questions = []
 if "last_cases_count" not in st.session_state:
     st.session_state.last_cases_count = 0
+if "last_variant" not in st.session_state:
+    st.session_state.last_variant = None
 
 st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
-clicked = st.button(
-    "export test cases ✨",
-    disabled=not (user_story.strip() and ac_text.strip())
-)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    clicked_without = st.button(
+        "export without UI ✨",
+        disabled=not (user_story.strip() and ac_text.strip())
+    )
+
+with col2:
+    clicked_with = st.button(
+        "export with UI 🧠✨",
+        disabled=not (user_story.strip() and ac_text.strip())
+    )
+
 st.markdown('</div>', unsafe_allow_html=True)
 
-if clicked:
+if clicked_without or clicked_with:
+    use_ui = clicked_with
+
     with st.spinner("Generating test cases and building PDF..."):
-        cases, open_q = generate_cases(user_story, ac_text)
+        cases, open_q = generate_cases(user_story, ac_text, use_ui_context=use_ui)
         pdf_bytes = build_pdf(user_story, ac_text, cases, open_q)
 
         st.session_state.last_pdf = pdf_bytes
         st.session_state.last_open_questions = open_q
         st.session_state.last_cases_count = len(cases)
+        st.session_state.last_variant = "with_json" if use_ui else "without_json"
+
+if st.session_state.last_variant:
+    st.info(f"Generated with: {st.session_state.last_variant}")
 
 if st.session_state.last_open_questions:
     st.warning("Notes / Open Questions:\n- " + "\n- ".join(st.session_state.last_open_questions))
@@ -506,9 +523,6 @@ if st.session_state.last_pdf:
     st.download_button(
         "download PDF 🧾",
         data=st.session_state.last_pdf,
-        file_name="test_design.pdf",
+        file_name=f"test_design_{st.session_state.last_variant or 'result'}.pdf",
         mime="application/pdf",
     )
-
-
-
