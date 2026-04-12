@@ -229,9 +229,12 @@ STRICT UI RULES (MANDATORY):
 - Navigation must be explicit and beginner-friendly (click path through menus/screens).
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
-ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
-- Create 1–2 test cases per acceptance criterion (group only if it is natural).
-- Every acceptance criterion MUST be mapped to at least one test case.
+COVERAGE IS THE TOP PRIORITY.
+- Every acceptance criterion MUST be covered explicitly.
+- If needed, create additional test cases to cover uncovered acceptance criteria.
+- Do not stop after producing a few navigation-focused test cases.
+- Before finishing, verify that every acceptance criterion is covered at least once.
+- Prefer adding an extra test case over leaving an acceptance criterion uncovered.
 
 CRITICAL: VERBATIM REQUIREMENTS HANDLING
 - You MUST copy every acceptance criterion line EXACTLY (verbatim) into the output under "requirements".
@@ -265,6 +268,11 @@ OUTPUT SCHEMA:
   ],
   "open_questions":[]
 }
+
+You MUST output:
+"ac_coverage": [
+  {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
+]
 
 RULES:
 - Provide focused test cases.
