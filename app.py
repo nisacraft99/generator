@@ -370,6 +370,17 @@ def _normalize_step(step_obj):
         }
     return {"step": str(step_obj), "expected": "", "ui_node_id": None}
 
+def _clean_open_questions(raw_open_q):
+    cleaned = []
+    for q in raw_open_q:
+        if isinstance(q, str):
+            cleaned.append(q)
+        elif q is None:
+            cleaned.append("Unspecified open question.")
+        else:
+            cleaned.append(json.dumps(q, ensure_ascii=False))
+    return cleaned
+
 def enforce_navigation(tc, ui_context):
     nodes = {n["id"]: n for n in ui_context.get("nodes", [])}
     nav = tc.get("navigation_steps", []) or []
@@ -531,7 +542,7 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 
     try:
         resp = client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model="gpt-4o-mini",
             temperature=0.2,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -541,7 +552,8 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
         data = _json_from_text(resp.choices[0].message.content)
 
         tcs = data.get("test_cases", []) or []
-        open_q = data.get("open_questions", []) or []
+        raw_open_q = data.get("open_questions", []) or []
+        open_q = _clean_open_questions(raw_open_q)
 
         fixed = []
         for tc in tcs:
@@ -609,18 +621,11 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
         flow.append(Paragraph("—", body))
     flow.append(Spacer(1, 12))
 
-      # --- OPEN QUESTIONS ---
+    # --- OPEN QUESTIONS ---
     if open_questions:
         flow.append(Paragraph("<b>Open Questions</b>", head))
 
-        cleaned_open_questions = []
-        for q in open_questions:
-            if isinstance(q, str):
-                cleaned_open_questions.append(q)
-            elif q is None:
-                cleaned_open_questions.append("Unspecified open question.")
-            else:
-                cleaned_open_questions.append(json.dumps(q, ensure_ascii=False))
+        cleaned_open_questions = _clean_open_questions(open_questions)
 
         flow.append(
             ListFlowable(
@@ -742,7 +747,8 @@ if st.session_state.last_variant:
     st.info(f"Generated with: {st.session_state.last_variant}")
 
 if st.session_state.last_open_questions:
-    st.warning("Notes / Open Questions:\n- " + "\n- ".join(st.session_state.last_open_questions))
+    cleaned_open_questions = _clean_open_questions(st.session_state.last_open_questions)
+    st.warning("Notes / Open Questions:\n- " + "\n- ".join(cleaned_open_questions))
 
 if st.session_state.last_pdf:
     st.success(f"PDF ready ✅ (test cases: {st.session_state.last_cases_count})")
