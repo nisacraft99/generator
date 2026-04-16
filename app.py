@@ -246,11 +246,29 @@ CRITICAL: VERBATIM REQUIREMENTS HANDLING
 - If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
 - If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
 
-NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
-- For EVERY test case, the first navigation steps after the Login Step MUST start from a Console node (type="console"),
-  then click the corresponding nav_option, then reach the target screen.
-- You MUST express navigation using the ui_context parent chain.
-- Each navigation step MUST reference a concrete ui_node_id.
+NAVIGATION IS STRICTLY ENFORCED (CRITICAL):
+
+For EVERY test case:
+- navigation_steps MUST NOT be empty.
+- The FIRST navigation step MUST be:
+  "Login with <role>" and MUST reference a console node (type="console").
+
+- The SECOND step MUST navigate via a nav_option node.
+- The THIRD step MUST land on a screen node.
+
+VALID STRUCTURE (MANDATORY):
+1. Console (login)
+2. Nav Option (menu click)
+3. Screen (target screen)
+
+If this structure is not followed, the output is INVALID.
+
+You MUST ALWAYS follow the parent hierarchy from ui_context:
+console → nav_option → screen
+
+DO NOT skip levels.
+DO NOT jump directly to a screen.
+DO NOT start from a screen.
 
 OUTPUT SCHEMA:
 {
@@ -348,6 +366,31 @@ def _json_from_text(txt: str) -> dict:
     return {"test_cases": [], "open_questions": ["Model response was not valid JSON."]}
 
 def _normalize_step(step_obj):
+
+def enforce_navigation(tc, ui_context):
+    nodes = {n["id"]: n for n in ui_context.get("nodes", [])}
+
+    nav = tc.get("navigation_steps", [])
+
+    if len(nav) < 3:
+        return False
+
+    first = nodes.get(nav[0].get("ui_node_id"))
+    second = nodes.get(nav[1].get("ui_node_id"))
+    third = nodes.get(nav[2].get("ui_node_id"))
+
+    if not first or first.get("type") != "console":
+        return False
+    if not second or second.get("type") != "nav_option":
+        return False
+    if not third or third.get("type") != "screen":
+        return False
+
+    return True
+
+
+
+    
     if isinstance(step_obj, dict):
         return {
             "step": (step_obj.get("step", "") or "").strip(),
