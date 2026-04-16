@@ -229,7 +229,7 @@ STRICT UI RULES (MANDATORY):
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
 COVERAGE IS THE TOP PRIORITY.
-- Every acceptance criterion MUST be covered explicitly.
+- Every acceptance criterion MUST be covered explicitly in the testcases, otherwise the output is not accepted.
 - The test cases must cover all roles mentioned in the user story and acceptance criteria.
 - If needed, create additional test cases to cover uncovered acceptance criteria.
 - Prefer adding an extra test case over leaving an acceptance criterion uncovered.
