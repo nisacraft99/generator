@@ -230,7 +230,8 @@ STRICT UI RULES (MANDATORY):
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
 COVERAGE IS THE TOP PRIORITY.
-- Every Testcase starts with "Login with Director/Manager/Agent", depending on which role must be used for login according to the User Story.
+- Every Testcase starts with "Login with Director/Manager/Agent", depending on which roles must be used for login according to the User Story.
+- The Testcases must cover all roles mentioned in the User Story.
 - Every acceptance criterion MUST be covered explicitly.
 - If needed, create additional test cases to cover uncovered acceptance criteria.
 - Do not stop after producing a few navigation-focused test cases.
@@ -302,6 +303,7 @@ ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
 
 CRITICAL REQUIREMENTS HANDLING:
 - Every Testcase starts with "Login with Director/Manager/Agent", depending on which role must be used for login according to the User Story.
+- The Testcases must cover all roles mentioned in the User Story.
 - You MUST use every acceptance criterion as input.
 - If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
 - If some detail cannot be translated into a test step, add an open_questions entry.
