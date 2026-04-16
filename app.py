@@ -38,12 +38,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# ======================= GLOBAL FONT (Comic Sans everywhere) =======================
+# ======================= GLOBAL FONT =======================
 st.markdown("""
 <style>
 :root { --comic: "Comic Sans MS","Comic Sans",cursive; }
 
-/* Hit all major Streamlit containers + common widgets */
 html, body, .stApp, .stAppViewContainer, .main, .block-container,
 .stMarkdown, .stAlert, .stDataFrame, .stForm,
 .stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput,
@@ -54,7 +53,7 @@ label, p, span, div {
 </style>
 """, unsafe_allow_html=True)
 
-# ======================= PASSWORD GATE (same vibe) =======================
+# ======================= PASSWORD GATE =======================
 APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
 
 if "auth_ok" not in st.session_state:
@@ -125,7 +124,7 @@ if not st.session_state.auth_ok:
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# ======================= MAIN UI (keep original look) =======================
+# ======================= MAIN UI =======================
 st.markdown("""
 <style>
 .stApp { background: #ccf4f4 !important; }
@@ -226,49 +225,46 @@ If ui_context is provided, you MUST use it to generate concrete navigation.
 STRICT UI RULES (MANDATORY):
 - Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
 - Every step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id.
-- Navigation must be explicit and beginner-friendly (click path through menus/screens).
+- Navigation must be explicit and beginner-friendly.
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
 COVERAGE IS THE TOP PRIORITY.
-- Every Testcase starts with "Login with Director/Manager/Agent", depending on which roles must be used for login according to the User Story.
-- The Testcases must cover all roles mentioned in the User Story.
 - Every acceptance criterion MUST be covered explicitly.
+- The test cases must cover all roles mentioned in the user story and acceptance criteria.
 - If needed, create additional test cases to cover uncovered acceptance criteria.
-- Do not stop after producing a few navigation-focused test cases.
-- Before finishing, verify that every acceptance criterion is covered at least once.
 - Prefer adding an extra test case over leaving an acceptance criterion uncovered.
 
-CRITICAL: VERBATIM REQUIREMENTS HANDLING
-- You MUST copy every acceptance criterion line EXACTLY (verbatim) into the output under "requirements".
-- You MUST NOT paraphrase requirements text.
+CRITICAL REQUIREMENTS HANDLING:
+- You MUST copy every acceptance criterion line EXACTLY into the output under "requirements".
+- You MUST NOT paraphrase requirement text in "requirements".
 - Each test case MUST list which requirement IDs it covers.
-- Each test step MUST include a "derived_from" array referencing the requirement IDs that justify the step.
-- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
+- If a requirement mentions UI control behavior (e.g. multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
 - If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
 
 NAVIGATION IS STRICTLY ENFORCED (CRITICAL):
 
-For EVERY test case:
+For EVERY test case with ui_context:
 - navigation_steps MUST NOT be empty.
-- The FIRST navigation step MUST be:
-  "Login with <role>" and MUST reference a console node (type="console").
-
-- The SECOND step MUST navigate via a nav_option node.
-- The THIRD step MUST land on a screen node.
+- The FIRST navigation step MUST be a login step.
+- The SECOND navigation step MUST select a console node.
+- The THIRD navigation step MUST click the corresponding nav_option inside that console.
+- The FOURTH navigation step MUST land on the target screen.
 
 VALID STRUCTURE (MANDATORY):
-1. Console (login)
-2. Nav Option (menu click)
-3. Screen (target screen)
+1. Login step
+2. Console selection step
+3. Functional navigation step
+4. Target screen step
 
-If this structure is not followed, the output is INVALID.
-
-You MUST ALWAYS follow the parent hierarchy from ui_context:
-console → nav_option → screen
+The step-to-node mapping MUST be:
+- step 2 -> console node
+- step 3 -> nav_option node
+- step 4 -> screen node
 
 DO NOT skip levels.
-DO NOT jump directly to a screen.
+DO NOT jump directly from login to a dashboard.
 DO NOT start from a screen.
+DO NOT skip the console step.
 
 OUTPUT SCHEMA:
 {
@@ -297,7 +293,7 @@ You MUST output:
 RULES:
 - Provide focused test cases.
 - Each test case must contain navigation_steps.
-- Each test case MUST have at least 3 steps total (navigation_steps + steps).
+- Each test case MUST have at least 4 navigation steps when ui_context is provided.
 - Ensure acceptance criteria are covered across the set.
 - Be concise and testable. No Gherkin.
 """
@@ -320,10 +316,10 @@ ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
 - Every acceptance criterion MUST be mapped to at least one test case.
 
 CRITICAL REQUIREMENTS HANDLING:
-- Every Testcase starts with "Login with Director/Manager/Agent", depending on which role must be used for login according to the User Story.
-- The Testcases must cover all roles mentioned in the User Story.
+- Every test case starts with "Login with Director/Manager/Agent", depending on which role must be used for login according to the user story.
+- The test cases must cover all roles mentioned in the user story and acceptance criteria.
 - You MUST use every acceptance criterion as input.
-- If a requirement mentions UI control behavior (e.g., multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
+- If a requirement mentions UI control behavior (e.g. multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
 - If some detail cannot be translated into a test step, add an open_questions entry.
 
 OUTPUT SCHEMA:
@@ -366,31 +362,6 @@ def _json_from_text(txt: str) -> dict:
     return {"test_cases": [], "open_questions": ["Model response was not valid JSON."]}
 
 def _normalize_step(step_obj):
-
-def enforce_navigation(tc, ui_context):
-    nodes = {n["id"]: n for n in ui_context.get("nodes", [])}
-
-    nav = tc.get("navigation_steps", [])
-
-    if len(nav) < 3:
-        return False
-
-    first = nodes.get(nav[0].get("ui_node_id"))
-    second = nodes.get(nav[1].get("ui_node_id"))
-    third = nodes.get(nav[2].get("ui_node_id"))
-
-    if not first or first.get("type") != "console":
-        return False
-    if not second or second.get("type") != "nav_option":
-        return False
-    if not third or third.get("type") != "screen":
-        return False
-
-    return True
-
-
-
-    
     if isinstance(step_obj, dict):
         return {
             "step": (step_obj.get("step", "") or "").strip(),
@@ -398,6 +369,148 @@ def enforce_navigation(tc, ui_context):
             "ui_node_id": step_obj.get("ui_node_id", None),
         }
     return {"step": str(step_obj), "expected": "", "ui_node_id": None}
+
+def enforce_navigation(tc, ui_context):
+    nodes = {n["id"]: n for n in ui_context.get("nodes", [])}
+    nav = tc.get("navigation_steps", []) or []
+
+    if len(nav) < 4:
+        return False
+
+    second = nodes.get(nav[1].get("ui_node_id"))
+    third = nodes.get(nav[2].get("ui_node_id"))
+    fourth = nodes.get(nav[3].get("ui_node_id"))
+
+    if not second or second.get("type") != "console":
+        return False
+    if not third or third.get("type") != "nav_option":
+        return False
+    if not fourth or fourth.get("type") != "screen":
+        return False
+
+    return True
+
+def infer_fallback_navigation(story: str):
+    story_lower = story.lower()
+
+    if "manager meeting" in story_lower or "(mm)" in story_lower:
+        return [
+            {
+                "step": "Login with Director",
+                "expected": "The user is logged in successfully",
+                "ui_node_id": "LOGIN"
+            },
+            {
+                "step": "Select Director Console from the left navigation",
+                "expected": "Director Console is opened",
+                "ui_node_id": "CONSOLE-D"
+            },
+            {
+                "step": "Click Manager Meetings in the left navigation",
+                "expected": "Manager Meetings module is opened",
+                "ui_node_id": "OPT-MM"
+            },
+            {
+                "step": "Verify that the MM Dashboard is displayed",
+                "expected": "MM Dashboard is visible",
+                "ui_node_id": "SCR-MM-DASHBOARD"
+            }
+        ]
+
+    if "agent meeting" in story_lower or "(am)" in story_lower:
+        return [
+            {
+                "step": "Login with Manager",
+                "expected": "The user is logged in successfully",
+                "ui_node_id": "LOGIN"
+            },
+            {
+                "step": "Select Manager Console from the left navigation",
+                "expected": "Manager Console is opened",
+                "ui_node_id": "CONSOLE-M"
+            },
+            {
+                "step": "Click Agent Meetings in the left navigation",
+                "expected": "Agent Meetings module is opened",
+                "ui_node_id": "OPT-AM"
+            },
+            {
+                "step": "Verify that the AM Dashboard is displayed",
+                "expected": "AM Dashboard is visible",
+                "ui_node_id": "SCR-AM-DASHBOARD"
+            }
+        ]
+
+    if "calendar" in story_lower:
+        return [
+            {
+                "step": "Login with Director",
+                "expected": "The user is logged in successfully",
+                "ui_node_id": "LOGIN"
+            },
+            {
+                "step": "Select Calendar Console from the left navigation",
+                "expected": "Calendar Console is opened",
+                "ui_node_id": "CONSOLE-C"
+            },
+            {
+                "step": "Click Calendar View in the left navigation",
+                "expected": "Calendar module is opened",
+                "ui_node_id": "OPT-CALENDAR"
+            },
+            {
+                "step": "Verify that the Calendar View is displayed",
+                "expected": "Calendar View is visible",
+                "ui_node_id": "SCR-CALENDAR"
+            }
+        ]
+
+    if "evaluate" in story_lower or "evaluation" in story_lower:
+        return [
+            {
+                "step": "Login with Director",
+                "expected": "The user is logged in successfully",
+                "ui_node_id": "LOGIN"
+            },
+            {
+                "step": "Select Evaluation Console from the left navigation",
+                "expected": "Evaluation Console is opened",
+                "ui_node_id": "CONSOLE-E"
+            },
+            {
+                "step": "Click Evaluate Employees in the left navigation",
+                "expected": "Evaluate Employees dashboard is opened",
+                "ui_node_id": "OPT-EVALUATE"
+            },
+            {
+                "step": "Verify that the Evaluate Employees dashboard is displayed",
+                "expected": "Evaluate Employees dashboard is visible",
+                "ui_node_id": "SCR-EVALUATE-DASHBOARD"
+            }
+        ]
+
+    return [
+        {
+            "step": "Login with Director",
+            "expected": "The user is logged in successfully",
+            "ui_node_id": "LOGIN"
+        },
+        {
+            "step": "Select Director Console from the left navigation",
+            "expected": "Director Console is opened",
+            "ui_node_id": "CONSOLE-D"
+        },
+        {
+            "step": "Click Manager Meetings in the left navigation",
+            "expected": "Manager Meetings module is opened",
+            "ui_node_id": "OPT-MM"
+        },
+        {
+            "step": "Verify that the MM Dashboard is displayed",
+            "expected": "MM Dashboard is visible",
+            "ui_node_id": "SCR-MM-DASHBOARD"
+        }
+    ]
 
 def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
     if not client:
@@ -432,12 +545,18 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 
         fixed = []
         for tc in tcs:
+            if use_ui_context and not enforce_navigation(tc, UI_CONTEXT):
+                tc["navigation_steps"] = infer_fallback_navigation(story)
+
             nav = [_normalize_step(s) for s in (tc.get("navigation_steps", []) or [])]
             steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
 
             merged_steps = nav + steps
 
-            while len(merged_steps) < 3:
+            while len(merged_steps) < 4 and use_ui_context:
+                merged_steps.append({"step": "—", "expected": "—", "ui_node_id": None})
+
+            while len(merged_steps) < 3 and not use_ui_context:
                 merged_steps.append({"step": "—", "expected": "—", "ui_node_id": None})
 
             fixed.append(
@@ -568,7 +687,7 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
     doc.build(flow)
     return buf.getvalue()
 
-# ======================= EXPORT (spinner + persistent download) =======================
+# ======================= EXPORT =======================
 if "last_pdf" not in st.session_state:
     st.session_state.last_pdf = None
 if "last_open_questions" not in st.session_state:
