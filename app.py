@@ -247,7 +247,7 @@ CRITICAL: VERBATIM REQUIREMENTS HANDLING
 - If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
 
 NAVIGATION IS MANDATORY AND MUST BE EXPLICIT:
-- For EVERY test case, the first navigation steps MUST start from a Console node (type="console"),
+- For EVERY test case, the first navigation steps after the Login Step MUST start from a Console node (type="console"),
   then click the corresponding nav_option, then reach the target screen.
 - You MUST express navigation using the ui_context parent chain.
 - Each navigation step MUST reference a concrete ui_node_id.
