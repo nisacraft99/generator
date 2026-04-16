@@ -609,26 +609,27 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
         flow.append(Paragraph("—", body))
     flow.append(Spacer(1, 12))
 
-   if open_questions:
-    flow.append(Paragraph("<b>Open Questions</b>", head))
+      # --- OPEN QUESTIONS ---
+    if open_questions:
+        flow.append(Paragraph("<b>Open Questions</b>", head))
 
-    cleaned_open_questions = []
-    for q in open_questions:
-        if isinstance(q, str):
-            cleaned_open_questions.append(q)
-        elif q is None:
-            cleaned_open_questions.append("Unspecified open question.")
-        else:
-            cleaned_open_questions.append(json.dumps(q, ensure_ascii=False))
+        cleaned_open_questions = []
+        for q in open_questions:
+            if isinstance(q, str):
+                cleaned_open_questions.append(q)
+            elif q is None:
+                cleaned_open_questions.append("Unspecified open question.")
+            else:
+                cleaned_open_questions.append(json.dumps(q, ensure_ascii=False))
 
-    flow.append(
-        ListFlowable(
-            [ListItem(Paragraph(q, body), leftIndent=6) for q in cleaned_open_questions],
-            bulletType="bullet",
-            leftPadding=12,
+        flow.append(
+            ListFlowable(
+                [ListItem(Paragraph(q, body), leftIndent=6) for q in cleaned_open_questions],
+                bulletType="bullet",
+                leftPadding=12,
+            )
         )
-    )
-    flow.append(Spacer(1, 12))
+        flow.append(Spacer(1, 12))
 
     if cases:
         flow.append(Paragraph("<b>Generated Test Design</b>", head))
