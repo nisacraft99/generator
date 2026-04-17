@@ -7,7 +7,7 @@ import os
 import io
 import json
 import re
-from typing import Dict, List, Any, Tuple, Set
+from typing import Dict, List, Any, Tuple, Set, Optional
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -247,19 +247,31 @@ Return ONLY valid JSON. No markdown. No prose.
 You receive:
 - a user story
 - acceptance criteria
-- ui_context with node IDs
+- ui_context with node IDs and relationships
+
+GOAL:
+Generate focused test cases with real test actions and a separate machine-readable navigation_path.
 
 STRICT RULES:
 - Do NOT invent UI nodes that are not present in ui_context.nodes.
 - For each test case, provide a machine-readable "navigation_path" using ONLY node IDs from ui_context.
-- "navigation_path" must be an ordered list of node IDs that represents the intended navigation for the test case.
-- Keep real test actions in "steps". Do NOT replace real test actions with generic navigation text.
+- "navigation_path" must be an ordered list of node IDs representing the intended feature path.
+- Keep real test actions in "steps". Do NOT replace test actions with generic navigation text.
+- Prefer one focused test case per acceptance criterion.
+- Do NOT merge multiple acceptance criteria into one test case unless they are inseparable.
+- Keep role-based negative tests separate from functional tests.
 - A requirement may only appear in "covers" if the test case actually tests it.
+
+OWNING FEATURE PATH RULE:
+- Role-based permission testing must NOT change the owning feature path.
+- Example:
+  - MM features always use the MM owning path from the Director console.
+  - AM features always use the AM owning path from the Manager console.
+- A manager negative test for an MM still uses the MM feature path, but the role in the test steps is Manager.
 
 TRACEABILITY RULES:
 - Copy every acceptance criterion EXACTLY into "requirements".
 - Each test case MUST include a "covers" array with requirement IDs it truly covers.
-- It is allowed that a test case covers multiple requirements.
 - It is allowed that some requirements stay uncovered if you cannot test them properly.
 
 OUTPUT SCHEMA:
@@ -292,6 +304,9 @@ Generate test cases from the user story and acceptance criteria only.
 
 STRICT RULES:
 - Keep real test action steps.
+- Prefer one focused test case per acceptance criterion.
+- Do NOT merge multiple acceptance criteria into one test case unless they are inseparable.
+- Keep role-based negative tests separate from functional tests.
 - A requirement may only appear in "covers" if the test case actually tests it.
 
 TRACEABILITY RULES:
@@ -537,12 +552,6 @@ def _calc_role_coverage(story: str, requirements: List[Dict[str, str]], test_cas
     missing = sorted(list(required_roles - tested_roles))
     return covered, total, pct, missing
 
-def _calc_traceability_completeness(test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float]:
-    total = len(test_cases)
-    with_covers = sum(1 for tc in test_cases if tc.get("covers"))
-    pct = round((with_covers / total) * 100, 2) if total else 0.0
-    return with_covers, total, pct
-
 def _calc_ac_coverage(requirements: List[Dict[str, str]], test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float, List[str], List[str]]:
     req_ids = {r["id"] for r in requirements}
     covered_ids = set()
@@ -564,60 +573,52 @@ def _calc_ac_coverage(requirements: List[Dict[str, str]], test_cases: List[Dict[
     pct = round((covered / total) * 100, 2) if total else 0.0
     return covered, total, pct, missing_ids, missing_texts
 
-def _calc_navigation_path_match(
+def _calc_navigation_coverage_and_correctness(
     us_id_value: str,
     test_cases: List[Dict[str, Any]],
     nav_reference: List[Dict[str, Any]],
     use_ui: bool
-) -> Tuple[Any, Any, Any, List[str], List[Dict[str, Any]], bool]:
+) -> Tuple[Optional[int], Optional[int], Optional[float], Optional[int], Optional[int], Optional[float], List[str], List[Dict[str, Any]]]:
     if not use_ui:
-        return None, None, None, [], [], False
+        return None, None, None, None, None, None, [], []
 
     ref = _find_reference_for_us(us_id_value, nav_reference)
     expected = ref.get("expected_navigation", []) or []
     if not expected:
-        return None, None, None, [f"No navigation reference found for {us_id_value}"], [], False
+        return None, None, None, None, None, None, [f"No navigation reference found for {us_id_value}"], []
 
-    evaluable_cases = [tc for tc in test_cases if tc.get("navigation_path")]
-    if not evaluable_cases:
-        return None, None, None, ["No test case contains a machine-readable navigation_path."], [], False
+    total_cases = len(test_cases)
+    with_path_cases = [tc for tc in test_cases if tc.get("navigation_path")]
+    nav_cov_num = len(with_path_cases)
+    nav_cov_den = total_cases
+    nav_cov_pct = round((nav_cov_num / nav_cov_den) * 100, 2) if nav_cov_den else 0.0
 
-    matched = 0
-    comparisons = 0
-    mismatches = []
+    if not with_path_cases:
+        return nav_cov_num, nav_cov_den, nav_cov_pct, None, None, None, ["No test case contains a machine-readable navigation_path."], []
+
+    correct = 0
     case_details = []
+    notes = []
 
-    for tc in evaluable_cases:
+    for tc in with_path_cases:
         actual = tc.get("navigation_path", [])
-        compare_len = min(len(expected), len(actual))
-        local_match = 0
-
-        for i in range(compare_len):
-            comparisons += 1
-            if expected[i] == actual[i]:
-                matched += 1
-                local_match += 1
-            else:
-                mismatches.append(f"{tc.get('id','')}: expected {expected[i]} but got {actual[i]} at position {i+1}")
-
-        if len(actual) < len(expected):
-            for i in range(len(actual), len(expected)):
-                comparisons += 1
-                mismatches.append(f"{tc.get('id','')}: missing expected node {expected[i]} at position {i+1}")
-
-        if len(actual) > len(expected):
-            for i in range(len(expected), len(actual)):
-                comparisons += 1
-                mismatches.append(f"{tc.get('id','')}: unexpected extra node {actual[i]} at position {i+1}")
+        is_correct = actual == expected
+        if is_correct:
+            correct += 1
+        else:
+            notes.append(f"{tc.get('id','')}: expected {' -> '.join(expected)} but got {' -> '.join(actual)}")
 
         case_details.append({
             "test_case_id": tc.get("id", ""),
             "actual_path": actual,
-            "matched_prefix_items": local_match,
+            "is_correct": is_correct,
         })
 
-    pct = round((matched / comparisons) * 100, 2) if comparisons else 0.0
-    return matched, comparisons, pct, mismatches[:10], case_details, True
+    corr_num = correct
+    corr_den = len(with_path_cases)
+    corr_pct = round((corr_num / corr_den) * 100, 2) if corr_den else 0.0
+
+    return nav_cov_num, nav_cov_den, nav_cov_pct, corr_num, corr_den, corr_pct, notes[:10], case_details
 
 def evaluate_result(
     us_id_value: str,
@@ -631,8 +632,7 @@ def evaluate_result(
 
     ac_cov_num, ac_cov_den, ac_cov_pct, missing_req_ids, missing_req_texts = _calc_ac_coverage(requirements, test_cases)
     role_num, role_den, role_pct, missing_roles = _calc_role_coverage(story, requirements, test_cases)
-    trace_num, trace_den, trace_pct = _calc_traceability_completeness(test_cases)
-    path_num, path_den, path_pct, path_mismatches, case_paths, path_evaluable = _calc_navigation_path_match(
+    nav_cov_num, nav_cov_den, nav_cov_pct, nav_corr_num, nav_corr_den, nav_corr_pct, nav_notes, case_paths = _calc_navigation_coverage_and_correctness(
         us_id_value, test_cases, nav_reference, use_ui
     )
 
@@ -643,17 +643,16 @@ def evaluate_result(
         "role_coverage_num": role_num,
         "role_coverage_den": role_den,
         "role_coverage_pct": role_pct,
-        "traceability_num": trace_num,
-        "traceability_den": trace_den,
-        "traceability_pct": trace_pct,
-        "path_match_num": path_num,
-        "path_match_den": path_den,
-        "path_match_pct": path_pct,
-        "path_match_evaluable": path_evaluable,
+        "navigation_coverage_num": nav_cov_num,
+        "navigation_coverage_den": nav_cov_den,
+        "navigation_coverage_pct": nav_cov_pct,
+        "navigation_correct_num": nav_corr_num,
+        "navigation_correct_den": nav_corr_den,
+        "navigation_correct_pct": nav_corr_pct,
         "missing_req_ids": missing_req_ids,
         "missing_req_texts": missing_req_texts,
         "missing_roles": missing_roles,
-        "path_mismatches": path_mismatches,
+        "navigation_notes": nav_notes,
         "case_paths": case_paths,
         "test_case_count": len(test_cases),
     }
@@ -707,16 +706,20 @@ def build_pdf(
 
     if evaluation:
         flow.append(Paragraph("<b>Automated Evaluation</b>", head))
-        path_value = "N/A"
-        if evaluation.get("path_match_evaluable"):
-            path_value = f"{evaluation.get('path_match_num', 0)}/{evaluation.get('path_match_den', 0)} ({evaluation.get('path_match_pct', 0)}%)"
+
+        nav_cov_value = "N/A"
+        nav_corr_value = "N/A"
+        if evaluation.get("navigation_coverage_num") is not None:
+            nav_cov_value = f"{evaluation.get('navigation_coverage_num', 0)}/{evaluation.get('navigation_coverage_den', 0)} ({evaluation.get('navigation_coverage_pct', 0)}%)"
+        if evaluation.get("navigation_correct_num") is not None:
+            nav_corr_value = f"{evaluation.get('navigation_correct_num', 0)}/{evaluation.get('navigation_correct_den', 0)} ({evaluation.get('navigation_correct_pct', 0)}%)"
 
         erows = [
             ["Metric", "Value"],
             ["AC Coverage", f"{evaluation.get('ac_coverage_num', 0)}/{evaluation.get('ac_coverage_den', 0)} ({evaluation.get('ac_coverage_pct', 0)}%)"],
-            ["Traceability Completeness", f"{evaluation.get('traceability_num', 0)}/{evaluation.get('traceability_den', 0)} ({evaluation.get('traceability_pct', 0)}%)"],
             ["Role Coverage", f"{evaluation.get('role_coverage_num', 0)}/{evaluation.get('role_coverage_den', 0)} ({evaluation.get('role_coverage_pct', 0)}%)"],
-            ["Navigation Path Match", path_value],
+            ["Navigation Coverage", nav_cov_value],
+            ["Navigation Correctness", nav_corr_value],
             ["Test Cases", str(evaluation.get('test_case_count', 0))],
         ]
         et = Table(erows, colWidths=[180, 260])
@@ -941,23 +944,30 @@ if st.session_state.last_evaluation:
     ev = st.session_state.last_evaluation
     st.subheader("Automated Evaluation")
 
+    nav_cov_text = "N/A" if ev["navigation_coverage_num"] is None else f"{ev['navigation_coverage_pct']}%"
+    nav_corr_text = "N/A" if ev["navigation_correct_num"] is None else f"{ev['navigation_correct_pct']}%"
+
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("AC Coverage", f"{ev['ac_coverage_pct']}%")
-    m2.metric("Traceability", f"{ev['traceability_pct']}%")
-    m3.metric("Role Coverage", f"{ev['role_coverage_pct']}%")
-    m4.metric("Path Match", "N/A" if not ev["path_match_evaluable"] else f"{ev['path_match_pct']}%")
+    m2.metric("Role Coverage", f"{ev['role_coverage_pct']}%")
+    m3.metric("Navigation Coverage", nav_cov_text)
+    m4.metric("Navigation Correctness", nav_corr_text)
 
     st.write(f"**AC Coverage:** {ev['ac_coverage_num']}/{ev['ac_coverage_den']}")
-    st.write(f"**Traceability Completeness:** {ev['traceability_num']}/{ev['traceability_den']}")
     st.write(f"**Role Coverage:** {ev['role_coverage_num']}/{ev['role_coverage_den']}")
 
     if st.session_state.last_use_ui:
-        if ev["path_match_evaluable"]:
-            st.write(f"**Navigation Path Match:** {ev['path_match_num']}/{ev['path_match_den']}")
+        if ev["navigation_coverage_num"] is not None:
+            st.write(f"**Navigation Coverage:** {ev['navigation_coverage_num']}/{ev['navigation_coverage_den']}")
         else:
-            st.write("**Navigation Path Match:** N/A")
+            st.write("**Navigation Coverage:** N/A")
+
+        if ev["navigation_correct_num"] is not None:
+            st.write(f"**Navigation Correctness:** {ev['navigation_correct_num']}/{ev['navigation_correct_den']}")
+        else:
+            st.write("**Navigation Correctness:** N/A")
     else:
-        st.write("**Navigation Path Match:** not applicable for generation without UI context")
+        st.write("**Navigation Coverage / Correctness:** not applicable for generation without UI context")
 
     if ev.get("missing_roles"):
         st.error("Missing roles in generated tests: " + ", ".join(ev["missing_roles"]))
@@ -969,15 +979,16 @@ if st.session_state.last_evaluation:
     else:
         st.success("All explicitly mapped requirements are covered.")
 
-    if ev.get("path_mismatches"):
-        st.warning("Navigation path mismatches / notes:")
-        for item in ev["path_mismatches"]:
+    if ev.get("navigation_notes"):
+        st.warning("Navigation notes:")
+        for item in ev["navigation_notes"]:
             st.write(f"- {item}")
 
     if ev.get("case_paths"):
         st.subheader("Actual Paths per Test Case")
         for cp in ev["case_paths"]:
-            st.write(f"**{cp['test_case_id']}**: {' -> '.join(cp['actual_path']) if cp['actual_path'] else 'N/A'}")
+            status = "correct" if cp.get("is_correct") else "wrong"
+            st.write(f"**{cp['test_case_id']}** ({status}): {' -> '.join(cp['actual_path']) if cp['actual_path'] else 'N/A'}")
 
 if st.session_state.last_pdf:
     st.success(f"PDF ready ✅ (test cases: {st.session_state.last_cases_count})")
