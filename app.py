@@ -1,4 +1,4 @@
-# app.py — UI unchanged + generator + built-in evaluation + navigation reference
+# app.py — generator + evaluation + navigation reference + fixed AC coverage
 # Run:
 #   pip install streamlit python-dotenv reportlab openai
 #   streamlit run app.py
@@ -25,7 +25,6 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# --- OpenAI ---
 try:
     from openai import OpenAI
 except Exception:
@@ -251,30 +250,19 @@ If ui_context is provided, you MUST use it to generate concrete navigation.
 
 STRICT UI RULES (MANDATORY):
 - Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
-- Every step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id.
+- Every step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id whenever possible.
 - Navigation must be explicit and beginner-friendly.
-- Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
 COVERAGE IS THE TOP PRIORITY.
-- Every acceptance criterion MUST be covered explicitly in the testcases, otherwise the output is not accepted.
+- Every acceptance criterion MUST be covered explicitly in the testcases.
 - The test cases must cover all roles mentioned in the user story and acceptance criteria.
-- If needed, create additional test cases to cover uncovered acceptance criteria.
-- Prefer adding an extra test case over leaving an acceptance criterion uncovered.
 
 CRITICAL REQUIREMENTS HANDLING:
 - You MUST copy every acceptance criterion line EXACTLY into the output under "requirements".
 - You MUST NOT paraphrase requirement text in "requirements".
-- Each test case MUST list which requirement IDs it covers.
-- If a requirement mentions UI control behavior (e.g. multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
-- If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
-
-NAVIGATION IS STRICTLY ENFORCED (CRITICAL):
-For EVERY test case with ui_context:
-- navigation_steps MUST NOT be empty.
-- The FIRST navigation step MUST be a login step.
-- The SECOND navigation step MUST select a console node.
-- The THIRD navigation step MUST click the corresponding nav_option inside that console.
-- The FOURTH navigation step MUST land on the target screen.
+- Each test case MUST list which requirement IDs it covers in "covers".
+- If a requirement mentions UI control behavior, the test steps MUST explicitly test that behavior.
+- If you cannot incorporate a detail, add an open_questions entry.
 
 OUTPUT SCHEMA:
 {
@@ -296,9 +284,6 @@ OUTPUT SCHEMA:
       ]
     }
   ],
-  "ac_coverage": [
-    {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
-  ],
   "open_questions":[]
 }
 """
@@ -312,13 +297,11 @@ Generate test cases based ONLY on the provided user story and acceptance criteri
 IMPORTANT RULES:
 - Do NOT assume any UI structure.
 - Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
-- Do NOT include ui_node_id values.
 - Do NOT force explicit navigation.
-- Focus on functional behavior derived from the requirements only.
 
 ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
-- Create 1–2 test cases per acceptance criterion (group only if it is natural).
 - Every acceptance criterion MUST be mapped to at least one test case.
+- Each test case MUST list which requirement IDs it covers in "covers".
 
 OUTPUT SCHEMA:
 {
@@ -337,9 +320,6 @@ OUTPUT SCHEMA:
       ]
     }
   ],
-  "ac_coverage": [
-    {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
-  ],
   "open_questions":[]
 }
 """
@@ -349,7 +329,7 @@ ROLE_NAMES = ["director", "manager", "agent"]
 
 def _clean_line(s: str) -> str:
     s = (s or "").strip()
-    s = re.sub(r"^[•\\-\\*\\d\\.\\)\\( ]+", "", s).strip()
+    s = re.sub(r"^[•\-\*\d\.\)\( ]+", "", s).strip()
     return s
 
 def _ac_lines(ac_blob: str) -> List[str]:
@@ -358,11 +338,11 @@ def _ac_lines(ac_blob: str) -> List[str]:
 def _json_from_text(txt: str) -> dict:
     txt = (txt or "").strip()
     if txt.startswith("```"):
-        txt = re.sub(r"^```(json)?\\s*|\\s*```$", "", txt, flags=re.S).strip()
+        txt = re.sub(r"^```(json)?\s*|\s*```$", "", txt, flags=re.S).strip()
     try:
         return json.loads(txt)
     except Exception:
-        m = re.search(r"\\{.*\\}", txt, flags=re.S)
+        m = re.search(r"\{.*\}", txt, flags=re.S)
         if m:
             try:
                 return json.loads(m.group(0))
@@ -371,7 +351,6 @@ def _json_from_text(txt: str) -> dict:
     return {
         "requirements": [],
         "test_cases": [],
-        "ac_coverage": [],
         "open_questions": ["Model response was not valid JSON."]
     }
 
@@ -393,6 +372,33 @@ def _clean_open_questions(raw_open_q):
             cleaned.append("Unspecified open question.")
         else:
             cleaned.append(json.dumps(q, ensure_ascii=False))
+    return cleaned
+
+def _build_requirements_from_ac(ac_blob: str) -> List[Dict[str, str]]:
+    lines = _ac_lines(ac_blob)
+    return [{"id": f"REQ-{i}", "text": ac} for i, ac in enumerate(lines, start=1)]
+
+def _normalize_requirements(raw_requirements: List[Dict[str, Any]], ac_blob: str) -> List[Dict[str, str]]:
+    fallback = _build_requirements_from_ac(ac_blob)
+
+    if not raw_requirements:
+        return fallback
+
+    cleaned = []
+    for i, req in enumerate(raw_requirements, start=1):
+        req_id = str(req.get("id", f"REQ-{i}")).strip() or f"REQ-{i}"
+        text = _clean_line(req.get("text", ""))
+        if text:
+            cleaned.append({"id": req_id, "text": text})
+
+    if not cleaned:
+        return fallback
+
+    # if model returned fewer requirements than AC lines, prefer exact AC fallback
+    ac_lines = _ac_lines(ac_blob)
+    if len(cleaned) != len(ac_lines):
+        return fallback
+
     return cleaned
 
 def enforce_navigation(tc, ui_context):
@@ -457,20 +463,34 @@ def infer_fallback_navigation(story: str):
         {"step": "Verify that the MM Dashboard is displayed", "expected": "MM Dashboard is visible", "ui_node_id": "SCR-MM-DASHBOARD"},
     ]
 
+def _fallback_assign_covers(test_cases: List[Dict[str, Any]], requirements: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+    """
+    If model does not return covers, assign TC-1 -> REQ-1, TC-2 -> REQ-2, ...
+    extra test cases keep empty covers.
+    """
+    req_ids = [r["id"] for r in requirements]
+    fixed = []
+
+    for idx, tc in enumerate(test_cases):
+        covers = tc.get("covers", []) or []
+        if not covers and idx < len(req_ids):
+            covers = [req_ids[idx]]
+        tc["covers"] = covers
+        fixed.append(tc)
+    return fixed
+
 def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
     if not client:
         return {
-            "requirements": [],
+            "requirements": _build_requirements_from_ac(ac_blob),
             "test_cases": [],
-            "ac_coverage": [],
             "open_questions": ["OpenAI client not initialized (missing OPENAI_API_KEY or openai package)."]
         }
 
     if not story.strip():
         return {
-            "requirements": [],
+            "requirements": _build_requirements_from_ac(ac_blob),
             "test_cases": [],
-            "ac_coverage": [],
             "open_questions": ["User story is empty."]
         }
 
@@ -496,9 +516,8 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
         )
         data = _json_from_text(resp.choices[0].message.content)
 
-        requirements = data.get("requirements", []) or []
+        requirements = _normalize_requirements(data.get("requirements", []) or [], ac_blob)
         raw_open_q = data.get("open_questions", []) or []
-        ac_coverage = data.get("ac_coverage", []) or []
         tcs = data.get("test_cases", []) or []
 
         open_q = _clean_open_questions(raw_open_q)
@@ -529,18 +548,18 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
                 }
             )
 
+        fixed = _fallback_assign_covers(fixed, requirements)
+
         return {
             "requirements": requirements,
             "test_cases": fixed,
-            "ac_coverage": ac_coverage,
             "open_questions": open_q,
         }
 
     except Exception as e:
         return {
-            "requirements": [],
+            "requirements": _build_requirements_from_ac(ac_blob),
             "test_cases": [],
-            "ac_coverage": [],
             "open_questions": [f"OpenAI call failed: {e}"]
         }
 
@@ -560,14 +579,14 @@ def _extract_roles_from_text(text: str) -> Set[str]:
             found.add(role)
     return found
 
-def _extract_roles_from_requirements(story: str, ac_lines: List[str]) -> Set[str]:
+def _extract_roles_from_requirements(story: str, requirements: List[Dict[str, str]]) -> Set[str]:
     found = _extract_roles_from_text(story)
-    for ac in ac_lines:
-        found |= _extract_roles_from_text(ac)
+    for req in requirements:
+        found |= _extract_roles_from_text(req.get("text", ""))
     return found
 
-def _calc_role_coverage(story: str, ac_lines: List[str], test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float, List[str]]:
-    required_roles = _extract_roles_from_requirements(story, ac_lines)
+def _calc_role_coverage(story: str, requirements: List[Dict[str, str]], test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float, List[str]]:
+    required_roles = _extract_roles_from_requirements(story, requirements)
     tested_roles = set()
 
     for tc in test_cases:
@@ -580,39 +599,26 @@ def _calc_role_coverage(story: str, ac_lines: List[str], test_cases: List[Dict[s
     missing = sorted(list(required_roles - tested_roles))
     return covered, total, pct, missing
 
-def _calc_ac_coverage(ac_lines: List[str], raw_result: Dict[str, Any], test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float, List[str]]:
-    total = len(ac_lines)
-    if total == 0:
-        return 0, 0, 0.0, []
+def _calc_ac_coverage(requirements: List[Dict[str, str]], test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float, List[str], List[str]]:
+    req_ids = {r["id"] for r in requirements}
+    covered_ids = set()
 
-    covered_acs = set()
-    missing_acs = []
+    for tc in test_cases:
+        for req_id in tc.get("covers", []) or []:
+            if req_id in req_ids:
+                covered_ids.add(req_id)
 
-    model_cov = raw_result.get("ac_coverage", []) or []
-    if model_cov:
-        for item in model_cov:
-            ac_text = _clean_line(item.get("ac_text", ""))
-            covered_by = item.get("covered_by", []) or []
-            if ac_text in ac_lines and covered_by:
-                covered_acs.add(ac_text)
+    missing_ids = []
+    missing_texts = []
+    for req in requirements:
+        if req["id"] not in covered_ids:
+            missing_ids.append(req["id"])
+            missing_texts.append(req["text"])
 
-    if not covered_acs:
-        tc_texts = []
-        for tc in test_cases:
-            tc_texts.append(_lower_text_block_from_case(tc))
-
-        for ac in ac_lines:
-            ac_l = ac.lower()
-            if any(ac_l in tc_text for tc_text in tc_texts):
-                covered_acs.add(ac)
-
-    for ac in ac_lines:
-        if ac not in covered_acs:
-            missing_acs.append(ac)
-
-    covered = len(covered_acs)
+    covered = len(covered_ids)
+    total = len(req_ids)
     pct = round((covered / total) * 100, 2) if total else 0.0
-    return covered, total, pct, missing_acs
+    return covered, total, pct, missing_ids, missing_texts
 
 def _calc_node_validity(test_cases: List[Dict[str, Any]], ui_context: Dict[str, Any], use_ui: bool) -> Tuple[int, int, float, int]:
     if not use_ui:
@@ -664,7 +670,7 @@ def _calc_navigation_path_match(
     ref = _find_reference_for_us(us_id_value, nav_reference)
     expected = ref.get("expected_navigation", []) or []
     if not expected:
-        return 0, 0, 0.0, [], []
+        return 0, 0, 0.0, [f"No navigation reference found for {us_id_value}"], []
 
     matched = 0
     comparisons = 0
@@ -673,10 +679,9 @@ def _calc_navigation_path_match(
 
     for tc in test_cases:
         actual = _unique_path_from_case(tc)
-
-        # compare prefix against expected
         compare_len = min(len(expected), len(actual))
         local_match = 0
+
         for i in range(compare_len):
             comparisons += 1
             if expected[i] == actual[i]:
@@ -685,13 +690,11 @@ def _calc_navigation_path_match(
             else:
                 mismatches.append(f"{tc.get('id','')}: expected {expected[i]} but got {actual[i]} at position {i+1}")
 
-        # missing path items
         if len(actual) < len(expected):
             for i in range(len(actual), len(expected)):
                 comparisons += 1
                 mismatches.append(f"{tc.get('id','')}: missing expected node {expected[i]} at position {i+1}")
 
-        # extra items are not counted as match
         if len(actual) > len(expected):
             for i in range(len(expected), len(actual)):
                 comparisons += 1
@@ -709,17 +712,16 @@ def _calc_navigation_path_match(
 def evaluate_result(
     us_id_value: str,
     story: str,
-    ac_blob: str,
     raw_result: Dict[str, Any],
     ui_context: Dict[str, Any],
     nav_reference: List[Dict[str, Any]],
     use_ui: bool
 ) -> Dict[str, Any]:
-    ac_lines = _ac_lines(ac_blob)
+    requirements = raw_result.get("requirements", []) or []
     test_cases = raw_result.get("test_cases", []) or []
 
-    ac_cov_num, ac_cov_den, ac_cov_pct, missing_acs = _calc_ac_coverage(ac_lines, raw_result, test_cases)
-    role_num, role_den, role_pct, missing_roles = _calc_role_coverage(story, ac_lines, test_cases)
+    ac_cov_num, ac_cov_den, ac_cov_pct, missing_req_ids, missing_req_texts = _calc_ac_coverage(requirements, test_cases)
+    role_num, role_den, role_pct, missing_roles = _calc_role_coverage(story, requirements, test_cases)
     node_num, node_den, node_pct, hallucinations = _calc_node_validity(test_cases, ui_context, use_ui)
     path_num, path_den, path_pct, path_mismatches, case_paths = _calc_navigation_path_match(
         us_id_value, test_cases, nav_reference, use_ui
@@ -739,7 +741,8 @@ def evaluate_result(
         "path_match_den": path_den,
         "path_match_pct": path_pct,
         "hallucination_count": hallucinations,
-        "missing_acs": missing_acs,
+        "missing_req_ids": missing_req_ids,
+        "missing_req_texts": missing_req_texts,
         "missing_roles": missing_roles,
         "path_mismatches": path_mismatches,
         "case_paths": case_paths,
@@ -833,7 +836,7 @@ def build_pdf(
         flow.append(Paragraph("<b>Generated Test Design</b>", head))
         flow.append(Spacer(1, 6))
 
-        trows = [["ID", "Title", "Priority", "Type"]]
+        trows = [["ID", "Title", "Priority", "Type", "Covers"]]
         for tc in cases:
             trows.append(
                 [
@@ -841,10 +844,11 @@ def build_pdf(
                     Paragraph(tc.get("title", "") or "", cell),
                     Paragraph(tc.get("priority", "") or "", cell),
                     Paragraph(tc.get("type", "") or "", cell),
+                    Paragraph(", ".join(tc.get("covers", []) or []) or "—", cell),
                 ]
             )
 
-        t = Table(trows, colWidths=[50, 300, 70, 70])
+        t = Table(trows, colWidths=[45, 235, 55, 55, 100])
         t.setStyle(
             TableStyle(
                 [
@@ -967,7 +971,6 @@ if clicked_evaluate and st.session_state.last_raw_result:
         evaluation = evaluate_result(
             us_id_value=us_id,
             story=user_story,
-            ac_blob=ac_text,
             raw_result=st.session_state.last_raw_result,
             ui_context=UI_CONTEXT,
             nav_reference=NAV_REFERENCE,
@@ -995,6 +998,16 @@ if st.session_state.last_open_questions:
     cleaned_open_questions = _clean_open_questions(st.session_state.last_open_questions)
     st.warning("Notes / Open Questions:\n- " + "\n- ".join(cleaned_open_questions))
 
+if st.session_state.last_raw_result:
+    with st.expander("Show requirement mapping"):
+        reqs = st.session_state.last_raw_result.get("requirements", []) or []
+        tcs = st.session_state.last_raw_result.get("test_cases", []) or []
+        for req in reqs:
+            st.write(f"**{req['id']}**: {req['text']}")
+        st.write("---")
+        for tc in tcs:
+            st.write(f"**{tc.get('id','')}** covers: {', '.join(tc.get('covers', []) or []) or '—'}")
+
 if st.session_state.last_evaluation:
     ev = st.session_state.last_evaluation
     st.subheader("Automated Evaluation")
@@ -1008,6 +1021,7 @@ if st.session_state.last_evaluation:
 
     st.write(f"**AC Coverage:** {ev['ac_coverage_num']}/{ev['ac_coverage_den']}")
     st.write(f"**Role Coverage:** {ev['role_coverage_num']}/{ev['role_coverage_den']}")
+
     if st.session_state.last_use_ui:
         st.write(f"**Node Validity:** {ev['node_valid_num']}/{ev['node_valid_den']}")
         st.write(f"**Navigation Path Match:** {ev['path_match_num']}/{ev['path_match_den']}")
@@ -1017,12 +1031,12 @@ if st.session_state.last_evaluation:
     if ev.get("missing_roles"):
         st.error("Missing roles in generated tests: " + ", ".join(ev["missing_roles"]))
 
-    if ev.get("missing_acs"):
-        st.error("Uncovered acceptance criteria:")
-        for ac in ev["missing_acs"]:
-            st.write(f"- {ac}")
+    if ev.get("missing_req_texts"):
+        st.error("Uncovered requirements:")
+        for req_id, req_text in zip(ev["missing_req_ids"], ev["missing_req_texts"]):
+            st.write(f"- {req_id}: {req_text}")
     else:
-        st.success("All acceptance criteria appear to be covered.")
+        st.success("All requirements appear to be covered.")
 
     if ev.get("path_mismatches"):
         st.warning("Navigation mismatches:")
