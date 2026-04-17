@@ -1,4 +1,4 @@
-# app.py — UI unchanged (Aqua + Comic Sans + Password Gate) + ui_context + spinner + persistent download
+# app.py — UI unchanged + generator + built-in evaluation + navigation reference
 # Run:
 #   pip install streamlit python-dotenv reportlab openai
 #   streamlit run app.py
@@ -7,6 +7,7 @@ import os
 import io
 import json
 import re
+from typing import Dict, List, Any, Tuple, Set
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -138,7 +139,8 @@ st.markdown("""
 .mock-label { font-weight: 500; font-size: 25px; color: #000; margin: 12px 0 6px 40px; }
 .field-single, .field-multi { width: 900px; margin-left: 40px; }
 
-.stTextArea textarea {
+.stTextArea textarea,
+.stTextInput input {
   background: #fff4c7 !important;
   border: 3px solid #000 !important;
   border-radius: 16px !important;
@@ -173,6 +175,15 @@ st.markdown("""
 
 st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
+st.markdown('<div class="mock-label">user story id</div>', unsafe_allow_html=True)
+us_id = st.text_input(
+    "",
+    key="us_id_input",
+    value="US-1",
+    placeholder="US-1",
+    label_visibility="collapsed"
+)
+
 st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True)
 st.markdown('<div class="field-single singleline">', unsafe_allow_html=True)
 user_story = st.text_area(
@@ -191,8 +202,9 @@ ac_text = st.text_area(
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ======================= UI CONTEXT LOADER =======================
+# ======================= LOADERS =======================
 UI_CONTEXT_PATH = "ui_context.json"
+NAV_REFERENCE_PATH = "navigation_reference.json"
 
 def load_ui_context(path: str) -> dict:
     try:
@@ -207,8 +219,23 @@ def load_ui_context(path: str) -> dict:
         st.error(f"UI context could not be loaded: {e}")
         return {}
 
+def load_navigation_reference(path: str) -> list:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+        st.error("navigation_reference.json must contain a JSON list.")
+        return []
+    except Exception as e:
+        st.error(f"Navigation reference could not be loaded: {e}")
+        return []
+
 UI_CONTEXT = load_ui_context(UI_CONTEXT_PATH)
+NAV_REFERENCE = load_navigation_reference(NAV_REFERENCE_PATH)
+
 st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', []))}")
+st.caption(f"Navigation references loaded: {len(NAV_REFERENCE)}")
 
 # ======================= OPENAI SETUP =======================
 load_dotenv()
@@ -242,7 +269,6 @@ CRITICAL REQUIREMENTS HANDLING:
 - If you cannot incorporate a word/detail from a requirement, add an open_questions entry.
 
 NAVIGATION IS STRICTLY ENFORCED (CRITICAL):
-
 For EVERY test case with ui_context:
 - navigation_steps MUST NOT be empty.
 - The FIRST navigation step MUST be a login step.
@@ -250,40 +276,18 @@ For EVERY test case with ui_context:
 - The THIRD navigation step MUST click the corresponding nav_option inside that console.
 - The FOURTH navigation step MUST land on the target screen.
 
-VALID STRUCTURE (MANDATORY):
-1. Login step
-2. Console selection step
-3. Functional navigation step
-4. Target screen step
-
-The step-to-node mapping MUST be:
-- step 2 -> console node
-- step 3 -> nav_option node
-- step 4 -> screen node
-
-Role mention does NOT imply role-owned navigation.
-
-A role may be mentioned only for permission validation.
-If a feature belongs to a specific console/module, all navigation must follow that feature's owning console.
-
-Example:
-- Manager Meeting (MM) belongs to Director Console.
-- Therefore, navigation for MM test cases MUST use Director Console -> Manager Meetings.
-- A manager negative test may log in as Manager, but must not invent a Manager Console path to MM if such a path does not exist in ui_context.
-
-DO NOT skip levels.
-DO NOT jump directly from login to a dashboard.
-DO NOT start from a screen.
-DO NOT skip the console step.
-
 OUTPUT SCHEMA:
 {
+  "requirements": [
+    {"id":"REQ-1", "text":"exact acceptance criterion text"}
+  ],
   "test_cases":[
     {
       "id":"TC-1",
       "title":"string",
       "priority":"High|Medium|Low",
       "type":"Functional|Negative|Boundary",
+      "covers":["REQ-1"],
       "navigation_steps":[
         {"step":"string","expected":"string","ui_node_id":"string"}
       ],
@@ -292,20 +296,11 @@ OUTPUT SCHEMA:
       ]
     }
   ],
+  "ac_coverage": [
+    {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
+  ],
   "open_questions":[]
 }
-
-You MUST output:
-"ac_coverage": [
-  {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
-]
-
-RULES:
-- Provide focused test cases.
-- Each test case must contain navigation_steps.
-- Each test case MUST have at least 4 navigation steps when ui_context is provided.
-- Ensure acceptance criteria are covered across the set.
-- Be concise and testable. No Gherkin.
 """
 
 SYSTEM_PROMPT_NO_UI = """
@@ -325,51 +320,60 @@ ACCEPTANCE CRITERIA COVERAGE IS MANDATORY:
 - Create 1–2 test cases per acceptance criterion (group only if it is natural).
 - Every acceptance criterion MUST be mapped to at least one test case.
 
-CRITICAL REQUIREMENTS HANDLING:
-- Every test case starts with "Login with Director/Manager/Agent", depending on which role must be used for login according to the user story.
-- The test cases must cover all roles mentioned in the user story and acceptance criteria.
-- You MUST use every acceptance criterion as input.
-- If a requirement mentions UI control behavior (e.g. multiselect, disabled, becomes active), the test steps MUST explicitly test that behavior.
-- If some detail cannot be translated into a test step, add an open_questions entry.
-
 OUTPUT SCHEMA:
 {
+  "requirements": [
+    {"id":"REQ-1", "text":"exact acceptance criterion text"}
+  ],
   "test_cases":[
     {
       "id":"TC-1",
       "title":"string",
       "priority":"High|Medium|Low",
       "type":"Functional|Negative|Boundary",
+      "covers":["REQ-1"],
       "steps":[
         {"step":"string","expected":"string","ui_node_id":null}
       ]
     }
   ],
+  "ac_coverage": [
+    {"ac_text":"<exact AC>", "covered_by":["TC-1","TC-3"]}
+  ],
   "open_questions":[]
 }
-
-RULES:
-- Provide focused test cases.
-- Each test case MUST have at least 3 steps.
-- Ensure acceptance criteria are covered across the set.
-- Use generic functional steps only.
-- Be concise and testable. No Gherkin.
 """
+
+# ======================= HELPERS =======================
+ROLE_NAMES = ["director", "manager", "agent"]
+
+def _clean_line(s: str) -> str:
+    s = (s or "").strip()
+    s = re.sub(r"^[•\\-\\*\\d\\.\\)\\( ]+", "", s).strip()
+    return s
+
+def _ac_lines(ac_blob: str) -> List[str]:
+    return [_clean_line(l) for l in ac_blob.splitlines() if _clean_line(l)]
 
 def _json_from_text(txt: str) -> dict:
     txt = (txt or "").strip()
     if txt.startswith("```"):
-        txt = re.sub(r"^```(json)?\s*|\s*```$", "", txt, flags=re.S).strip()
+        txt = re.sub(r"^```(json)?\\s*|\\s*```$", "", txt, flags=re.S).strip()
     try:
         return json.loads(txt)
     except Exception:
-        m = re.search(r"\{.*\}", txt, flags=re.S)
+        m = re.search(r"\\{.*\\}", txt, flags=re.S)
         if m:
             try:
                 return json.loads(m.group(0))
             except Exception:
                 pass
-    return {"test_cases": [], "open_questions": ["Model response was not valid JSON."]}
+    return {
+        "requirements": [],
+        "test_cases": [],
+        "ac_coverage": [],
+        "open_questions": ["Model response was not valid JSON."]
+    }
 
 def _normalize_step(step_obj):
     if isinstance(step_obj, dict):
@@ -416,132 +420,63 @@ def infer_fallback_navigation(story: str):
 
     if "manager meeting" in story_lower or "(mm)" in story_lower:
         return [
-            {
-                "step": "Login with Director",
-                "expected": "The user is logged in successfully",
-                "ui_node_id": "LOGIN"
-            },
-            {
-                "step": "Select Director Console from the left navigation",
-                "expected": "Director Console is opened",
-                "ui_node_id": "CONSOLE-D"
-            },
-            {
-                "step": "Click Manager Meetings in the left navigation",
-                "expected": "Manager Meetings module is opened",
-                "ui_node_id": "OPT-MM"
-            },
-            {
-                "step": "Verify that the MM Dashboard is displayed",
-                "expected": "MM Dashboard is visible",
-                "ui_node_id": "SCR-MM-DASHBOARD"
-            }
+            {"step": "Login with Director", "expected": "The user is logged in successfully", "ui_node_id": "LOGIN"},
+            {"step": "Select Director Console from the left navigation", "expected": "Director Console is opened", "ui_node_id": "CONSOLE-D"},
+            {"step": "Click Manager Meeting in the left navigation", "expected": "Manager Meeting module is opened", "ui_node_id": "OPT-MM"},
+            {"step": "Verify that the MM Dashboard is displayed", "expected": "MM Dashboard is visible", "ui_node_id": "SCR-MM-DASHBOARD"},
         ]
 
     if "agent meeting" in story_lower or "(am)" in story_lower:
         return [
-            {
-                "step": "Login with Manager",
-                "expected": "The user is logged in successfully",
-                "ui_node_id": "LOGIN"
-            },
-            {
-                "step": "Select Manager Console from the left navigation",
-                "expected": "Manager Console is opened",
-                "ui_node_id": "CONSOLE-M"
-            },
-            {
-                "step": "Click Agent Meetings in the left navigation",
-                "expected": "Agent Meetings module is opened",
-                "ui_node_id": "OPT-AM"
-            },
-            {
-                "step": "Verify that the AM Dashboard is displayed",
-                "expected": "AM Dashboard is visible",
-                "ui_node_id": "SCR-AM-DASHBOARD"
-            }
+            {"step": "Login with Manager", "expected": "The user is logged in successfully", "ui_node_id": "LOGIN"},
+            {"step": "Select Manager Console from the left navigation", "expected": "Manager Console is opened", "ui_node_id": "CONSOLE-M"},
+            {"step": "Click Agent Meeting in the left navigation", "expected": "Agent Meeting module is opened", "ui_node_id": "OPT-AM"},
+            {"step": "Verify that the AM Dashboard is displayed", "expected": "AM Dashboard is visible", "ui_node_id": "SCR-AM-DASHBOARD"},
         ]
 
     if "calendar" in story_lower:
         return [
-            {
-                "step": "Login with Director",
-                "expected": "The user is logged in successfully",
-                "ui_node_id": "LOGIN"
-            },
-            {
-                "step": "Select Calendar Console from the left navigation",
-                "expected": "Calendar Console is opened",
-                "ui_node_id": "CONSOLE-C"
-            },
-            {
-                "step": "Click Calendar View in the left navigation",
-                "expected": "Calendar module is opened",
-                "ui_node_id": "OPT-CALENDAR"
-            },
-            {
-                "step": "Verify that the Calendar View is displayed",
-                "expected": "Calendar View is visible",
-                "ui_node_id": "SCR-CALENDAR"
-            }
+            {"step": "Login with Director", "expected": "The user is logged in successfully", "ui_node_id": "LOGIN"},
+            {"step": "Select Calendar Console from the left navigation", "expected": "Calendar Console is opened", "ui_node_id": "CONSOLE-C"},
+            {"step": "Click Calendar in the left navigation", "expected": "Calendar module is opened", "ui_node_id": "OPT-CALENDAR"},
+            {"step": "Verify that the Calendar View is displayed", "expected": "Calendar View is visible", "ui_node_id": "SCR-CALENDAR"},
         ]
 
     if "evaluate" in story_lower or "evaluation" in story_lower:
         return [
-            {
-                "step": "Login with Director",
-                "expected": "The user is logged in successfully",
-                "ui_node_id": "LOGIN"
-            },
-            {
-                "step": "Select Evaluation Console from the left navigation",
-                "expected": "Evaluation Console is opened",
-                "ui_node_id": "CONSOLE-E"
-            },
-            {
-                "step": "Click Evaluate Employees in the left navigation",
-                "expected": "Evaluate Employees dashboard is opened",
-                "ui_node_id": "OPT-EVALUATE"
-            },
-            {
-                "step": "Verify that the Evaluate Employees dashboard is displayed",
-                "expected": "Evaluate Employees dashboard is visible",
-                "ui_node_id": "SCR-EVALUATE-DASHBOARD"
-            }
+            {"step": "Login with Director", "expected": "The user is logged in successfully", "ui_node_id": "LOGIN"},
+            {"step": "Select Evaluation Console from the left navigation", "expected": "Evaluation Console is opened", "ui_node_id": "CONSOLE-E"},
+            {"step": "Click Evaluate Employees in the left navigation", "expected": "Evaluate Employees dashboard is opened", "ui_node_id": "OPT-EVALUATE"},
+            {"step": "Verify that the Evaluate Employees dashboard is displayed", "expected": "Evaluate Employees dashboard is visible", "ui_node_id": "SCR-EVALUATE-DASHBOARD"},
         ]
 
     return [
-        {
-            "step": "Login with Director",
-            "expected": "The user is logged in successfully",
-            "ui_node_id": "LOGIN"
-        },
-        {
-            "step": "Select Director Console from the left navigation",
-            "expected": "Director Console is opened",
-            "ui_node_id": "CONSOLE-D"
-        },
-        {
-            "step": "Click Manager Meetings in the left navigation",
-            "expected": "Manager Meetings module is opened",
-            "ui_node_id": "OPT-MM"
-        },
-        {
-            "step": "Verify that the MM Dashboard is displayed",
-            "expected": "MM Dashboard is visible",
-            "ui_node_id": "SCR-MM-DASHBOARD"
-        }
+        {"step": "Login with Director", "expected": "The user is logged in successfully", "ui_node_id": "LOGIN"},
+        {"step": "Select Director Console from the left navigation", "expected": "Director Console is opened", "ui_node_id": "CONSOLE-D"},
+        {"step": "Click Manager Meeting in the left navigation", "expected": "Manager Meeting module is opened", "ui_node_id": "OPT-MM"},
+        {"step": "Verify that the MM Dashboard is displayed", "expected": "MM Dashboard is visible", "ui_node_id": "SCR-MM-DASHBOARD"},
     ]
 
 def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
     if not client:
-        return [], ["OpenAI client not initialized (missing OPENAI_API_KEY or openai package)."]
+        return {
+            "requirements": [],
+            "test_cases": [],
+            "ac_coverage": [],
+            "open_questions": ["OpenAI client not initialized (missing OPENAI_API_KEY or openai package)."]
+        }
+
     if not story.strip():
-        return [], ["User story is empty."]
+        return {
+            "requirements": [],
+            "test_cases": [],
+            "ac_coverage": [],
+            "open_questions": ["User story is empty."]
+        }
 
     payload = {
         "story": story.strip(),
-        "acceptance_criteria": [l.strip() for l in ac_blob.splitlines() if l.strip()],
+        "acceptance_criteria": _ac_lines(ac_blob),
     }
 
     if use_ui_context:
@@ -561,8 +496,11 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
         )
         data = _json_from_text(resp.choices[0].message.content)
 
-        tcs = data.get("test_cases", []) or []
+        requirements = data.get("requirements", []) or []
         raw_open_q = data.get("open_questions", []) or []
+        ac_coverage = data.get("ac_coverage", []) or []
+        tcs = data.get("test_cases", []) or []
+
         open_q = _clean_open_questions(raw_open_q)
 
         fixed = []
@@ -572,7 +510,6 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 
             nav = [_normalize_step(s) for s in (tc.get("navigation_steps", []) or [])]
             steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
-
             merged_steps = nav + steps
 
             while len(merged_steps) < 4 and use_ui_context:
@@ -587,16 +524,237 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
                     "title": (tc.get("title", "") or "").strip(),
                     "priority": (tc.get("priority", "") or "").strip(),
                     "type": (tc.get("type", "") or "").strip(),
+                    "covers": tc.get("covers", []) or [],
                     "steps": merged_steps,
                 }
             )
 
-        return fixed, open_q
+        return {
+            "requirements": requirements,
+            "test_cases": fixed,
+            "ac_coverage": ac_coverage,
+            "open_questions": open_q,
+        }
+
     except Exception as e:
-        return [], [f"OpenAI call failed: {e}"]
+        return {
+            "requirements": [],
+            "test_cases": [],
+            "ac_coverage": [],
+            "open_questions": [f"OpenAI call failed: {e}"]
+        }
+
+# ======================= EVALUATION =======================
+def _lower_text_block_from_case(tc: Dict[str, Any]) -> str:
+    parts = [tc.get("title", "") or ""]
+    for s in tc.get("steps", []) or []:
+        parts.append(s.get("step", "") or "")
+        parts.append(s.get("expected", "") or "")
+    return " ".join(parts).lower()
+
+def _extract_roles_from_text(text: str) -> Set[str]:
+    t = (text or "").lower()
+    found = set()
+    for role in ROLE_NAMES:
+        if role in t:
+            found.add(role)
+    return found
+
+def _extract_roles_from_requirements(story: str, ac_lines: List[str]) -> Set[str]:
+    found = _extract_roles_from_text(story)
+    for ac in ac_lines:
+        found |= _extract_roles_from_text(ac)
+    return found
+
+def _calc_role_coverage(story: str, ac_lines: List[str], test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float, List[str]]:
+    required_roles = _extract_roles_from_requirements(story, ac_lines)
+    tested_roles = set()
+
+    for tc in test_cases:
+        tc_text = _lower_text_block_from_case(tc)
+        tested_roles |= _extract_roles_from_text(tc_text)
+
+    covered = len(required_roles & tested_roles)
+    total = len(required_roles)
+    pct = round((covered / total) * 100, 2) if total else 0.0
+    missing = sorted(list(required_roles - tested_roles))
+    return covered, total, pct, missing
+
+def _calc_ac_coverage(ac_lines: List[str], raw_result: Dict[str, Any], test_cases: List[Dict[str, Any]]) -> Tuple[int, int, float, List[str]]:
+    total = len(ac_lines)
+    if total == 0:
+        return 0, 0, 0.0, []
+
+    covered_acs = set()
+    missing_acs = []
+
+    model_cov = raw_result.get("ac_coverage", []) or []
+    if model_cov:
+        for item in model_cov:
+            ac_text = _clean_line(item.get("ac_text", ""))
+            covered_by = item.get("covered_by", []) or []
+            if ac_text in ac_lines and covered_by:
+                covered_acs.add(ac_text)
+
+    if not covered_acs:
+        tc_texts = []
+        for tc in test_cases:
+            tc_texts.append(_lower_text_block_from_case(tc))
+
+        for ac in ac_lines:
+            ac_l = ac.lower()
+            if any(ac_l in tc_text for tc_text in tc_texts):
+                covered_acs.add(ac)
+
+    for ac in ac_lines:
+        if ac not in covered_acs:
+            missing_acs.append(ac)
+
+    covered = len(covered_acs)
+    pct = round((covered / total) * 100, 2) if total else 0.0
+    return covered, total, pct, missing_acs
+
+def _calc_node_validity(test_cases: List[Dict[str, Any]], ui_context: Dict[str, Any], use_ui: bool) -> Tuple[int, int, float, int]:
+    if not use_ui:
+        return 0, 0, 0.0, 0
+
+    nodes = {n["id"]: n for n in ui_context.get("nodes", [])}
+    valid_nodes = 0
+    total_nodes = 0
+    hallucinations = 0
+
+    for tc in test_cases:
+        for s in tc.get("steps", []) or []:
+            node_id = s.get("ui_node_id")
+            if node_id:
+                total_nodes += 1
+                if node_id in nodes or node_id == "LOGIN":
+                    valid_nodes += 1
+                else:
+                    hallucinations += 1
+
+    pct = round((valid_nodes / total_nodes) * 100, 2) if total_nodes else 0.0
+    return valid_nodes, total_nodes, pct, hallucinations
+
+def _find_reference_for_us(us_id_value: str, nav_reference: List[Dict[str, Any]]) -> Dict[str, Any]:
+    us_id_value = (us_id_value or "").strip().lower()
+    for item in nav_reference:
+        if str(item.get("us_id", "")).strip().lower() == us_id_value:
+            return item
+    return {}
+
+def _unique_path_from_case(tc: Dict[str, Any]) -> List[str]:
+    path = []
+    for s in tc.get("steps", []) or []:
+        node_id = s.get("ui_node_id")
+        if node_id and node_id != "LOGIN":
+            if not path or path[-1] != node_id:
+                path.append(node_id)
+    return path
+
+def _calc_navigation_path_match(
+    us_id_value: str,
+    test_cases: List[Dict[str, Any]],
+    nav_reference: List[Dict[str, Any]],
+    use_ui: bool
+) -> Tuple[int, int, float, List[str], List[Dict[str, Any]]]:
+    if not use_ui:
+        return 0, 0, 0.0, [], []
+
+    ref = _find_reference_for_us(us_id_value, nav_reference)
+    expected = ref.get("expected_navigation", []) or []
+    if not expected:
+        return 0, 0, 0.0, [], []
+
+    matched = 0
+    comparisons = 0
+    mismatches = []
+    case_details = []
+
+    for tc in test_cases:
+        actual = _unique_path_from_case(tc)
+
+        # compare prefix against expected
+        compare_len = min(len(expected), len(actual))
+        local_match = 0
+        for i in range(compare_len):
+            comparisons += 1
+            if expected[i] == actual[i]:
+                matched += 1
+                local_match += 1
+            else:
+                mismatches.append(f"{tc.get('id','')}: expected {expected[i]} but got {actual[i]} at position {i+1}")
+
+        # missing path items
+        if len(actual) < len(expected):
+            for i in range(len(actual), len(expected)):
+                comparisons += 1
+                mismatches.append(f"{tc.get('id','')}: missing expected node {expected[i]} at position {i+1}")
+
+        # extra items are not counted as match
+        if len(actual) > len(expected):
+            for i in range(len(expected), len(actual)):
+                comparisons += 1
+                mismatches.append(f"{tc.get('id','')}: unexpected extra node {actual[i]} at position {i+1}")
+
+        case_details.append({
+            "test_case_id": tc.get("id", ""),
+            "actual_path": actual,
+            "matched_prefix_items": local_match,
+        })
+
+    pct = round((matched / comparisons) * 100, 2) if comparisons else 0.0
+    return matched, comparisons, pct, mismatches[:10], case_details
+
+def evaluate_result(
+    us_id_value: str,
+    story: str,
+    ac_blob: str,
+    raw_result: Dict[str, Any],
+    ui_context: Dict[str, Any],
+    nav_reference: List[Dict[str, Any]],
+    use_ui: bool
+) -> Dict[str, Any]:
+    ac_lines = _ac_lines(ac_blob)
+    test_cases = raw_result.get("test_cases", []) or []
+
+    ac_cov_num, ac_cov_den, ac_cov_pct, missing_acs = _calc_ac_coverage(ac_lines, raw_result, test_cases)
+    role_num, role_den, role_pct, missing_roles = _calc_role_coverage(story, ac_lines, test_cases)
+    node_num, node_den, node_pct, hallucinations = _calc_node_validity(test_cases, ui_context, use_ui)
+    path_num, path_den, path_pct, path_mismatches, case_paths = _calc_navigation_path_match(
+        us_id_value, test_cases, nav_reference, use_ui
+    )
+
+    return {
+        "ac_coverage_num": ac_cov_num,
+        "ac_coverage_den": ac_cov_den,
+        "ac_coverage_pct": ac_cov_pct,
+        "role_coverage_num": role_num,
+        "role_coverage_den": role_den,
+        "role_coverage_pct": role_pct,
+        "node_valid_num": node_num,
+        "node_valid_den": node_den,
+        "node_valid_pct": node_pct,
+        "path_match_num": path_num,
+        "path_match_den": path_den,
+        "path_match_pct": path_pct,
+        "hallucination_count": hallucinations,
+        "missing_acs": missing_acs,
+        "missing_roles": missing_roles,
+        "path_mismatches": path_mismatches,
+        "case_paths": case_paths,
+        "test_case_count": len(test_cases),
+    }
 
 # ======================= PDF BUILDER =======================
-def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) -> bytes:
+def build_pdf(
+    story_text: str,
+    ac_blob: str,
+    cases: list,
+    open_questions: list,
+    evaluation: Dict[str, Any] = None,
+    us_id_value: str = ""
+) -> bytes:
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
@@ -613,12 +771,16 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
     flow.append(Paragraph("User Story to Testcase Generator", title))
     flow.append(Spacer(1, 10))
 
+    flow.append(Paragraph("<b>User Story ID</b>", head))
+    flow.append(Paragraph(us_id_value.strip() or "—", body))
+    flow.append(Spacer(1, 8))
+
     flow.append(Paragraph("<b>User Story</b>", head))
     flow.append(Paragraph(story_text.strip() or "—", body))
     flow.append(Spacer(1, 8))
 
     flow.append(Paragraph("<b>Acceptance Criteria</b>", head))
-    lines = [l.strip() for l in ac_blob.splitlines() if l.strip()]
+    lines = _ac_lines(ac_blob)
     if lines:
         flow.append(
             ListFlowable(
@@ -631,12 +793,33 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
         flow.append(Paragraph("—", body))
     flow.append(Spacer(1, 12))
 
-    # --- OPEN QUESTIONS ---
+    if evaluation:
+        flow.append(Paragraph("<b>Automated Evaluation</b>", head))
+        erows = [
+            ["Metric", "Value"],
+            ["AC Coverage", f"{evaluation.get('ac_coverage_num', 0)}/{evaluation.get('ac_coverage_den', 0)} ({evaluation.get('ac_coverage_pct', 0)}%)"],
+            ["Role Coverage", f"{evaluation.get('role_coverage_num', 0)}/{evaluation.get('role_coverage_den', 0)} ({evaluation.get('role_coverage_pct', 0)}%)"],
+            ["Node Validity", f"{evaluation.get('node_valid_num', 0)}/{evaluation.get('node_valid_den', 0)} ({evaluation.get('node_valid_pct', 0)}%)"],
+            ["Navigation Path Match", f"{evaluation.get('path_match_num', 0)}/{evaluation.get('path_match_den', 0)} ({evaluation.get('path_match_pct', 0)}%)"],
+            ["Hallucination Count", str(evaluation.get('hallucination_count', 0))],
+            ["Test Cases", str(evaluation.get('test_case_count', 0))],
+        ]
+        et = Table(erows, colWidths=[180, 260])
+        et.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightblue),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
+        )
+        flow.append(et)
+        flow.append(Spacer(1, 12))
+
     if open_questions:
         flow.append(Paragraph("<b>Open Questions</b>", head))
-
         cleaned_open_questions = _clean_open_questions(open_questions)
-
         flow.append(
             ListFlowable(
                 [ListItem(Paragraph(q, body), leftIndent=6) for q in cleaned_open_questions],
@@ -713,7 +896,7 @@ def build_pdf(story_text: str, ac_blob: str, cases: list, open_questions: list) 
     doc.build(flow)
     return buf.getvalue()
 
-# ======================= EXPORT =======================
+# ======================= SESSION STATE =======================
 if "last_pdf" not in st.session_state:
     st.session_state.last_pdf = None
 if "last_open_questions" not in st.session_state:
@@ -722,21 +905,34 @@ if "last_cases_count" not in st.session_state:
     st.session_state.last_cases_count = 0
 if "last_variant" not in st.session_state:
     st.session_state.last_variant = None
+if "last_raw_result" not in st.session_state:
+    st.session_state.last_raw_result = None
+if "last_evaluation" not in st.session_state:
+    st.session_state.last_evaluation = None
+if "last_use_ui" not in st.session_state:
+    st.session_state.last_use_ui = False
 
+# ======================= EXPORT / EVALUATE =======================
 st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     clicked_without = st.button(
         "export without UI ✨",
-        disabled=not (user_story.strip() and ac_text.strip())
+        disabled=not (us_id.strip() and user_story.strip() and ac_text.strip())
     )
 
 with col2:
     clicked_with = st.button(
         "export with UI 🧠✨",
-        disabled=not (user_story.strip() and ac_text.strip())
+        disabled=not (us_id.strip() and user_story.strip() and ac_text.strip())
+    )
+
+with col3:
+    clicked_evaluate = st.button(
+        "evaluate output 📊",
+        disabled=not bool(st.session_state.last_raw_result)
     )
 
 st.markdown('</div>', unsafe_allow_html=True)
@@ -745,14 +941,53 @@ if clicked_without or clicked_with:
     use_ui = clicked_with
 
     with st.spinner("Generating test cases and building PDF..."):
-        cases, open_q = generate_cases(user_story, ac_text, use_ui_context=use_ui)
-        pdf_bytes = build_pdf(user_story, ac_text, cases, open_q)
+        result = generate_cases(user_story, ac_text, use_ui_context=use_ui)
+        cases = result.get("test_cases", []) or []
+        open_q = result.get("open_questions", []) or []
 
-        st.session_state.last_pdf = pdf_bytes
+        st.session_state.last_raw_result = result
         st.session_state.last_open_questions = open_q
         st.session_state.last_cases_count = len(cases)
-        st.session_state.last_variant = "with_json" if use_ui else "without_json"
+        st.session_state.last_variant = "with_ui_context" if use_ui else "without_ui_context"
+        st.session_state.last_use_ui = use_ui
+        st.session_state.last_evaluation = None
 
+        pdf_bytes = build_pdf(
+            user_story,
+            ac_text,
+            cases,
+            open_q,
+            evaluation=None,
+            us_id_value=us_id
+        )
+        st.session_state.last_pdf = pdf_bytes
+
+if clicked_evaluate and st.session_state.last_raw_result:
+    with st.spinner("Evaluating generated design..."):
+        evaluation = evaluate_result(
+            us_id_value=us_id,
+            story=user_story,
+            ac_blob=ac_text,
+            raw_result=st.session_state.last_raw_result,
+            ui_context=UI_CONTEXT,
+            nav_reference=NAV_REFERENCE,
+            use_ui=st.session_state.last_use_ui,
+        )
+        st.session_state.last_evaluation = evaluation
+
+        cases = st.session_state.last_raw_result.get("test_cases", []) or []
+        open_q = st.session_state.last_open_questions or []
+        pdf_bytes = build_pdf(
+            user_story,
+            ac_text,
+            cases,
+            open_q,
+            evaluation=evaluation,
+            us_id_value=us_id
+        )
+        st.session_state.last_pdf = pdf_bytes
+
+# ======================= OUTPUT =======================
 if st.session_state.last_variant:
     st.info(f"Generated with: {st.session_state.last_variant}")
 
@@ -760,11 +995,50 @@ if st.session_state.last_open_questions:
     cleaned_open_questions = _clean_open_questions(st.session_state.last_open_questions)
     st.warning("Notes / Open Questions:\n- " + "\n- ".join(cleaned_open_questions))
 
+if st.session_state.last_evaluation:
+    ev = st.session_state.last_evaluation
+    st.subheader("Automated Evaluation")
+
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("AC Coverage", f"{ev['ac_coverage_pct']}%")
+    m2.metric("Role Coverage", f"{ev['role_coverage_pct']}%")
+    m3.metric("Node Validity", f"{ev['node_valid_pct']}%")
+    m4.metric("Path Match", f"{ev['path_match_pct']}%")
+    m5.metric("Hallucinations", str(ev["hallucination_count"]))
+
+    st.write(f"**AC Coverage:** {ev['ac_coverage_num']}/{ev['ac_coverage_den']}")
+    st.write(f"**Role Coverage:** {ev['role_coverage_num']}/{ev['role_coverage_den']}")
+    if st.session_state.last_use_ui:
+        st.write(f"**Node Validity:** {ev['node_valid_num']}/{ev['node_valid_den']}")
+        st.write(f"**Navigation Path Match:** {ev['path_match_num']}/{ev['path_match_den']}")
+    else:
+        st.write("**Node Validity / Path Match:** not applicable for generation without UI context")
+
+    if ev.get("missing_roles"):
+        st.error("Missing roles in generated tests: " + ", ".join(ev["missing_roles"]))
+
+    if ev.get("missing_acs"):
+        st.error("Uncovered acceptance criteria:")
+        for ac in ev["missing_acs"]:
+            st.write(f"- {ac}")
+    else:
+        st.success("All acceptance criteria appear to be covered.")
+
+    if ev.get("path_mismatches"):
+        st.warning("Navigation mismatches:")
+        for item in ev["path_mismatches"]:
+            st.write(f"- {item}")
+
+    if ev.get("case_paths"):
+        with st.expander("Show actual paths per test case"):
+            for cp in ev["case_paths"]:
+                st.write(f"**{cp['test_case_id']}**: {' -> '.join(cp['actual_path']) if cp['actual_path'] else '—'}")
+
 if st.session_state.last_pdf:
     st.success(f"PDF ready ✅ (test cases: {st.session_state.last_cases_count})")
     st.download_button(
         "download PDF 🧾",
         data=st.session_state.last_pdf,
-        file_name=f"test_design_{st.session_state.last_variant or 'result'}.pdf",
+        file_name=f"test_design_{us_id}_{st.session_state.last_variant or 'result'}.pdf",
         mime="application/pdf",
     )
