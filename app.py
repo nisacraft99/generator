@@ -261,6 +261,16 @@ The step-to-node mapping MUST be:
 - step 3 -> nav_option node
 - step 4 -> screen node
 
+Role mention does NOT imply role-owned navigation.
+
+A role may be mentioned only for permission validation.
+If a feature belongs to a specific console/module, all navigation must follow that feature's owning console.
+
+Example:
+- Manager Meeting (MM) belongs to Director Console.
+- Therefore, navigation for MM test cases MUST use Director Console -> Manager Meetings.
+- A manager negative test may log in as Manager, but must not invent a Manager Console path to MM if such a path does not exist in ui_context.
+
 DO NOT skip levels.
 DO NOT jump directly from login to a dashboard.
 DO NOT start from a screen.
