@@ -1,0 +1,173 @@
+[
+  {
+    "us_id": "US-1",
+    "title": "Create MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "MOD-MM-CREATE"],
+    "target_type": "modal"
+  },
+  {
+    "us_id": "US-2",
+    "title": "View MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-3",
+    "title": "Edit MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-EDIT"],
+    "target_type": "modal"
+  },
+  {
+    "us_id": "US-4",
+    "title": "Delete MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-DELETE"],
+    "target_type": "modal"
+  },
+  {
+    "us_id": "US-5",
+    "title": "MM Dashboard",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-6",
+    "title": "Create Action for MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-ACTION-CREATE"],
+    "target_type": "modal"
+  },
+  {
+    "us_id": "US-7",
+    "title": "View Action for MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-8",
+    "title": "Edit Action for MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-9",
+    "title": "Delete Action for MM",
+    "module": "MM",
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
+    "target_type": "screen"
+  },
+
+  {
+    "us_id": "US-10",
+    "title": "Create AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "MOD-AM-CREATE"],
+    "target_type": "modal"
+  },
+  {
+    "us_id": "US-11",
+    "title": "View AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-12",
+    "title": "Edit AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-13",
+    "title": "Delete AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-14",
+    "title": "AM Dashboard",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-15",
+    "title": "Create Action for AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-16",
+    "title": "View Action for AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-17",
+    "title": "Edit Action for AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-18",
+    "title": "Delete Action for AM",
+    "module": "AM",
+    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
+    "target_type": "screen"
+  },
+
+  {
+    "us_id": "US-19",
+    "title": "View Calendar View",
+    "module": "CALENDAR",
+    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-20",
+    "title": "Search for other Calendar Views",
+    "module": "CALENDAR",
+    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-21",
+    "title": "Drag and Drop Meetings within Calendar View",
+    "module": "CALENDAR",
+    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-22",
+    "title": "Cancel, Accept or Decline Meetings within Calendar View",
+    "module": "CALENDAR",
+    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "target_type": "screen"
+  },
+
+  {
+    "us_id": "US-23",
+    "title": "Evaluate Employees",
+    "module": "EVALUATION",
+    "expected_navigation": ["CONSOLE-E", "OPT-EVALUATE", "SCR-EVALUATE-DASHBOARD", "SCR-EVALUATE-DETAIL"],
+    "target_type": "screen"
+  },
+  {
+    "us_id": "US-24",
+    "title": "View My Evaluations",
+    "module": "MY_EVALUATIONS",
+    "expected_navigation": ["CONSOLE-E", "OPT-MY-EVAL", "SCR-MY-EVAL-DASHBOARD", "SCR-MY-EVAL-DETAIL", "MOD-EVAL-APPEAL"],
+    "target_type": "mixed"
+  }
+]
