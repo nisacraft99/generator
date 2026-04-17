@@ -225,7 +225,8 @@ def load_navigation_reference(path: str) -> list:
             return data
         st.warning("navigation_reference.json must contain a JSON list.")
         return []
-    except Exception:
+    except Exception as e:
+        st.warning(f"Navigation reference could not be loaded: {e}")
         return []
 
 UI_CONTEXT = load_ui_context(UI_CONTEXT_PATH)
@@ -243,17 +244,21 @@ SYSTEM_PROMPT_WITH_UI = """
 You are a senior test engineer.
 Return ONLY valid JSON. No markdown. No prose.
 
-Use the provided ui_context to create concrete, realistic UI-based test cases.
+You receive:
+- a user story
+- acceptance criteria
+- ui_context with node IDs
 
 STRICT RULES:
-- Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
-- Keep the REAL test action steps. Do not output only generic navigation.
-- A test case is valid only if it contains the action that really tests the requirement.
-- If a requirement is not actually tested, do NOT list it in "covers".
+- Do NOT invent UI nodes that are not present in ui_context.nodes.
+- For each test case, provide a machine-readable "navigation_path" using ONLY node IDs from ui_context.
+- "navigation_path" must be an ordered list of node IDs that represents the intended navigation for the test case.
+- Keep real test actions in "steps". Do NOT replace real test actions with generic navigation text.
+- A requirement may only appear in "covers" if the test case actually tests it.
 
 TRACEABILITY RULES:
 - Copy every acceptance criterion EXACTLY into "requirements".
-- Each test case MUST include a "covers" array with the requirement IDs it truly covers.
+- Each test case MUST include a "covers" array with requirement IDs it truly covers.
 - It is allowed that a test case covers multiple requirements.
 - It is allowed that some requirements stay uncovered if you cannot test them properly.
 
@@ -269,11 +274,9 @@ OUTPUT SCHEMA:
       "priority":"High|Medium|Low",
       "type":"Functional|Negative|Boundary",
       "covers":["REQ-1"],
-      "navigation_steps":[
-        {"step":"string","expected":"string","ui_node_id":"string"}
-      ],
+      "navigation_path":["CONSOLE-D","OPT-MM","SCR-MM-DASHBOARD","SCR-MM-DETAIL"],
       "steps":[
-        {"step":"string","expected":"string","ui_node_id":"string"}
+        {"step":"string","expected":"string"}
       ]
     }
   ],
@@ -288,15 +291,12 @@ Return ONLY valid JSON. No markdown. No prose.
 Generate test cases from the user story and acceptance criteria only.
 
 STRICT RULES:
-- Keep the REAL test action steps.
-- A test case is valid only if it contains the action that really tests the requirement.
-- If a requirement is not actually tested, do NOT list it in "covers".
+- Keep real test action steps.
+- A requirement may only appear in "covers" if the test case actually tests it.
 
 TRACEABILITY RULES:
 - Copy every acceptance criterion EXACTLY into "requirements".
-- Each test case MUST include a "covers" array with the requirement IDs it truly covers.
-- It is allowed that a test case covers multiple requirements.
-- It is allowed that some requirements stay uncovered if you cannot test them properly.
+- Each test case MUST include a "covers" array with requirement IDs it truly covers.
 
 OUTPUT SCHEMA:
 {
@@ -311,7 +311,7 @@ OUTPUT SCHEMA:
       "type":"Functional|Negative|Boundary",
       "covers":["REQ-1"],
       "steps":[
-        {"step":"string","expected":"string","ui_node_id":null}
+        {"step":"string","expected":"string"}
       ]
     }
   ],
@@ -354,9 +354,8 @@ def _normalize_step(step_obj):
         return {
             "step": (step_obj.get("step", "") or "").strip(),
             "expected": (step_obj.get("expected", "") or "").strip(),
-            "ui_node_id": step_obj.get("ui_node_id", None),
         }
-    return {"step": str(step_obj), "expected": "", "ui_node_id": None}
+    return {"step": str(step_obj), "expected": ""}
 
 def _clean_open_questions(raw_open_q):
     cleaned = []
@@ -403,22 +402,31 @@ def _keep_only_valid_covers(test_cases: List[Dict[str, Any]], requirements: List
 
     return fixed
 
-def _normalize_test_cases(tcs: List[Dict[str, Any]], use_ui_context: bool) -> List[Dict[str, Any]]:
+def _normalize_navigation_path(path: Any, ui_context: Dict[str, Any]) -> List[str]:
+    if not isinstance(path, list):
+        return []
+
+    valid_nodes = {n["id"] for n in ui_context.get("nodes", [])}
+    cleaned = []
+    for node_id in path:
+        node_id = str(node_id).strip()
+        if node_id in valid_nodes:
+            if not cleaned or cleaned[-1] != node_id:
+                cleaned.append(node_id)
+    return cleaned
+
+def _normalize_test_cases(tcs: List[Dict[str, Any]], use_ui_context: bool, ui_context: Dict[str, Any]) -> List[Dict[str, Any]]:
     fixed = []
 
     for tc in tcs:
-        nav = [_normalize_step(s) for s in (tc.get("navigation_steps", []) or [])]
         steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
-
-        # Keep both, but do NOT overwrite with fallback navigation.
-        merged_steps = nav + steps if use_ui_context else steps
-
-        # Remove empty placeholder steps
-        merged_steps = [
-            s for s in merged_steps
+        steps = [
+            s for s in steps
             if (s.get("step") or "").strip() not in {"", "—"}
                or (s.get("expected") or "").strip() not in {"", "—"}
         ]
+
+        navigation_path = _normalize_navigation_path(tc.get("navigation_path", []), ui_context) if use_ui_context else []
 
         fixed.append(
             {
@@ -427,11 +435,19 @@ def _normalize_test_cases(tcs: List[Dict[str, Any]], use_ui_context: bool) -> Li
                 "priority": (tc.get("priority", "") or "").strip(),
                 "type": (tc.get("type", "") or "").strip(),
                 "covers": tc.get("covers", []) or [],
-                "steps": merged_steps,
+                "navigation_path": navigation_path,
+                "steps": steps,
             }
         )
 
     return fixed
+
+def _find_reference_for_us(us_id_value: str, nav_reference: List[Dict[str, Any]]) -> Dict[str, Any]:
+    us_id_value = (us_id_value or "").strip().lower()
+    for item in nav_reference:
+        if str(item.get("us_id", "")).strip().lower() == us_id_value:
+            return item
+    return {}
 
 # ======================= GENERATION =======================
 def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
@@ -474,7 +490,7 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
         tcs = data.get("test_cases", []) or []
         open_q = _clean_open_questions(raw_open_q)
 
-        fixed = _normalize_test_cases(tcs, use_ui_context)
+        fixed = _normalize_test_cases(tcs, use_ui_context, UI_CONTEXT)
         fixed = _keep_only_valid_covers(fixed, requirements)
 
         return {
@@ -548,65 +564,31 @@ def _calc_ac_coverage(requirements: List[Dict[str, str]], test_cases: List[Dict[
     pct = round((covered / total) * 100, 2) if total else 0.0
     return covered, total, pct, missing_ids, missing_texts
 
-def _calc_node_validity(test_cases: List[Dict[str, Any]], ui_context: Dict[str, Any], use_ui: bool) -> Tuple[int, int, float, int]:
-    if not use_ui:
-        return 0, 0, 0.0, 0
-
-    nodes = {n["id"]: n for n in ui_context.get("nodes", [])}
-    valid_nodes = 0
-    total_nodes = 0
-    hallucinations = 0
-
-    for tc in test_cases:
-        for s in tc.get("steps", []) or []:
-            node_id = s.get("ui_node_id")
-            if node_id:
-                total_nodes += 1
-                if node_id in nodes or node_id == "LOGIN":
-                    valid_nodes += 1
-                else:
-                    hallucinations += 1
-
-    pct = round((valid_nodes / total_nodes) * 100, 2) if total_nodes else 0.0
-    return valid_nodes, total_nodes, pct, hallucinations
-
-def _find_reference_for_us(us_id_value: str, nav_reference: List[Dict[str, Any]]) -> Dict[str, Any]:
-    us_id_value = (us_id_value or "").strip().lower()
-    for item in nav_reference:
-        if str(item.get("us_id", "")).strip().lower() == us_id_value:
-            return item
-    return {}
-
-def _unique_path_from_case(tc: Dict[str, Any]) -> List[str]:
-    path = []
-    for s in tc.get("steps", []) or []:
-        node_id = s.get("ui_node_id")
-        if node_id and node_id != "LOGIN":
-            if not path or path[-1] != node_id:
-                path.append(node_id)
-    return path
-
 def _calc_navigation_path_match(
     us_id_value: str,
     test_cases: List[Dict[str, Any]],
     nav_reference: List[Dict[str, Any]],
     use_ui: bool
-) -> Tuple[int, int, float, List[str], List[Dict[str, Any]]]:
+) -> Tuple[Any, Any, Any, List[str], List[Dict[str, Any]], bool]:
     if not use_ui:
-        return 0, 0, 0.0, [], []
+        return None, None, None, [], [], False
 
     ref = _find_reference_for_us(us_id_value, nav_reference)
     expected = ref.get("expected_navigation", []) or []
     if not expected:
-        return 0, 0, 0.0, [f"No navigation reference found for {us_id_value}"], []
+        return None, None, None, [f"No navigation reference found for {us_id_value}"], [], False
+
+    evaluable_cases = [tc for tc in test_cases if tc.get("navigation_path")]
+    if not evaluable_cases:
+        return None, None, None, ["No test case contains a machine-readable navigation_path."], [], False
 
     matched = 0
     comparisons = 0
     mismatches = []
     case_details = []
 
-    for tc in test_cases:
-        actual = _unique_path_from_case(tc)
+    for tc in evaluable_cases:
+        actual = tc.get("navigation_path", [])
         compare_len = min(len(expected), len(actual))
         local_match = 0
 
@@ -635,13 +617,12 @@ def _calc_navigation_path_match(
         })
 
     pct = round((matched / comparisons) * 100, 2) if comparisons else 0.0
-    return matched, comparisons, pct, mismatches[:10], case_details
+    return matched, comparisons, pct, mismatches[:10], case_details, True
 
 def evaluate_result(
     us_id_value: str,
     story: str,
     raw_result: Dict[str, Any],
-    ui_context: Dict[str, Any],
     nav_reference: List[Dict[str, Any]],
     use_ui: bool
 ) -> Dict[str, Any]:
@@ -651,8 +632,7 @@ def evaluate_result(
     ac_cov_num, ac_cov_den, ac_cov_pct, missing_req_ids, missing_req_texts = _calc_ac_coverage(requirements, test_cases)
     role_num, role_den, role_pct, missing_roles = _calc_role_coverage(story, requirements, test_cases)
     trace_num, trace_den, trace_pct = _calc_traceability_completeness(test_cases)
-    node_num, node_den, node_pct, hallucinations = _calc_node_validity(test_cases, ui_context, use_ui)
-    path_num, path_den, path_pct, path_mismatches, case_paths = _calc_navigation_path_match(
+    path_num, path_den, path_pct, path_mismatches, case_paths, path_evaluable = _calc_navigation_path_match(
         us_id_value, test_cases, nav_reference, use_ui
     )
 
@@ -666,13 +646,10 @@ def evaluate_result(
         "traceability_num": trace_num,
         "traceability_den": trace_den,
         "traceability_pct": trace_pct,
-        "node_valid_num": node_num,
-        "node_valid_den": node_den,
-        "node_valid_pct": node_pct,
         "path_match_num": path_num,
         "path_match_den": path_den,
         "path_match_pct": path_pct,
-        "hallucination_count": hallucinations,
+        "path_match_evaluable": path_evaluable,
         "missing_req_ids": missing_req_ids,
         "missing_req_texts": missing_req_texts,
         "missing_roles": missing_roles,
@@ -730,14 +707,16 @@ def build_pdf(
 
     if evaluation:
         flow.append(Paragraph("<b>Automated Evaluation</b>", head))
+        path_value = "N/A"
+        if evaluation.get("path_match_evaluable"):
+            path_value = f"{evaluation.get('path_match_num', 0)}/{evaluation.get('path_match_den', 0)} ({evaluation.get('path_match_pct', 0)}%)"
+
         erows = [
             ["Metric", "Value"],
             ["AC Coverage", f"{evaluation.get('ac_coverage_num', 0)}/{evaluation.get('ac_coverage_den', 0)} ({evaluation.get('ac_coverage_pct', 0)}%)"],
             ["Traceability Completeness", f"{evaluation.get('traceability_num', 0)}/{evaluation.get('traceability_den', 0)} ({evaluation.get('traceability_pct', 0)}%)"],
             ["Role Coverage", f"{evaluation.get('role_coverage_num', 0)}/{evaluation.get('role_coverage_den', 0)} ({evaluation.get('role_coverage_pct', 0)}%)"],
-            ["Node Validity", f"{evaluation.get('node_valid_num', 0)}/{evaluation.get('node_valid_den', 0)} ({evaluation.get('node_valid_pct', 0)}%)"],
-            ["Navigation Path Match", f"{evaluation.get('path_match_num', 0)}/{evaluation.get('path_match_den', 0)} ({evaluation.get('path_match_pct', 0)}%)"],
-            ["Hallucination Count", str(evaluation.get('hallucination_count', 0))],
+            ["Navigation Path Match", path_value],
             ["Test Cases", str(evaluation.get('test_case_count', 0))],
         ]
         et = Table(erows, colWidths=[180, 260])
@@ -796,6 +775,11 @@ def build_pdf(
 
         for tc in cases:
             flow.append(Paragraph(f"<b>{tc.get('id','')}</b> — {tc.get('title','')}", styles["Heading3"]))
+
+            nav_path = tc.get("navigation_path", []) or []
+            flow.append(Paragraph(f"<b>Navigation Path:</b> {' → '.join(nav_path) if nav_path else 'N/A'}", body))
+            flow.append(Spacer(1, 4))
+
             steps = tc.get("steps", []) or []
 
             step_rows = [
@@ -914,7 +898,6 @@ if clicked_evaluate and st.session_state.last_raw_result:
             us_id_value=us_id,
             story=user_story,
             raw_result=st.session_state.last_raw_result,
-            ui_context=UI_CONTEXT,
             nav_reference=NAV_REFERENCE,
             use_ui=st.session_state.last_use_ui,
         )
@@ -952,27 +935,29 @@ if st.session_state.last_raw_result:
 
     for tc in tcs:
         st.write(f"**{tc.get('id','')}** covers: {', '.join(tc.get('covers', []) or []) or '—'}")
+        st.write(f"Path: {' -> '.join(tc.get('navigation_path', []) or []) or 'N/A'}")
 
 if st.session_state.last_evaluation:
     ev = st.session_state.last_evaluation
     st.subheader("Automated Evaluation")
 
-    m1, m2, m3, m4, m5 = st.columns(5)
+    m1, m2, m3, m4 = st.columns(4)
     m1.metric("AC Coverage", f"{ev['ac_coverage_pct']}%")
     m2.metric("Traceability", f"{ev['traceability_pct']}%")
     m3.metric("Role Coverage", f"{ev['role_coverage_pct']}%")
-    m4.metric("Path Match", f"{ev['path_match_pct']}%")
-    m5.metric("Hallucinations", str(ev["hallucination_count"]))
+    m4.metric("Path Match", "N/A" if not ev["path_match_evaluable"] else f"{ev['path_match_pct']}%")
 
     st.write(f"**AC Coverage:** {ev['ac_coverage_num']}/{ev['ac_coverage_den']}")
     st.write(f"**Traceability Completeness:** {ev['traceability_num']}/{ev['traceability_den']}")
     st.write(f"**Role Coverage:** {ev['role_coverage_num']}/{ev['role_coverage_den']}")
 
     if st.session_state.last_use_ui:
-        st.write(f"**Node Validity:** {ev['node_valid_num']}/{ev['node_valid_den']}")
-        st.write(f"**Navigation Path Match:** {ev['path_match_num']}/{ev['path_match_den']}")
+        if ev["path_match_evaluable"]:
+            st.write(f"**Navigation Path Match:** {ev['path_match_num']}/{ev['path_match_den']}")
+        else:
+            st.write("**Navigation Path Match:** N/A")
     else:
-        st.write("**Node Validity / Path Match:** not applicable for generation without UI context")
+        st.write("**Navigation Path Match:** not applicable for generation without UI context")
 
     if ev.get("missing_roles"):
         st.error("Missing roles in generated tests: " + ", ".join(ev["missing_roles"]))
@@ -985,14 +970,14 @@ if st.session_state.last_evaluation:
         st.success("All explicitly mapped requirements are covered.")
 
     if ev.get("path_mismatches"):
-        st.warning("Navigation mismatches:")
+        st.warning("Navigation path mismatches / notes:")
         for item in ev["path_mismatches"]:
             st.write(f"- {item}")
 
     if ev.get("case_paths"):
         st.subheader("Actual Paths per Test Case")
         for cp in ev["case_paths"]:
-            st.write(f"**{cp['test_case_id']}**: {' -> '.join(cp['actual_path']) if cp['actual_path'] else '—'}")
+            st.write(f"**{cp['test_case_id']}**: {' -> '.join(cp['actual_path']) if cp['actual_path'] else 'N/A'}")
 
 if st.session_state.last_pdf:
     st.success(f"PDF ready ✅ (test cases: {st.session_state.last_cases_count})")
