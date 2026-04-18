@@ -1,155 +1,297 @@
 {
   "US-1": [
-    {"ac_id":"AC-1","keywords":["create","mm","popup","fields"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["title","50"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["deadline","dd/mm/yyyy"],"phrases":["dd/mm/yyyy"],"mode":"exact"},
-    {"ac_id":"AC-4","keywords":["location","dropdown"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["participants","filtered","location"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["future","deadline"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-7","keywords":["redirect","mm"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-8","keywords":["director","create"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-9","keywords":["manager","not create"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-10","keywords":["agent","no access"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-11","keywords":["id","dashboard"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["create", "mm", "popup", "fields"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["title", "50", "characters"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["deadline", "date", "dd/mm/yyyy"], "phrases": ["dd/mm/yyyy"], "mode": "exact" },
+    { "ac_id": "AC-4", "keywords": ["location", "dropdown"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["participants", "filtered", "location"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["future", "deadline"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["redirect", "newly created", "mm", "menu"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["director", "create", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["manager", "view", "not create"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["agent", "not view", "mm module"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-11", "keywords": ["id", "dashboard", "mm"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-2": [
-    {"ac_id":"AC-1","keywords":["id","redirect"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["title","deadline","location","participants"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["director","view all"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["manager","assigned"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["agent","not view"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["id", "existing mm", "redirect"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["title", "deadline", "location", "participants"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["director", "view all", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["manager", "view", "assigned"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["agent", "not view", "mm"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-3": [
-    {"ac_id":"AC-1","keywords":["edit","button"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["deadline","future"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["title","50"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["participants"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["not change","location","id"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["director","edit"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-7","keywords":["manager","not edit"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["id", "existing mm", "redirect"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["edit", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["edit", "deadline", "future"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["edit", "title", "50"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["edit", "participants"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["not change", "location", "id"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["director", "edit", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["manager", "view", "not edit"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-4": [
-    {"ac_id":"AC-1","keywords":["delete","button"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["popup"],"phrases":["are you sure to delete this mm?"],"mode":"exact"},
-    {"ac_id":"AC-3","keywords":["no","cancel"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["yes","delete","redirect"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["director","delete"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["manager","not delete"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["id", "existing mm", "redirect"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["delete", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["popup", "delete", "yes", "no"], "phrases": ["are you sure to delete this mm?"], "mode": "exact" },
+    { "ac_id": "AC-4", "keywords": ["no", "popup disappears", "back", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["yes", "deleted", "redirect", "dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["director", "delete", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "view", "not delete"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-5": [
-    {"ac_id":"AC-1","keywords":["dashboard","list"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["sorted","ids"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["table","columns"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["search","refresh"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["reset"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["director","all"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-7","keywords":["manager","assigned"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-8","keywords":["agent","no access"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["mm dashboard", "all created mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["list", "sorted", "ids"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["table", "id", "title", "location", "participants", "deadline"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["row", "columns", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["search bar", "title", "id", "search button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["search", "refresh", "match criteria"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["reset", "all mm", "undo search"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["director", "see all", "dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["manager", "see", "assigned", "dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["agent", "not see", "mm dashboard"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-6": [
-    {"ac_id":"AC-1","keywords":["add action"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["topic","root cause","action","200"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["urgency","dropdown"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["save","cancel"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["action saved"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["action id"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-7","keywords":["cancel","not created"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-8","keywords":["director","create"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-9","keywords":["manager","not create"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["existing mm", "add action", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["new window", "create action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["topic", "root cause", "action", "200"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["urgency", "dropdown", "low", "medium", "high"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["save", "cancel", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["save", "action saved", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["action id", "details page"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["cancel", "redirect", "not created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["director", "create", "action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["manager", "view", "not create"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-7": [
-    {"ac_id":"AC-1","keywords":["list of actions"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["sorted","urgency"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["columns","action id"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["redirect","details"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["all data"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["existing mm", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["sorted", "urgency", "high", "medium", "low"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["columns", "action id", "topic", "urgency"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["click action", "redirect", "details"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["details", "all data", "created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["director", "view all", "actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "view", "assigned"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["agent", "not view", "actions"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-8": [
-    {"ac_id":"AC-1","keywords":["edit","action"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["prefilled"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["200"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["urgency","change"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["save","updated"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["cancel","not edited"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["existing mm", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["edit", "button", "next to every action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["edit", "new window"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["prefilled", "created information"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["topic", "root cause", "action", "200", "edit"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["urgency", "prefilled", "change urgency"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["save", "cancel", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["save", "edited action", "updated action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["cancel", "redirect", "not edited"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["director", "edit", "actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-11", "keywords": ["manager", "view", "not edit"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-9": [
-    {"ac_id":"AC-1","keywords":["delete","action"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["popup"],"phrases":["are you sure to delete this action?"],"mode":"exact"},
-    {"ac_id":"AC-3","keywords":["yes","deleted"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["existing mm", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["delete", "button", "next to every action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["popup", "delete action", "yes", "no"], "phrases": ["are you sure to delete this action?"], "mode": "exact" },
+    { "ac_id": "AC-4", "keywords": ["no", "popup disappears", "back", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["yes", "action deleted", "not appear"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["director", "delete", "action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "not delete", "action"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-10": [
-    {"ac_id":"AC-1","keywords":["create","am","popup"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["title","50"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["deadline","dd/mm/yyyy"],"phrases":["dd/mm/yyyy"],"mode":"exact"},
-    {"ac_id":"AC-4","keywords":["location","dropdown"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["subdivision","filtered"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["participants","filtered"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-7","keywords":["deactivated"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-8","keywords":["future"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["create", "am", "popup", "fields"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["title", "50", "characters"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["deadline", "date", "dd/mm/yyyy"], "phrases": ["dd/mm/yyyy"], "mode": "exact" },
+    { "ac_id": "AC-4", "keywords": ["location", "dropdown"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["subdivision", "filtered", "location"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["participants", "filtered", "location"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["subdivision", "deactivated", "participants"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["participants", "deactivated", "subdivision"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["future", "deadline"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["redirect", "newly created", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-11", "keywords": ["manager", "create", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-12", "keywords": ["manager", "permission", "participants", "subdivisions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-13", "keywords": ["director", "view", "not create"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-14", "keywords": ["agent", "view", "not create"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-15", "keywords": ["id", "dashboard", "am"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-11": [
+    { "ac_id": "AC-1", "keywords": ["id", "existing am", "redirect"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["title", "deadline", "location", "participants", "subdivision"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["director", "view all", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["manager", "view", "created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["agent", "view", "assigned"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-12": [
+    { "ac_id": "AC-1", "keywords": ["id", "existing am", "redirect"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["edit", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["edit", "deadline", "future"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["edit", "title", "50"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["edit", "participants", "subdivision"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["not change", "location", "id"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "edit", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["director", "view", "not edit"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-13": [
+    { "ac_id": "AC-1", "keywords": ["id", "existing am", "redirect"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["delete", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["popup", "delete am", "yes", "no"], "phrases": ["are you sure to delete this am?"], "mode": "exact" },
+    { "ac_id": "AC-4", "keywords": ["no", "popup disappears", "back", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["yes", "deleted", "redirect", "dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["manager", "delete", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["director", "view", "not delete"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-14": [
+    { "ac_id": "AC-1", "keywords": ["am dashboard", "all created am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["list", "sorted", "ids"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["table", "id", "title", "location", "participants", "subdivision", "deadline"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["row", "columns", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["search bar", "title", "id", "search button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["search", "refresh", "match criteria"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["reset", "all am", "undo search"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["director", "see all", "dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["manager", "see", "created", "dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["agent", "see", "created for him", "dashboard"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-15": [
+    { "ac_id": "AC-1", "keywords": ["existing am", "add action", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["new window", "create action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["topic", "root cause", "action", "200"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["urgency", "dropdown", "low", "medium", "high"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["save", "cancel", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["save", "action saved", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["action id", "details page"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["cancel", "redirect", "not created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["director", "view", "not create"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["manager", "create", "actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-11", "keywords": ["agent", "not create", "actions"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-16": [
+    { "ac_id": "AC-1", "keywords": ["existing am", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["sorted", "urgency", "high", "medium", "low"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["columns", "action id", "topic", "urgency"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["click action", "redirect", "details"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["details", "all data", "created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["director", "view all", "actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "view", "created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["agent", "view", "assigned"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-17": [
+    { "ac_id": "AC-1", "keywords": ["existing am", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["edit", "button", "next to every action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["edit", "new window"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["prefilled", "created information"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["topic", "root cause", "action", "200", "edit"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["urgency", "prefilled", "change urgency"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["save", "cancel", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["save", "edited action", "updated action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["cancel", "redirect", "not edited"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["director", "not edit", "actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-11", "keywords": ["manager", "edit", "actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-12", "keywords": ["agent", "not edit", "actions"], "phrases": [], "mode": "semantic" }
+  ],
+
+  "US-18": [
+    { "ac_id": "AC-1", "keywords": ["existing am", "list of actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["delete", "button", "next to every action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["popup", "delete action", "yes", "no"], "phrases": ["are you sure to delete this action?"], "mode": "exact" },
+    { "ac_id": "AC-4", "keywords": ["no", "popup disappears", "back", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["yes", "action deleted", "not appear"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["director", "not delete", "actions"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "delete", "action"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["agent", "not delete", "actions"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-19": [
-    {"ac_id":"AC-1","keywords":["calendar","month"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["arrows"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["past","3 months"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["future","6 months"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["mm","red","am","blue"],"phrases":[],"mode":"semantic"}
+    { "ac_id": "AC-1", "keywords": ["calendar view", "current month", "logged in user"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["arrows", "calendar"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["left arrow", "past months", "3 months"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["right arrow", "future months", "6 months"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["mm", "red", "am", "blue"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["director", "see mm", "created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "see mm", "see am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["agent", "see am"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-20": [
-    {"ac_id":"AC-1","keywords":["search bar"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["type","user"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["calendar","user"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["director","search"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["manager","subordinate"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["agent","no access"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-7","keywords":["error"],"phrases":["the user you searched for does not exist"],"mode":"exact"},
-    {"ac_id":"AC-9","keywords":["permission"],"phrases":["you do not have permission to view this user’s calendar"],"mode":"exact"}
+    { "ac_id": "AC-1", "keywords": ["search bar", "calendar"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["type", "name", "another user"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["search", "calendar view", "searched user"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["director", "search", "manager", "agent"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["manager", "search", "subordinate"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["agent", "not see", "search bar", "other calendars"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["error"], "phrases": ["the user you searched for does not exist"], "mode": "exact" },
+    { "ac_id": "AC-8", "keywords": ["error"], "phrases": ["the user you searched for does not exist"], "mode": "exact" },
+    { "ac_id": "AC-9", "keywords": ["permission"], "phrases": ["you do not have permission to view this user’s calendar"], "mode": "exact" }
   ],
 
   "US-21": [
-    {"ac_id":"AC-1","keywords":["drag","future"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["manager","not drag"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["director","drag"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["notification"],"phrases":["rescheduled: mm/am with the title"],"mode":"exact"}
+    { "ac_id": "AC-1", "keywords": ["drag", "drop", "future", "today"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["manager", "not drag", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["manager", "drag", "am", "created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["director", "drag", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["director", "drag", "mm", "created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["agent", "not drag", "am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["notification", "rescheduled", "title"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-22": [
-    {"ac_id":"AC-1","keywords":["accept","decline"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["director","cancel"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["manager","accept"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["agent","accept"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["notification"],"phrases":["accepted: user"],"mode":"exact"},
-    {"ac_id":"AC-6","keywords":["notification"],"phrases":["declined: user"],"mode":"exact"},
-    {"ac_id":"AC-7","keywords":["notification"],"phrases":["cancelled: mm/am with the title"],"mode":"exact"}
+    { "ac_id": "AC-1", "keywords": ["accept", "decline", "calendar view"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["director", "view all", "cancel", "not accept", "not decline"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["manager", "accept", "decline", "mm assigned", "cancel am"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["agent", "accept", "decline", "am assigned", "not cancel"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["notification", "accepted"], "phrases": ["accepted: user"], "mode": "exact" },
+    { "ac_id": "AC-6", "keywords": ["notification", "declined"], "phrases": ["declined: user"], "mode": "exact" },
+    { "ac_id": "AC-7", "keywords": ["notification", "cancelled"], "phrases": ["cancelled: mm/am with the title"], "mode": "exact" },
+    { "ac_id": "AC-8", "keywords": ["declined", "no notification"], "phrases": [], "mode": "semantic" }
   ],
 
   "US-23": [
-    {"ac_id":"AC-1","keywords":["location filter"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["search","managers"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["evaluate"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["redirect"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-5","keywords":["mandatory"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-6","keywords":["error"],"phrases":["please fill all mandatory fields"],"mode":"exact"},
-    {"ac_id":"AC-7","keywords":["save"],"phrases":["the evaluation was successfully saved"],"mode":"exact"},
-    {"ac_id":"AC-8","keywords":["notification"],"phrases":["evaluation: a new evaluation was created for you"],"mode":"exact"}
+    { "ac_id": "AC-1", "keywords": ["evaluate employees", "director", "location filter", "search bar", "search button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["director", "location", "search", "managers"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["search bar", "director", "managers"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["director", "only evaluate", "managers"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["director", "click manager", "evaluation page"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["manager", "not see", "location filter"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["manager", "search bar", "search button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["manager", "search", "subordinate agents"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["manager", "only evaluate", "agents"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-10", "keywords": ["manager", "search subordinate", "evaluation page"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-11", "keywords": ["efficiency", "reliability", "communication", "comment"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-12", "keywords": ["mandatory", "except comment"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-13", "keywords": ["error"], "phrases": ["please fill all mandatory fields"], "mode": "exact" },
+    { "ac_id": "AC-14", "keywords": ["save", "cancel", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-15", "keywords": ["save", "redirect"], "phrases": ["the evaluation was successfully saved"], "mode": "exact" },
+    { "ac_id": "AC-16", "keywords": ["evaluation id", "dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-17", "keywords": ["dashboard", "list", "id", "date", "employee"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-18", "keywords": ["cancel", "redirect", "not saved"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-19", "keywords": ["notification"], "phrases": ["evaluation: a new evaluation was created for you"], "mode": "exact" }
   ],
 
   "US-24": [
-    {"ac_id":"AC-1","keywords":["view evaluations"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-2","keywords":["sorted","date"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-3","keywords":["appeal"],"phrases":[],"mode":"semantic"},
-    {"ac_id":"AC-4","keywords":["error"],"phrases":["to raise an appeal, a comment is mandatory"],"mode":"exact"},
-    {"ac_id":"AC-5","keywords":["save"],"phrases":["the appeal was successfully sent"],"mode":"exact"},
-    {"ac_id":"AC-6","keywords":["notification"],"phrases":["evaluation: a user you evaluated has raised an appeal"],"mode":"exact"}
+    { "ac_id": "AC-1", "keywords": ["my evaluations", "manager", "agent", "view evaluations"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-2", "keywords": ["sorted", "date created"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-3", "keywords": ["columns", "id", "date"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["click evaluation", "efficiency", "reliability", "communication", "comment"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-5", "keywords": ["back", "appeal", "button"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-6", "keywords": ["back", "redirect", "my evaluations dashboard"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-7", "keywords": ["appeal", "popup", "mandatory", "500"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-8", "keywords": ["cancel", "popup disappears", "nothing sent"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-9", "keywords": ["error"], "phrases": ["to raise an appeal, a comment is mandatory"], "mode": "exact" },
+    { "ac_id": "AC-10", "keywords": ["save"], "phrases": ["the appeal was successfully sent"], "mode": "exact" },
+    { "ac_id": "AC-11", "keywords": ["notification"], "phrases": ["evaluation: a user you evaluated has raised an appeal"], "mode": "exact" },
+    { "ac_id": "AC-12", "keywords": ["appeal", "1 week"], "phrases": [], "mode": "semantic" }
   ]
 }
