@@ -1,1170 +1,155 @@
 {
   "US-1": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["create", "mm", "popup", "fields"],
-      "phrases": ["create mm"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["title", "50", "characters"],
-      "phrases": ["up to 50 characters"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["deadline", "date", "format", "dd/mm/yyyy"],
-      "phrases": ["dd/mm/yyyy"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["location", "dropdown"],
-      "phrases": ["location field is a dropdown"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["participants", "filtered", "location"],
-      "phrases": ["participants field gets filtered according to which location you selected"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["future", "deadline"],
-      "phrases": ["only a deadline in the future can be selected"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["redirect", "newly created", "mm", "menu"],
-      "phrases": ["user is redirected to a menu within the newly created mm"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["director", "create", "mm"],
-      "phrases": ["only a user with the role director can create an mm"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["manager", "view", "not create"],
-      "phrases": ["a user with the role manager has viewing permissions, but can not create an mm"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["agent", "not view", "mm module"],
-      "phrases": ["a user with the role agent can not view the mm module"]
-    },
-    {
-      "ac_id": "AC-11",
-      "keywords": ["id", "dashboard", "mm"],
-      "phrases": ["a newly created mm gets an id and appears in the dashboard of the mm module"]
-    }
+    {"ac_id":"AC-1","keywords":["create","mm","popup","fields"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["title","50"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["deadline","dd/mm/yyyy"],"phrases":["dd/mm/yyyy"],"mode":"exact"},
+    {"ac_id":"AC-4","keywords":["location","dropdown"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["participants","filtered","location"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["future","deadline"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-7","keywords":["redirect","mm"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-8","keywords":["director","create"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-9","keywords":["manager","not create"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-10","keywords":["agent","no access"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-11","keywords":["id","dashboard"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-2": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["id", "existing mm", "redirect", "mm"],
-      "phrases": ["when clicking on the id of an existing mm inside mm dashboard, the user is redirected to the mm of the id he clicked on"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["title", "deadline", "location", "participants"],
-      "phrases": ["he can see the title, deadline, location and participants of the mm"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["director", "view", "all mm"],
-      "phrases": ["a user with the role director can view all mm that were created for any manager"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["manager", "view", "assigned"],
-      "phrases": ["a user with the role manager can only view mm that he was assigned to"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["agent", "not view", "mm"],
-      "phrases": ["a user with the role agent can not view any mm"]
-    }
+    {"ac_id":"AC-1","keywords":["id","redirect"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["title","deadline","location","participants"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["director","view all"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["manager","assigned"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["agent","not view"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-3": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["id", "existing mm", "redirect"],
-      "phrases": ["when clicking on the id of an existing mm inside mm module, the user is redirected to the mm of the id he clicked on"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["edit", "button"],
-      "phrases": ["there is an edit button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["edit", "deadline", "future"],
-      "phrases": ["the user can change the deadline of the created mm, but only change it to another date in the future"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["edit", "title", "50", "characters"],
-      "phrases": ["a user can change the title of the mm to another title with a maximum of 50 characters"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["edit", "participants"],
-      "phrases": ["a user can change the participants of the mm"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["not change", "location", "id"],
-      "phrases": ["a user can not change the location or the id of an mm"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["director", "edit", "mm"],
-      "phrases": ["only a user with the role director can edit an mm"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["manager", "view", "not edit"],
-      "phrases": ["a user with the role manager has viewing permissions, but can not edit an mm"]
-    }
+    {"ac_id":"AC-1","keywords":["edit","button"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["deadline","future"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["title","50"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["participants"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["not change","location","id"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["director","edit"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-7","keywords":["manager","not edit"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-4": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["id", "existing mm", "redirect"],
-      "phrases": ["when clicking on the id of an existing mm inside mm module, the user is redirected to the mm of the id he clicked on"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["delete", "button"],
-      "phrases": ["there is a delete button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["popup", "delete", "yes", "no"],
-      "phrases": ["are you sure to delete this mm?"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["no", "popup disappears", "back", "mm"],
-      "phrases": ["after clicking the no button, the pop-up disappears and the user is back inside the mm"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["yes", "deleted", "redirect", "dashboard"],
-      "phrases": ["after clicking the yes button, the pop-up disappears, the mm is deleted and the user is redirected to the mm dashboard"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["director", "delete", "mm"],
-      "phrases": ["only a user with the role director can delete an mm"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "view", "not delete"],
-      "phrases": ["a user with the role manager has viewing permissions, but can not delete an mm"]
-    }
+    {"ac_id":"AC-1","keywords":["delete","button"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["popup"],"phrases":["are you sure to delete this mm?"],"mode":"exact"},
+    {"ac_id":"AC-3","keywords":["no","cancel"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["yes","delete","redirect"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["director","delete"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["manager","not delete"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-5": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["mm dashboard", "all created mm"],
-      "phrases": ["the mm dashboard shows all already created mm"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["list", "sorted", "ids"],
-      "phrases": ["the mm are shown in a list, sorted by their ids"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["table", "id", "title", "location", "participants", "deadline"],
-      "phrases": ["the list is in the form of a table, with the columns id, title, location, participants and deadline"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["row", "columns", "mm"],
-      "phrases": ["each mm is in a row"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["search bar", "title", "id", "search button"],
-      "phrases": ["there is a search bar above where you can type in the title or id of an mm and a search button"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["search", "refresh", "match criteria"],
-      "phrases": ["after typing in information into the search bar and clicking the search button, the list of mm is refreshed, showing only the mm that match the criteria you searched for"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["reset", "all mm", "undo search"],
-      "phrases": ["there is a reset button next to the search bar, and when you click on it all mm are shown again and the search is undone"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["director", "see all", "dashboard"],
-      "phrases": ["only a user with the role director can see all mm in the dashboard"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["manager", "see", "assigned", "dashboard"],
-      "phrases": ["a user with the role manager can only see mm to which he was assigned to in the dashboard"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["agent", "not see", "mm dashboard"],
-      "phrases": ["a user with the role agent can not see the mm dashboard at all"]
-    }
+    {"ac_id":"AC-1","keywords":["dashboard","list"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["sorted","ids"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["table","columns"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["search","refresh"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["reset"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["director","all"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-7","keywords":["manager","assigned"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-8","keywords":["agent","no access"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-6": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing mm", "add action", "button"],
-      "phrases": ["there is a button inside of it called add action"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["new window", "create action"],
-      "phrases": ["when clicking the add action button, a new window appears where you can fill in fields to create an action"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["topic", "root cause", "action", "200"],
-      "phrases": ["the fields are called topic, root cause and action"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["urgency", "dropdown", "low", "medium", "high"],
-      "phrases": ["there is a dropdown field called urgency"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["save", "cancel", "button"],
-      "phrases": ["there is a save and a cancel button"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["save", "action saved", "list of actions"],
-      "phrases": ["when clicking the save button, the action is saved to the mm and displayed in the mm’s list of actions"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["action id", "details page"],
-      "phrases": ["a newly created action gets an id that appears next to each action in the mm details page"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["cancel", "redirect", "not created"],
-      "phrases": ["when clicking the cancel button, the user is redirected to the mm and the action was not created"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["director", "create actions"],
-      "phrases": ["only directors can create actions for mm"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["manager", "view actions", "not create"],
-      "phrases": ["managers can view actions of mm they are assigned to, but can not create any"]
-    }
+    {"ac_id":"AC-1","keywords":["add action"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["topic","root cause","action","200"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["urgency","dropdown"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["save","cancel"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["action saved"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["action id"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-7","keywords":["cancel","not created"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-8","keywords":["director","create"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-9","keywords":["manager","not create"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-7": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing mm", "list of actions"],
-      "phrases": ["there is a list of actions that were created for it"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["sorted", "urgency", "high", "medium", "low"],
-      "phrases": ["the actions are sorted by urgency"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["columns", "action id", "topic", "urgency"],
-      "phrases": ["the list of actions has the columns action id, topic and urgency"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["click action", "redirect", "details"],
-      "phrases": ["when clicking on an existing action, the user is redirected to the actions details"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["details", "all data", "created"],
-      "phrases": ["the details contain all the data that were filled into the fields when the action was created"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["director", "view all actions"],
-      "phrases": ["a user with the role director can view all actions of mm that were created for any manager"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "view actions", "assigned"],
-      "phrases": ["a user with the role manager can only view actions of mm that he was assigned to"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["agent", "not view", "mm actions"],
-      "phrases": ["a user with the role agent can not view any mm actions"]
-    }
+    {"ac_id":"AC-1","keywords":["list of actions"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["sorted","urgency"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["columns","action id"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["redirect","details"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["all data"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-8": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing mm", "list of actions"],
-      "phrases": ["there is a list of actions that were created for it"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["edit", "button", "next to every action"],
-      "phrases": ["next to every action, there is an edit button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["edit", "new window"],
-      "phrases": ["when clicking the edit button, a new window appears where you can edit the action"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["prefilled", "created information"],
-      "phrases": ["all fields are prefilled with the information that was filled when the action was created"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["topic", "root cause", "action", "200", "edit"],
-      "phrases": ["the fields topic, root cause and action can be edited and have a maximum number of 200 characters each"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["urgency", "prefilled", "change urgency"],
-      "phrases": ["there is a dropdown field called urgency that is prefilled with the urgency level you selected before, and you can change the urgency"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["save", "cancel", "button"],
-      "phrases": ["there is a save and a cancel button"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["save", "edited action", "updated action"],
-      "phrases": ["when clicking the save button, the edited action is saved to the mm and the updated action is displayed in the mm’s list of actions"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["cancel", "redirect", "not edited"],
-      "phrases": ["when clicking the cancel button, the user is redirected to the mm and the action was not edited"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["director", "edit actions"],
-      "phrases": ["only directors can edit actions for mm"]
-    },
-    {
-      "ac_id": "AC-11",
-      "keywords": ["manager", "view actions", "not edit"],
-      "phrases": ["managers can view actions of mm they are assigned to, but can not edit any"]
-    }
+    {"ac_id":"AC-1","keywords":["edit","action"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["prefilled"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["200"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["urgency","change"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["save","updated"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["cancel","not edited"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-9": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing mm", "list of actions"],
-      "phrases": ["there is a list of actions that were created for it"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["delete", "button", "next to every action"],
-      "phrases": ["next to every action, there is a delete button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["popup", "delete action", "yes", "no"],
-      "phrases": ["are you sure to delete this action?"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["no", "popup disappears", "back", "mm"],
-      "phrases": ["after clicking the no button, the pop-up disappears and the user is back inside the mm"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["yes", "action deleted", "not appear"],
-      "phrases": ["after clicking the yes button, the pop-up disappears, the action is deleted and the action does not appear inside the mm anymore"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["director", "delete action", "mm"],
-      "phrases": ["only a user with the role director can delete an action of an mm"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "not delete", "action"],
-      "phrases": ["a user with the role manager can not delete an action of an mm"]
-    }
+    {"ac_id":"AC-1","keywords":["delete","action"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["popup"],"phrases":["are you sure to delete this action?"],"mode":"exact"},
+    {"ac_id":"AC-3","keywords":["yes","deleted"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-10": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["create", "am", "popup", "fields"],
-      "phrases": ["create am"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["title", "50", "characters"],
-      "phrases": ["up to 50 characters"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["deadline", "date", "format", "dd/mm/yyyy"],
-      "phrases": ["dd/mm/yyyy"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["location", "dropdown"],
-      "phrases": ["location field is a dropdown"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["subdivision", "filtered", "location"],
-      "phrases": ["subdivision field gets filtered according to which location you selected"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["participants", "filtered", "location"],
-      "phrases": ["participants field gets filtered according to which location you selected"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["subdivision", "deactivated", "participants"],
-      "phrases": ["if you select a subdivision, the participants field gets deactivated"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["participants", "deactivated", "subdivision"],
-      "phrases": ["if you select a participant, the subdivision field gets deactivated"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["future", "deadline"],
-      "phrases": ["only a deadline in the future can be selected"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["redirect", "newly created", "am"],
-      "phrases": ["the user is redirected to a menu within the newly created am"]
-    },
-    {
-      "ac_id": "AC-11",
-      "keywords": ["manager", "create", "am"],
-      "phrases": ["only a user with the role manager can create an am"]
-    },
-    {
-      "ac_id": "AC-12",
-      "keywords": ["manager", "permission", "participants", "subdivisions"],
-      "phrases": ["a user with the role manager can only select participants or subdivisions of which he has permission to view"]
-    },
-    {
-      "ac_id": "AC-13",
-      "keywords": ["director", "view", "not create"],
-      "phrases": ["a user with the role director has viewing permissions, but can not create an am"]
-    },
-    {
-      "ac_id": "AC-14",
-      "keywords": ["agent", "view am module", "not create"],
-      "phrases": ["a user with the role agent can view the am module, but can not create an am"]
-    },
-    {
-      "ac_id": "AC-15",
-      "keywords": ["id", "dashboard", "am"],
-      "phrases": ["a newly created am gets an id and appears in the dashboard of the am module"]
-    }
+    {"ac_id":"AC-1","keywords":["create","am","popup"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["title","50"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["deadline","dd/mm/yyyy"],"phrases":["dd/mm/yyyy"],"mode":"exact"},
+    {"ac_id":"AC-4","keywords":["location","dropdown"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["subdivision","filtered"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["participants","filtered"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-7","keywords":["deactivated"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-8","keywords":["future"],"phrases":[],"mode":"semantic"}
   ],
-  "US-11": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["id", "existing am", "redirect"],
-      "phrases": ["when clicking on the id of an existing am inside am dashboard, the user is redirected to the am of the id he clicked on"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["title", "deadline", "location", "participants", "subdivision"],
-      "phrases": ["he can see the title, deadline, location and participants/subdivision of the am"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["director", "view all am"],
-      "phrases": ["a user with the role director can view all am that were created for any agent"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["manager", "view", "created"],
-      "phrases": ["a user with the role manager can only view am that he created"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["agent", "view", "assigned"],
-      "phrases": ["a user with the role agent can only view am he was assigned to"]
-    }
-  ],
-  "US-12": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["id", "existing am", "redirect"],
-      "phrases": ["when clicking on the id of an existing am inside am module, the user is redirected to the am of the id he clicked on"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["edit", "button"],
-      "phrases": ["there is an edit button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["edit", "deadline", "future"],
-      "phrases": ["the user can change the deadline of the created am, but only change it to another date in the future"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["edit", "title", "50", "characters"],
-      "phrases": ["a user can change the title of the am to another title with a maximum of 50 characters"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["edit", "participants", "subdivision"],
-      "phrases": ["a user can change the participants/subdivision of the am"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["not change", "location", "id"],
-      "phrases": ["a user can not change the location or the id of an am"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "edit", "am"],
-      "phrases": ["only a user with the role manager can edit an am"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["director", "view", "not edit"],
-      "phrases": ["a user with the role director has viewing permissions, but can not edit an am"]
-    }
-  ],
-  "US-13": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["id", "existing am", "redirect"],
-      "phrases": ["when clicking on the id of an existing am inside am module, the user is redirected to the am of the id he clicked on"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["delete", "button"],
-      "phrases": ["there is a delete button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["popup", "delete am", "yes", "no"],
-      "phrases": ["are you sure to delete this am?"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["no", "popup disappears", "back", "am"],
-      "phrases": ["after clicking the no button, the pop-up disappears and the user is back inside the am"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["yes", "deleted", "redirect", "am dashboard"],
-      "phrases": ["after clicking the yes button, the pop-up disappears, the am is deleted and the user is redirected to the am dashboard"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["manager", "delete", "am"],
-      "phrases": ["only a user with the role manager can delete an am"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["director", "view", "not delete"],
-      "phrases": ["a user with the role director has viewing permissions, but can not delete an am"]
-    }
-  ],
-  "US-14": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["am dashboard", "all created am"],
-      "phrases": ["the am dashboard shows all already created am"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["list", "sorted", "ids"],
-      "phrases": ["the am are shown in a list, sorted by their ids"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["table", "id", "title", "location", "participants", "subdivision", "deadline"],
-      "phrases": ["the list is in the form of a table, with the columns id, title, location, participants/subdivision and deadline"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["row", "columns", "am"],
-      "phrases": ["each am is in a row"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["search bar", "title", "id", "search button"],
-      "phrases": ["there is a search bar above where you can type in the title or id of an am and a search button"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["search", "refresh", "match criteria"],
-      "phrases": ["after typing in information into the search bar and clicking the search button, the list of am is refreshed, showing only the am that match the criteria you searched for"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["reset", "all am", "undo search"],
-      "phrases": ["there is a reset button next to the search bar, and when you click on it all am are shown again and the search is undone"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["director", "see all", "dashboard"],
-      "phrases": ["only a user with the role director can see all am in the dashboard"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["manager", "see", "created", "dashboard"],
-      "phrases": ["a user with the role manager can only see am which he created in the dashboard"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["agent", "see", "created for him", "dashboard"],
-      "phrases": ["a user with the role agent can only see am created for him in the dashboard"]
-    }
-  ],
-  "US-15": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing am", "add action", "button"],
-      "phrases": ["there is a button inside of it called add action"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["new window", "create action"],
-      "phrases": ["when clicking the add action button, a new window appears where you can fill in fields to create an action"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["topic", "root cause", "action", "200"],
-      "phrases": ["the fields are called topic, root cause and action"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["urgency", "dropdown", "low", "medium", "high"],
-      "phrases": ["there is a dropdown field called urgency"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["save", "cancel", "button"],
-      "phrases": ["there is a save and a cancel button"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["save", "action saved", "list of actions"],
-      "phrases": ["when clicking the save button, the action is saved to the am and displayed in the am’s list of actions"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["action id", "am details"],
-      "phrases": ["a newly created action gets an id that appears next to each action in the am details page"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["cancel", "redirect", "not created"],
-      "phrases": ["when clicking the cancel button, the user is redirected to the am and the action was not created"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["director", "view actions", "not create"],
-      "phrases": ["directors can view all actions of any am, but not create any"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["manager", "create actions", "created am"],
-      "phrases": ["managers can create actions for any am they created"]
-    },
-    {
-      "ac_id": "AC-11",
-      "keywords": ["agent", "not create", "actions"],
-      "phrases": ["agents can not create any actions for any am"]
-    }
-  ],
-  "US-16": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing am", "list of actions"],
-      "phrases": ["there is a list of actions that were created for it"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["sorted", "urgency", "high", "medium", "low"],
-      "phrases": ["the actions are sorted by urgency"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["columns", "action id", "topic", "urgency"],
-      "phrases": ["the list of actions has the columns action id, topic and urgency"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["click action", "redirect", "details"],
-      "phrases": ["when clicking on an existing action, the user is redirected to the actions details"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["details", "all data", "created"],
-      "phrases": ["the details contain all the data that were filled into the fields when the action was created"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["director", "view all actions"],
-      "phrases": ["a user with the role director can view all actions of am that were created by any manager"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "view actions", "created"],
-      "phrases": ["a user with the role manager can only view actions of am that he created"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["agent", "view actions", "assigned"],
-      "phrases": ["a user with the role agent can only view actions of am he is assigned to"]
-    }
-  ],
-  "US-17": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing am", "list of actions"],
-      "phrases": ["there is a list of actions that were created for it"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["edit", "button", "next to every action"],
-      "phrases": ["next to every action, there is an edit button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["edit", "new window"],
-      "phrases": ["when clicking the edit button, a new window appears where you can edit the action"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["prefilled", "created information"],
-      "phrases": ["all fields are prefilled with the information that was filled when the action was created"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["topic", "root cause", "action", "200", "edit"],
-      "phrases": ["the fields topic, root cause and action can be edited and have a maximum number of 200 characters each"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["urgency", "prefilled", "change urgency"],
-      "phrases": ["there is a dropdown field called urgency that is prefilled with the urgency level you selected before, and you can change the urgency"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["save", "cancel", "button"],
-      "phrases": ["there is a save and a cancel button"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["save", "edited action", "updated action"],
-      "phrases": ["when clicking the save button, the edited action is saved to the am and the updated action is displayed in the am’s list of actions"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["cancel", "redirect", "not edited"],
-      "phrases": ["when clicking the cancel button, the user is redirected to the am and the action was not edited"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["director", "not edit", "actions"],
-      "phrases": ["directors can not edit actions for am"]
-    },
-    {
-      "ac_id": "AC-11",
-      "keywords": ["manager", "edit actions", "created am"],
-      "phrases": ["managers can edit actions of am that they created"]
-    },
-    {
-      "ac_id": "AC-12",
-      "keywords": ["agent", "not edit", "actions"],
-      "phrases": ["agents can not edit any actions of any am"]
-    }
-  ],
-  "US-18": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["existing am", "list of actions"],
-      "phrases": ["there is a list of actions that were created for it"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["delete", "button", "next to every action"],
-      "phrases": ["next to every action, there is a delete button"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["popup", "delete action", "yes", "no"],
-      "phrases": ["are you sure to delete this action?"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["no", "popup disappears", "back", "am"],
-      "phrases": ["after clicking the no button, the pop-up disappears and the user is back inside the am"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["yes", "action deleted", "not appear"],
-      "phrases": ["after clicking the yes button, the pop-up disappears, the action is deleted and the action does not appear inside the am anymore"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["director", "not delete", "actions"],
-      "phrases": ["a user with the role director can not delete any actions of any am"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "delete action", "created am"],
-      "phrases": ["a user with the role manager can delete an action of an am that he created"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["agent", "not delete", "actions"],
-      "phrases": ["a user with the role agent can not delete any actions of any am"]
-    }
-  ],
+
   "US-19": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["calendar view", "current month", "logged in user"],
-      "phrases": ["the calendar view shows the current month’s schedule of the logged in user by default"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["arrows", "top", "calendar"],
-      "phrases": ["there are arrows on top of the calendar"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["left arrow", "past months", "3 months"],
-      "phrases": ["when clicking the left arrow, the user can see the past months’ schedule up to 3 months ago"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["right arrow", "future months", "6 months"],
-      "phrases": ["when clicking the right arrow, the user can see the future month’s schedule up to 6 months ahead"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["mm", "red", "am", "blue"],
-      "phrases": ["mm are marked red in the calendar, am are marked blue"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["director", "see mm", "created"],
-      "phrases": ["directors can see mm they created for other managers by default"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "see mm", "see am"],
-      "phrases": ["managers can see mm that were created for them, and am that they created for their subordinate agents"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["agent", "see am"],
-      "phrases": ["agents can only see am that were created for them"]
-    }
+    {"ac_id":"AC-1","keywords":["calendar","month"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["arrows"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["past","3 months"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["future","6 months"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["mm","red","am","blue"],"phrases":[],"mode":"semantic"}
   ],
+
   "US-20": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["search bar", "calendar"],
-      "phrases": ["there is a search bar above the calendar view"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["type", "name", "another user"],
-      "phrases": ["when clicking the search bar, the logged in user can type in the name of another user"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["search", "calendar view", "searched user"],
-      "phrases": ["after searching for a user and clicking the search button, the calendar view shows the calendar of the searched user"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["director", "search", "manager", "agent"],
-      "phrases": ["directors can search for the calendar view of any manager and any agent"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["manager", "search", "subordinate agents"],
-      "phrases": ["managers can only search for the calendar view of subordinate agents"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["agent", "not see", "search bar", "other calendars"],
-      "phrases": ["agents can not see the search bar and can not see other users’ calendars"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["error", "user not exist"],
-      "phrases": ["the user you searched for does not exist"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["error", "user not exist"],
-      "phrases": ["the user you searched for does not exist"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["permission", "not subordinate", "error"],
-      "phrases": ["you do not have permission to view this user’s calendar"]
-    }
+    {"ac_id":"AC-1","keywords":["search bar"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["type","user"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["calendar","user"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["director","search"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["manager","subordinate"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["agent","no access"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-7","keywords":["error"],"phrases":["the user you searched for does not exist"],"mode":"exact"},
+    {"ac_id":"AC-9","keywords":["permission"],"phrases":["you do not have permission to view this user’s calendar"],"mode":"exact"}
   ],
+
   "US-21": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["drag", "drop", "future", "today"],
-      "phrases": ["an mm or am can only be dragged and dropped to a date that is in the future or today"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["manager", "not drag", "mm"],
-      "phrases": ["a manager can not drag and drop any mm at all"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["manager", "drag", "am", "created"],
-      "phrases": ["a manager can drag and drop an am that he created to another day within the calendar view"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["director", "drag", "am"],
-      "phrases": ["a director can drag and drop am created by any manager to another day within the calendar view"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["director", "drag", "mm", "created"],
-      "phrases": ["a director can drag and drop any mm he created to another day within the calendar view"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["agent", "not drag", "am"],
-      "phrases": ["an agent can not drag and drop any am at all"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["notification", "rescheduled"],
-      "phrases": ["rescheduled: mm/am with the title"]
-    }
+    {"ac_id":"AC-1","keywords":["drag","future"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["manager","not drag"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["director","drag"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["notification"],"phrases":["rescheduled: mm/am with the title"],"mode":"exact"}
   ],
+
   "US-22": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["calendar view", "accept", "decline", "mm", "am"],
-      "phrases": ["in the calendar view, an mm or am can be accepted or declined"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["director", "view all", "cancel", "not accept", "not decline"],
-      "phrases": ["a director can view all mm and am, but can only cancel meetings and can not accept or decline them"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["manager", "accept", "decline", "mm assigned", "cancel am"],
-      "phrases": ["a manager can accept or decline mm he was assigned to, and cancel am that he created"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["agent", "accept", "decline", "am assigned", "not cancel"],
-      "phrases": ["an agent can accept or decline am he was assigned to, and can not cancel any meeting"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["accepted", "notification", "creator"],
-      "phrases": ["accepted: user [surname, first name] accepted the mm/am with the title"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["declined", "notification", "creator"],
-      "phrases": ["declined: user [surname, first name] declined the mm/am with the title"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["cancelled", "notification", "accepted", "not accepted"],
-      "phrases": ["cancelled: mm/am with the title"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["cancelled", "declined", "no notification"],
-      "phrases": ["all participants who declined the meeting do not get any notification at all"]
-    }
+    {"ac_id":"AC-1","keywords":["accept","decline"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["director","cancel"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["manager","accept"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["agent","accept"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["notification"],"phrases":["accepted: user"],"mode":"exact"},
+    {"ac_id":"AC-6","keywords":["notification"],"phrases":["declined: user"],"mode":"exact"},
+    {"ac_id":"AC-7","keywords":["notification"],"phrases":["cancelled: mm/am with the title"],"mode":"exact"}
   ],
+
   "US-23": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["evaluate employees", "director", "location filter", "search bar", "search button"],
-      "phrases": ["in the evaluate employees dashboard, a logged in director can see a filter named location, a search bar and a search button"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["director", "location", "search", "managers"],
-      "phrases": ["when a director enters a location into the filter and clicking the search button, managers appear that belong to the selected location"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["search bar", "director", "managers"],
-      "phrases": ["in the search bar, the logged in director can search for managers"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["director", "only evaluate", "managers"],
-      "phrases": ["a director can only evaluate managers, not agents"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["director", "click manager", "evaluation page"],
-      "phrases": ["when director clicks on a manager, he gets redirected to the evaluation page of that manager"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["manager", "not see", "location filter"],
-      "phrases": ["a manager can not see the location filter"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["manager", "search bar", "search button"],
-      "phrases": ["a manager can see the search bar and the search button"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["manager", "search", "subordinate agents"],
-      "phrases": ["a manager can search for his subordinate agents and can not search for any other user"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["manager", "only evaluate", "agents"],
-      "phrases": ["a manager can only evaluate agents"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["manager", "search subordinate", "evaluation page"],
-      "phrases": ["when manager searches for an agent that is his subordinate, he gets redirected to the evaluation page of that agent"]
-    },
-    {
-      "ac_id": "AC-11",
-      "keywords": ["efficiency", "reliability", "communication", "comment"],
-      "phrases": ["efficiency (scale 1 to 5)"]
-    },
-    {
-      "ac_id": "AC-12",
-      "keywords": ["mandatory", "except comment"],
-      "phrases": ["all fields are mandatory except the comment field"]
-    },
-    {
-      "ac_id": "AC-13",
-      "keywords": ["error", "mandatory"],
-      "phrases": ["please fill all mandatory fields"]
-    },
-    {
-      "ac_id": "AC-14",
-      "keywords": ["save", "cancel", "button"],
-      "phrases": ["there is a save and cancel button at the end of the page"]
-    },
-    {
-      "ac_id": "AC-15",
-      "keywords": ["save", "redirect", "successfully saved"],
-      "phrases": ["the evaluation was successfully saved"]
-    },
-    {
-      "ac_id": "AC-16",
-      "keywords": ["evaluation id", "dashboard"],
-      "phrases": ["after an evaluation was successfully saved, it gets an id and appears in the evaluate employees dashboard"]
-    },
-    {
-      "ac_id": "AC-17",
-      "keywords": ["dashboard", "list", "id", "date", "employee"],
-      "phrases": ["the dashboard shows a list of evaluations created by the logged in user, with the columns id, date and employee"]
-    },
-    {
-      "ac_id": "AC-18",
-      "keywords": ["cancel", "redirect", "not saved"],
-      "phrases": ["when clicking cancel, the user gets redirected to the evaluate employees dashboard and the evaluation is not saved"]
-    },
-    {
-      "ac_id": "AC-19",
-      "keywords": ["notification", "new evaluation"],
-      "phrases": ["evaluation: a new evaluation was created for you"]
-    }
+    {"ac_id":"AC-1","keywords":["location filter"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["search","managers"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["evaluate"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["redirect"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-5","keywords":["mandatory"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-6","keywords":["error"],"phrases":["please fill all mandatory fields"],"mode":"exact"},
+    {"ac_id":"AC-7","keywords":["save"],"phrases":["the evaluation was successfully saved"],"mode":"exact"},
+    {"ac_id":"AC-8","keywords":["notification"],"phrases":["evaluation: a new evaluation was created for you"],"mode":"exact"}
   ],
+
   "US-24": [
-    {
-      "ac_id": "AC-1",
-      "keywords": ["my evaluations", "manager", "agent", "view evaluations"],
-      "phrases": ["in the my evaluations dashboard, a logged in manager or agent can view evaluations created for himself"]
-    },
-    {
-      "ac_id": "AC-2",
-      "keywords": ["sorted", "date created"],
-      "phrases": ["the evaluations are sorted by the date when they were created"]
-    },
-    {
-      "ac_id": "AC-3",
-      "keywords": ["columns", "id", "date"],
-      "phrases": ["the columns in the my evaluations dashboard are id and date"]
-    },
-    {
-      "ac_id": "AC-4",
-      "keywords": ["click evaluation", "efficiency", "reliability", "communication", "comment"],
-      "phrases": ["when clicking on an evaluation, the user sees the following aspects"]
-    },
-    {
-      "ac_id": "AC-5",
-      "keywords": ["back", "appeal", "button"],
-      "phrases": ["there is a back and an appeal button at the end of the page"]
-    },
-    {
-      "ac_id": "AC-6",
-      "keywords": ["back", "redirect", "my evaluations dashboard"],
-      "phrases": ["when clicking back, the user gets redirected to the my evaluations dashboard"]
-    },
-    {
-      "ac_id": "AC-7",
-      "keywords": ["appeal", "popup", "mandatory", "500"],
-      "phrases": ["when clicking appeal, a pop-up appears with a mandatory free-text field with a maximum of 500 characters, along with a save and cancel button"]
-    },
-    {
-      "ac_id": "AC-8",
-      "keywords": ["cancel", "popup disappears", "nothing sent"],
-      "phrases": ["after clicking cancel, the pop-up disappears and nothing was sent"]
-    },
-    {
-      "ac_id": "AC-9",
-      "keywords": ["error", "comment mandatory", "appeal"],
-      "phrases": ["to raise an appeal, a comment is mandatory"]
-    },
-    {
-      "ac_id": "AC-10",
-      "keywords": ["save", "appeal successfully sent"],
-      "phrases": ["the appeal was successfully sent"]
-    },
-    {
-      "ac_id": "AC-11",
-      "keywords": ["notification", "appeal", "creator"],
-      "phrases": ["evaluation: a user you evaluated has raised an appeal"]
-    },
-    {
-      "ac_id": "AC-12",
-      "keywords": ["appeal", "not older than 1 week"],
-      "phrases": ["an appeal can only be raised for evaluations that are not older than 1 week"]
-    }
+    {"ac_id":"AC-1","keywords":["view evaluations"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-2","keywords":["sorted","date"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-3","keywords":["appeal"],"phrases":[],"mode":"semantic"},
+    {"ac_id":"AC-4","keywords":["error"],"phrases":["to raise an appeal, a comment is mandatory"],"mode":"exact"},
+    {"ac_id":"AC-5","keywords":["save"],"phrases":["the appeal was successfully sent"],"mode":"exact"},
+    {"ac_id":"AC-6","keywords":["notification"],"phrases":["evaluation: a user you evaluated has raised an appeal"],"mode":"exact"}
   ]
 }
