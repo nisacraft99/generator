@@ -458,16 +458,14 @@ def infer_fallback_navigation(story: str) -> List[Dict[str, Any]]:
         return [
             {"step": "Login with Director", "expected": "The user is logged in successfully", "ui_node_id": "LOGIN"},
             {"step": "Select Director Console from the left navigation", "expected": "Director Console is opened", "ui_node_id": "CONSOLE-D"},
-            {"step": "Click Manager Meeting in the left navigation", "expected": "Manager Meeting module is opened", "ui_node_id": "OPT-MM"},
-            {"step": "Verify that the MM Dashboard is displayed", "expected": "MM Dashboard is visible", "ui_node_id": "SCR-MM-DASHBOARD"},
+            {"step": "Click Manager Meeting in the left navigation", "expected": "Manager Meeting module is opened and MM Dashboard is visible", "ui_node_id": "OPT-MM"},
         ]
 
     if "agent meeting" in story_lower or "(am)" in story_lower:
         return [
             {"step": "Login with Manager", "expected": "The user is logged in successfully", "ui_node_id": "LOGIN"},
             {"step": "Select Manager Console from the left navigation", "expected": "Manager Console is opened", "ui_node_id": "CONSOLE-M"},
-            {"step": "Click Agent Meeting in the left navigation", "expected": "Agent Meeting module is opened", "ui_node_id": "OPT-AM"},
-            {"step": "Verify that the AM Dashboard is displayed", "expected": "AM Dashboard is visible", "ui_node_id": "SCR-AM-DASHBOARD"},
+            {"step": "Click Agent Meeting in the left navigation", "expected": "Agent Meeting module is opened and AM Dashboard is visible", "ui_node_id": "OPT-AM"},
         ]
 
     if "calendar" in story_lower:
