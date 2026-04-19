@@ -10,21 +10,21 @@
     "us_id": "US-2",
     "title": "View MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DETAIL"],
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL"],
     "target_type": "screen"
   },
   {
     "us_id": "US-3",
     "title": "Edit MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DETAIL", "MOD-MM-EDIT"],
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-EDIT"],
     "target_type": "modal"
   },
   {
     "us_id": "US-4",
     "title": "Delete MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DETAIL", "MOD-MM-DELETE"],
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-DELETE"],
     "target_type": "modal"
   },
   {
@@ -38,14 +38,14 @@
     "us_id": "US-6",
     "title": "Create Action for MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DETAIL", "MOD-MM-ACTION-CREATE"],
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-ACTION-CREATE"],
     "target_type": "modal"
   },
   {
     "us_id": "US-7",
     "title": "View Action for MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
     "target_type": "screen"
   },
   {
