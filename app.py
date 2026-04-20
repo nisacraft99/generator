@@ -7,7 +7,7 @@ import os
 import io
 import json
 import re
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Optional
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -25,7 +25,6 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# --- OpenAI ---
 try:
     from openai import OpenAI
 except Exception:
@@ -352,26 +351,6 @@ def _clean_open_questions(raw_open_q):
             cleaned.append(json.dumps(q, ensure_ascii=False))
     return cleaned
 
-def enforce_navigation(tc, ui_context):
-    nodes = {n["id"]: n for n in ui_context.get("nodes", [])}
-    nav = tc.get("navigation_steps", []) or []
-
-    if len(nav) < 4:
-        return False
-
-    second = nodes.get(nav[1].get("ui_node_id"))
-    third = nodes.get(nav[2].get("ui_node_id"))
-    fourth = nodes.get(nav[3].get("ui_node_id"))
-
-    if not second or second.get("type") != "console":
-        return False
-    if not third or third.get("type") != "nav_option":
-        return False
-    if not fourth or fourth.get("type") != "screen":
-        return False
-
-    return True
-
 def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
     if not client:
         return [], ["OpenAI client not initialized (missing OPENAI_API_KEY or openai package)."]
@@ -408,8 +387,6 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
             steps = [_normalize_step(s) for s in (tc.get("steps", []) or [])]
 
             merged_steps = nav + steps if use_ui_context else steps
-
-            # remove empty filler lines instead of inventing fallback
             merged_steps = [
                 s for s in merged_steps
                 if (s.get("step") or "").strip() not in {"", "—"}
@@ -436,7 +413,6 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 ROLE_WORDS = ["director", "manager", "agent"]
 
 CONCEPT_ALIASES = {
-    "MM": ["manager meeting", "mm"],
     "popup": ["popup", "pop-up", "dialog", "modal", "confirmation pop-up", "new window"],
     "redirect": ["redirect", "redirected", "navigated", "navigate", "navigated to", "land on"],
     "dashboard": ["dashboard"],
@@ -446,7 +422,7 @@ CONCEPT_ALIASES = {
     "delete": ["delete", "deleted", "deletion"],
     "create": ["create", "created", "creation"],
     "edit": ["edit", "edited", "editing"],
-    "view": ["view", "visible", "see", "shown", "displayed"],
+    "view": ["view", "visible", "see", "shown", "displayed", "present"],
     "not delete": [
         "not delete", "cannot delete", "can not delete", "unable to delete",
         "no permission to delete", "delete button is not visible",
@@ -455,7 +431,8 @@ CONCEPT_ALIASES = {
     ],
     "not create": [
         "not create", "cannot create", "can not create", "unable to create",
-        "no permission to create", "access denied", "not available", "not visible"
+        "no permission to create", "access denied", "not available", "not visible",
+        "button is not present", "button not present"
     ],
     "no access": [
         "no access", "cannot access", "can not access", "access denied",
@@ -520,7 +497,6 @@ def evaluate_ac_coverage(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[
         }
 
     haystack = collect_all_generated_text(cases)
-
     details = []
     total_score = 0.0
 
@@ -568,35 +544,53 @@ def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
             dedup.append(p)
     return dedup
 
-def evaluate_navigation(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
+def starts_with_prefix(actual: List[str], prefix: List[str]) -> bool:
+    if not prefix:
+        return False
+    if len(actual) < len(prefix):
+        return False
+    return actual[:len(prefix)] == prefix
+
+def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     ref = find_nav_reference(us_id_value)
     if not ref:
         return {
-            "coverage_pct": None,
             "correctness_pct": None,
-            "with_navigation": None,
             "correct_count": None,
+            "evaluated_count": None,
             "details": [],
             "note": f"No navigation reference found for {us_id_value}"
         }
 
-    expected = ref.get("expected_navigation", []) or []
-    valid_cases = 0
+    required_prefix = ref.get("required_prefix", []) or []
+    forbidden_prefixes = ref.get("forbidden_prefixes", []) or []
+
+    if not required_prefix:
+        return {
+            "correctness_pct": None,
+            "correct_count": None,
+            "evaluated_count": None,
+            "details": [],
+            "note": f"No required_prefix found for {us_id_value}"
+        }
+
+    evaluated_cases = 0
     correct_cases = 0
     details = []
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
-        has_nav = len(actual) >= 3
+        can_evaluate = len(actual) >= len(required_prefix)
         is_correct = False
 
-        if has_nav:
-            valid_cases += 1
-            min_len = min(len(actual), len(expected))
-            is_correct = (actual[:min_len] == expected[:min_len])
+        if can_evaluate:
+            evaluated_cases += 1
+            is_correct = starts_with_prefix(actual, required_prefix)
 
-            if len(expected) <= len(actual):
-                is_correct = actual[:len(expected)] == expected
+            for forbidden in forbidden_prefixes:
+                if starts_with_prefix(actual, forbidden):
+                    is_correct = False
+                    break
 
             if is_correct:
                 correct_cases += 1
@@ -604,20 +598,18 @@ def evaluate_navigation(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[s
         details.append({
             "tc_id": tc.get("id", ""),
             "actual": actual,
-            "expected": expected,
-            "has_navigation": has_nav,
+            "required_prefix": required_prefix,
+            "forbidden_prefixes": forbidden_prefixes,
+            "can_evaluate": can_evaluate,
             "is_correct": is_correct
         })
 
-    total_cases = len(cases)
-    coverage_pct = round((valid_cases / total_cases) * 100, 2) if total_cases else None
-    correctness_pct = round((correct_cases / valid_cases) * 100, 2) if valid_cases else None
+    correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
 
     return {
-        "coverage_pct": coverage_pct,
         "correctness_pct": correctness_pct,
-        "with_navigation": valid_cases,
         "correct_count": correct_cases,
+        "evaluated_count": evaluated_cases,
         "details": details,
         "note": None
     }
@@ -627,10 +619,32 @@ def extract_required_roles(story: str, ac_blob: str) -> List[str]:
     found = [r for r in ROLE_WORDS if r in text]
     return sorted(list(set(found)))
 
+def step_implies_role(step_text: str, expected_text: str, role: str) -> bool:
+    combined = normalize_text(f"{step_text} {expected_text}")
+    patterns = [
+        f"login as {role}",
+        f"logged in as {role}",
+        f"login with {role}",
+        f"log in as {role}",
+        f"log in with {role}",
+        f"as a {role}",
+        f"as {role}",
+    ]
+    return any(p in combined for p in patterns)
+
 def extract_generated_roles(cases: List[Dict[str, Any]]) -> List[str]:
-    text = collect_all_generated_text(cases)
-    found = [r for r in ROLE_WORDS if r in text]
-    return sorted(list(set(found)))
+    found = set()
+
+    for tc in cases:
+        for s in tc.get("steps", []) or []:
+            step_text = s.get("step", "")
+            expected_text = s.get("expected", "")
+
+            for role in ROLE_WORDS:
+                if step_implies_role(step_text, expected_text, role):
+                    found.add(role)
+
+    return sorted(list(found))
 
 def evaluate_role_coverage(story: str, ac_blob: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     required = extract_required_roles(story, ac_blob)
@@ -649,14 +663,10 @@ def evaluate_role_coverage(story: str, ac_blob: str, cases: List[Dict[str, Any]]
     }
 
 def evaluate_all(us_id_value: str, story: str, ac_blob: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
-    ac_eval = evaluate_ac_coverage(us_id_value, cases)
-    nav_eval = evaluate_navigation(us_id_value, cases)
-    role_eval = evaluate_role_coverage(story, ac_blob, cases)
-
     return {
-        "ac": ac_eval,
-        "navigation": nav_eval,
-        "role": role_eval
+        "ac": evaluate_ac_coverage(us_id_value, cases),
+        "navigation": evaluate_navigation_correctness(us_id_value, cases),
+        "role": evaluate_role_coverage(story, ac_blob, cases)
     }
 
 # ======================= PDF BUILDER =======================
@@ -709,14 +719,12 @@ def build_pdf(
     if evaluation:
         flow.append(Paragraph("<b>Automated Evaluation</b>", head))
         ac_value = "N/A" if evaluation["ac"]["overall_pct"] is None else f"{evaluation['ac']['covered_count']}/{evaluation['ac']['total_count']} ({evaluation['ac']['overall_pct']}%)"
-        nav_cov_value = "N/A" if evaluation["navigation"]["coverage_pct"] is None else f"{evaluation['navigation']['with_navigation']}/{len(cases)} ({evaluation['navigation']['coverage_pct']}%)"
-        nav_corr_value = "N/A" if evaluation["navigation"]["correctness_pct"] is None else f"{evaluation['navigation']['correct_count']}/{evaluation['navigation']['with_navigation']} ({evaluation['navigation']['correctness_pct']}%)"
+        nav_corr_value = "N/A" if evaluation["navigation"]["correctness_pct"] is None else f"{evaluation['navigation']['correct_count']}/{evaluation['navigation']['evaluated_count']} ({evaluation['navigation']['correctness_pct']}%)"
         role_value = "N/A" if evaluation["role"]["overall_pct"] is None else f"{evaluation['role']['covered_count']}/{evaluation['role']['total_count']} ({evaluation['role']['overall_pct']}%)"
 
         rows = [
             ["Metric", "Value"],
             ["AC Coverage", ac_value],
-            ["Navigation Coverage", nav_cov_value],
             ["Navigation Correctness", nav_corr_value],
             ["Role Coverage", role_value],
             ["Test Cases", str(len(cases))]
@@ -893,15 +901,13 @@ if st.session_state.last_evaluation:
     st.subheader("Automated Evaluation")
 
     ac_metric = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
-    nav_cov_metric = "N/A" if ev["navigation"]["coverage_pct"] is None else f"{ev['navigation']['coverage_pct']}%"
     nav_corr_metric = "N/A" if ev["navigation"]["correctness_pct"] is None else f"{ev['navigation']['correctness_pct']}%"
     role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
 
-    m1, m2, m3, m4 = st.columns(4)
+    m1, m2, m3 = st.columns(3)
     m1.metric("AC Coverage", ac_metric)
-    m2.metric("Navigation Coverage", nav_cov_metric)
-    m3.metric("Navigation Correctness", nav_corr_metric)
-    m4.metric("Role Coverage", role_metric)
+    m2.metric("Navigation Correctness", nav_corr_metric)
+    m3.metric("Role Coverage", role_metric)
 
     if ev["ac"]["note"]:
         st.warning(ev["ac"]["note"])
@@ -914,11 +920,14 @@ if st.session_state.last_evaluation:
     if ev["navigation"]["note"]:
         st.warning(ev["navigation"]["note"])
     else:
-        st.write(f"**Navigation Coverage:** {ev['navigation']['with_navigation']}/{len(st.session_state.last_cases)} Testfälle")
-        st.write(f"**Navigation Correctness:** {ev['navigation']['correct_count']}/{ev['navigation']['with_navigation']}")
+        st.write(f"**Navigation Correctness:** {ev['navigation']['correct_count']}/{ev['navigation']['evaluated_count']}")
         with st.expander("Navigation details"):
             for d in ev["navigation"]["details"]:
-                st.write(f"{d['tc_id']}: has_navigation={d['has_navigation']} correct={d['is_correct']} actual={d['actual']} expected={d['expected']}")
+                st.write(
+                    f"{d['tc_id']}: can_evaluate={d['can_evaluate']} "
+                    f"correct={d['is_correct']} actual={d['actual']} "
+                    f"required_prefix={d['required_prefix']} forbidden={d['forbidden_prefixes']}"
+                )
 
     st.write(f"**Role Coverage:** {ev['role']['covered_count']}/{ev['role']['total_count']}")
     st.write(f"Required roles: {ev['role']['required_roles']}")
