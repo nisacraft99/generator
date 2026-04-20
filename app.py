@@ -436,6 +436,7 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 ROLE_WORDS = ["director", "manager", "agent"]
 
 CONCEPT_ALIASES = {
+    "MM": ["manager meeting", "mm"],
     "popup": ["popup", "pop-up", "dialog", "modal", "confirmation pop-up", "new window"],
     "redirect": ["redirect", "redirected", "navigated", "navigate", "navigated to", "land on"],
     "dashboard": ["dashboard"],
