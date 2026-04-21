@@ -1,5 +1,5 @@
 {
-  "app": "TOPS",
+  "app": "UMS",
   "nodes": [
     { "id": "CONSOLE-D", "type": "console", "name": "Director Console", "parent": null },
     { "id": "CONSOLE-M", "type": "console", "name": "Manager Console", "parent": null },
