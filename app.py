@@ -231,7 +231,7 @@ If ui_context is provided, you MUST use it to generate concrete navigation.
 
 STRICT UI RULES (MANDATORY):
 - Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
-- Every navigation step MUST include 'ui_node_id' that matches an existing ui_context.nodes[].id when possible.
+- Every navigation step SHOULD include 'ui_node_id' that matches an existing ui_context.nodes[].id when possible.
 - Navigation must be explicit and beginner-friendly.
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
@@ -534,7 +534,6 @@ def find_nav_reference(us_id_value: str) -> Optional[Dict[str, Any]]:
 def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[str]:
     text = normalize_text(f"{step_text} {expected_text}")
 
-    # console
     if "director console" in text:
         return "CONSOLE-D"
     if "manager console" in text:
@@ -544,7 +543,6 @@ def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[st
     if "evaluation console" in text:
         return "CONSOLE-E"
 
-    # modules / nav options
     if "manager meeting" in text or "manager meetings" in text:
         return "OPT-MM"
     if "agent meeting" in text or "agent meetings" in text:
@@ -554,7 +552,6 @@ def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[st
     if "evaluate employees" in text:
         return "OPT-EVALUATE"
 
-    # screens
     if "mm dashboard" in text:
         return "SCR-MM-DASHBOARD"
     if "am dashboard" in text:
@@ -573,13 +570,13 @@ def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[st
 def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
     path = []
 
-    # 1) echte ui_node_id aus navigation_steps
+    # 1) ui_node_id aus navigation_steps
     for s in tc.get("navigation_steps", []) or []:
         node = s.get("ui_node_id")
         if node and node != "LOGIN":
             path.append(node)
 
-    # 2) fallback: aus navigation_steps text ableiten
+    # 2) fallback: navigation_steps Text
     if not path:
         for s in tc.get("navigation_steps", []) or []:
             inferred = infer_node_from_step_text(
@@ -589,7 +586,7 @@ def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
             if inferred:
                 path.append(inferred)
 
-    # 3) fallback: aus den ersten allgemeinen steps ableiten
+    # 3) fallback: erste steps
     if not path:
         for s in (tc.get("steps", []) or [])[:6]:
             inferred = infer_node_from_step_text(
@@ -605,13 +602,6 @@ def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
             dedup.append(p)
     return dedup
 
-def starts_with_prefix(actual: List[str], prefix: List[str]) -> bool:
-    if not prefix:
-        return False
-    if len(actual) < len(prefix):
-        return False
-    return actual[:len(prefix)] == prefix
-
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     ref = find_nav_reference(us_id_value)
     if not ref:
@@ -623,16 +613,14 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "note": f"No navigation reference found for {us_id_value}"
         }
 
-    required_prefix = ref.get("required_prefix", []) or []
-    forbidden_prefixes = ref.get("forbidden_prefixes", []) or []
-
-    if not required_prefix:
+    expected_navigation = ref.get("expected_navigation", []) or []
+    if not expected_navigation:
         return {
             "correctness_pct": None,
             "correct_count": None,
             "evaluated_count": None,
             "details": [],
-            "note": f"No required_prefix found for {us_id_value}"
+            "note": f"No expected_navigation found for {us_id_value}"
         }
 
     evaluated_cases = 0
@@ -647,13 +635,8 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         if can_evaluate:
             evaluated_cases += 1
 
-            min_len = min(len(actual), len(required_prefix))
-            is_correct = actual[:min_len] == required_prefix[:min_len]
-
-            for forbidden in forbidden_prefixes:
-                if len(actual) >= len(forbidden) and actual[:len(forbidden)] == forbidden:
-                    is_correct = False
-                    break
+            min_len = min(len(actual), len(expected_navigation))
+            is_correct = actual[:min_len] == expected_navigation[:min_len]
 
             if is_correct:
                 correct_cases += 1
@@ -661,8 +644,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         details.append({
             "tc_id": tc.get("id", ""),
             "actual": actual,
-            "required_prefix": required_prefix,
-            "forbidden_prefixes": forbidden_prefixes,
+            "expected": expected_navigation,
             "can_evaluate": can_evaluate,
             "is_correct": is_correct
         })
@@ -989,7 +971,7 @@ if st.session_state.last_evaluation:
                 st.write(
                     f"{d['tc_id']}: can_evaluate={d['can_evaluate']} "
                     f"correct={d['is_correct']} actual={d['actual']} "
-                    f"required_prefix={d['required_prefix']} forbidden={d['forbidden_prefixes']}"
+                    f"expected={d['expected']}"
                 )
 
     st.write(f"**Role Coverage:** {ev['role']['covered_count']}/{ev['role']['total_count']}")
