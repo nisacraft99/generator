@@ -686,8 +686,8 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         }
 
 evaluated_cases = 0
-    correct_cases = 0
-    details = []
+correct_cases = 0
+details = []
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
