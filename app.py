@@ -689,9 +689,9 @@ evaluated_cases = 0
 correct_cases = 0
 details = []
 
-    for tc in cases:
-        actual = extract_actual_nav_path(tc)
-        can_evaluate = len(actual) > 0
+for tc in cases:
+    actual = extract_actual_nav_path(tc)
+    can_evaluate = len(actual) > 0
 
         best_score = 0.0
         best_expected = []
