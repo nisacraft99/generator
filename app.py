@@ -255,6 +255,20 @@ ROLE AND OWNERSHIP RULES:
 - For negative permission tests, do not replace the generated role with a fallback role.
 - If a user has viewing permission but not create/edit/delete permission, test the missing control or denied action, not full module denial.
 
+IMPORTANT: Feature ownership and login role are separate.
+
+The login role determines permissions.
+The feature location in ui_context determines navigation.
+
+Do NOT navigate to a role's own console only because the test logs in with that role.
+
+If the user story is about Manager Meeting (MM), all roles must navigate through:
+LOGIN -> Director Console -> Manager Meetings -> MM Dashboard
+
+A Manager test case for MM must still use the Director Console path, because MM is located there.
+The Manager role is only used to verify restricted permissions.
+Never use Manager Console or Agent Meetings for MM test cases.
+
 NAVIGATION IS STRONGLY PREFERRED:
 For EVERY test case with ui_context, try to include:
 - FIRST navigation step = login
