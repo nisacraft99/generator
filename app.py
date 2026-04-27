@@ -733,7 +733,7 @@ for tc in cases:
         "evaluated_count": evaluated_cases,
         "details": details,
         "note": None if evaluated_cases else "No actual navigation could be extracted from generated test cases."
-}
+    }
 
 
 
