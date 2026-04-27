@@ -726,12 +726,13 @@ for tc in cases:
         })
 
     correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
+    
     return {
-    "correctness_pct": correctness_pct,
-    "correct_count": correct_cases,
-    "evaluated_count": evaluated_cases,
-    "details": details,
-    "note": None if evaluated_cases else "No actual navigation could be extracted from generated test cases."
+        "correctness_pct": correctness_pct,
+        "correct_count": correct_cases,
+        "evaluated_count": evaluated_cases,
+        "details": details,
+        "note": None if evaluated_cases else "No actual navigation could be extracted from generated test cases."
 }
 
 
