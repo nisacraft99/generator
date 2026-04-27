@@ -685,36 +685,36 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "note": f"No expected navigation path found for {us_id_value}"
         }
 
-evaluated_cases = 0
-correct_cases = 0
-details = []
+    evaluated_cases = 0
+    correct_cases = 0
+    details = []
 
-for tc in cases:
-    actual = extract_actual_nav_path(tc)
-    can_evaluate = len(actual) > 0
+    for tc in cases:
+        actual = extract_actual_nav_path(tc)
+        can_evaluate = len(actual) > 0
 
-    best_score = 0.0
-    best_expected = []
-    is_correct = False
+        best_score = 0.0
+        best_expected = []
+        is_correct = False
 
-    if can_evaluate:
-        evaluated_cases += 1
+        if can_evaluate:
+            evaluated_cases += 1
 
-        for expected in allowed_paths:
-            score = navigation_subsequence_score(expected, actual)
+            for expected in allowed_paths:
+                score = navigation_subsequence_score(expected, actual)
 
-            if score > best_score:
-                best_score = score
-                best_expected = expected
+                if score > best_score:
+                    best_score = score
+                    best_expected = expected
 
-            if is_subsequence(expected, actual):
-                is_correct = True
-                best_score = 1.0
-                best_expected = expected
-                break
+                if is_subsequence(expected, actual):
+                    is_correct = True
+                    best_score = 1.0
+                    best_expected = expected
+                    break
 
-        if is_correct:
-            correct_cases += 1
+            if is_correct:
+                correct_cases += 1
 
         details.append({
             "tc_id": tc.get("id", ""),
@@ -726,7 +726,7 @@ for tc in cases:
         })
 
     correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
-    
+
     return {
         "correctness_pct": correctness_pct,
         "correct_count": correct_cases,
@@ -734,7 +734,6 @@ for tc in cases:
         "details": details,
         "note": None if evaluated_cases else "No actual navigation could be extracted from generated test cases."
     }
-
 
 
 
