@@ -726,8 +726,7 @@ for tc in cases:
         })
 
     correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
-
-return {
+    return {
     "correctness_pct": correctness_pct,
     "correct_count": correct_cases,
     "evaluated_count": evaluated_cases,
