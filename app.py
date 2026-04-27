@@ -267,7 +267,6 @@ LOGIN -> Director Console -> Manager Meetings -> MM Dashboard
 
 A Manager test case for MM must still use the Director Console path, because MM is located there.
 So a Manager can open the Director Console.
-The Manager Console is separate from The Director Console, both are not connected.
 The Manager role is only used to verify restricted permissions.
 
 NAVIGATION IS STRONGLY PREFERRED:
