@@ -302,14 +302,23 @@ Return ONLY valid JSON (no markdown, no prose).
 
 Generate test cases based ONLY on the provided user story and acceptance criteria.
 
-IMPORTANT RULES:
+
+TEST CASE GRANULARITY RULES:
+- Very important: Prefer one focused test case per acceptance criterion.
+- Do NOT merge many acceptance criteria into one test case.
+- Keep negative role tests separate from positive functional tests.
+- Keep navigation and test logic in the same testcase output, with navigation first and then feature steps.
 - Do NOT assume any UI structure.
 - Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
 - Do NOT include ui_node_id values.
 - Focus on functional behavior derived from the requirements only.
-- Prefer one focused test case per acceptance criterion.
 - Do NOT merge many acceptance criteria into one test case.
 - Keep negative role tests separate from positive functional tests.
+
+COVERAGE IS THE TOP PRIORITY:
+- Every acceptance criterion MUST be covered explicitly in the testcase set.
+- The test cases must cover all roles mentioned in the user story and acceptance criteria.
+- If needed, create additional test cases to cover uncovered acceptance criteria.
 
 OUTPUT SCHEMA:
 {
