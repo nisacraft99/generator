@@ -276,6 +276,15 @@ For EVERY test case with ui_context, try to include:
 - THIRD navigation step = nav_option node
 - FOURTH navigation step = screen node
 
+IMPORTANT RULES:
+- Do NOT assume any UI structure.
+- Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
+- Do NOT include ui_node_id values.
+- Focus on functional behavior derived from the requirements only.
+- Prefer one focused test case per acceptance criterion.
+- Do NOT merge many acceptance criteria into one test case.
+- Keep negative role tests separate from positive functional tests.
+
 OUTPUT SCHEMA:
 {
   "test_cases":[
