@@ -616,6 +616,42 @@ def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
             dedup.append(p)
     return dedup
 
+
+def is_subsequence(expected: List[str], actual: List[str]) -> bool:
+    """
+    True, wenn expected in actual in gleicher Reihenfolge vorkommt.
+    Zusätzliche Nodes in actual sind erlaubt.
+    Beispiel:
+    actual   = ["CONSOLE-M", "CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "EL-MM-ID"]
+    expected = ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "EL-MM-ID"]
+    => True
+    """
+    i = 0
+    for node in actual:
+        if i < len(expected) and node == expected[i]:
+            i += 1
+    return i == len(expected)
+
+
+def navigation_subsequence_score(expected: List[str], actual: List[str]) -> float:
+    """
+    Gibt einen anteiligen Score zurück.
+    Wenn alle expected Nodes in richtiger Reihenfolge vorkommen: 1.0
+    """
+    if not expected:
+        return 0.0
+
+    matched = 0
+    i = 0
+
+    for node in actual:
+        if i < len(expected) and node == expected[i]:
+            matched += 1
+            i += 1
+
+    return matched / len(expected)
+
+
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     ref = find_nav_reference(us_id_value)
     if not ref:
@@ -627,30 +663,55 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "note": f"No navigation reference found for {us_id_value}"
         }
 
-    expected_navigation = ref.get("expected_navigation", []) or []
-    if not expected_navigation:
+    # Unterstützt entweder:
+    # 1) "expected_navigation": [...]
+    # oder
+    # 2) "allowed_paths": [[...], [...]]
+    allowed_paths = []
+
+    if ref.get("allowed_paths"):
+        allowed_paths = ref.get("allowed_paths", [])
+    elif ref.get("expected_navigation"):
+        allowed_paths = [ref.get("expected_navigation", [])]
+
+    allowed_paths = [p for p in allowed_paths if p]
+
+    if not allowed_paths:
         return {
             "correctness_pct": None,
             "correct_count": None,
             "evaluated_count": None,
             "details": [],
-            "note": f"No expected_navigation found for {us_id_value}"
+            "note": f"No expected navigation path found for {us_id_value}"
         }
 
-    evaluated_cases = 0
+evaluated_cases = 0
     correct_cases = 0
     details = []
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
         can_evaluate = len(actual) > 0
+
+        best_score = 0.0
+        best_expected = []
         is_correct = False
 
         if can_evaluate:
             evaluated_cases += 1
 
-            min_len = min(len(actual), len(expected_navigation))
-            is_correct = actual[:min_len] == expected_navigation[:min_len]
+            for expected in allowed_paths:
+                score = navigation_subsequence_score(expected, actual)
+
+                if score > best_score:
+                    best_score = score
+                    best_expected = expected
+
+                if is_subsequence(expected, actual):
+                    is_correct = True
+                    best_score = 1.0
+                    best_expected = expected
+                    break
 
             if is_correct:
                 correct_cases += 1
@@ -658,9 +719,10 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         details.append({
             "tc_id": tc.get("id", ""),
             "actual": actual,
-            "expected": expected_navigation,
+            "expected": best_expected,
             "can_evaluate": can_evaluate,
-            "is_correct": is_correct
+            "is_correct": is_correct,
+            "match_score": round(best_score, 2)
         })
 
     correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
@@ -672,6 +734,9 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         "details": details,
         "note": None if evaluated_cases else "No actual navigation could be extracted from generated test cases."
     }
+
+
+
 
 def extract_required_roles(story: str, ac_blob: str) -> List[str]:
     text = normalize_text(story + " " + ac_blob)
