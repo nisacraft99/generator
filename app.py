@@ -236,7 +236,7 @@ STRICT UI RULES (MANDATORY):
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
 TEST CASE GRANULARITY RULES:
-- Very important: Prefer one focused test case per acceptance criterion.
+- VERY IMPORTANT: Give one focused test case per acceptance criterion. If less Testcases are in Output than there are acceptance criteria, the output is INVALID.
 - Do NOT merge many acceptance criteria into one test case.
 - Keep negative role tests separate from positive functional tests.
 - Keep navigation and test logic in the same testcase output, with navigation first and then feature steps.
