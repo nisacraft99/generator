@@ -266,8 +266,8 @@ If the user story is about Manager Meeting (MM), all roles must navigate through
 LOGIN -> Director Console -> Manager Meetings -> MM Dashboard
 
 A Manager test case for MM must still use the Director Console path, because MM is located there.
+So a Manager can open the Director Console.
 The Manager role is only used to verify restricted permissions.
-Never use Manager Console or Agent Meetings for MM test cases.
 
 NAVIGATION IS STRONGLY PREFERRED:
 For EVERY test case with ui_context, try to include:
