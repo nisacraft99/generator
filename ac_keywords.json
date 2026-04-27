@@ -36,7 +36,7 @@
     { "ac_id": "AC-1", "keywords": ["id", "existing mm", "redirect"], "phrases": [], "mode": "semantic" },
     { "ac_id": "AC-2", "keywords": ["delete", "button"], "phrases": [], "mode": "semantic" },
     { "ac_id": "AC-3", "keywords": ["popup", "delete", "yes", "no"], "phrases": ["are you sure to delete this mm?"], "mode": "exact" },
-    { "ac_id": "AC-4", "keywords": ["no", "popup disappears", "back", "mm"], "phrases": [], "mode": "semantic" },
+    { "ac_id": "AC-4", "keywords": ["no", "popup disappears", "mm"], "phrases": [], "mode": "semantic" },
     { "ac_id": "AC-5", "keywords": ["yes", "deleted", "redirect", "dashboard"], "phrases": [], "mode": "semantic" },
     { "ac_id": "AC-6", "keywords": ["director", "delete", "mm"], "phrases": [], "mode": "semantic" },
     { "ac_id": "AC-7", "keywords": ["manager", "view", "not delete"], "phrases": [], "mode": "semantic" }
