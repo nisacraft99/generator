@@ -236,7 +236,7 @@ STRICT UI RULES (MANDATORY):
 - Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
 
 TEST CASE GRANULARITY RULES:
-- Prefer one focused test case per acceptance criterion.
+- Very important: Prefer one focused test case per acceptance criterion.
 - Do NOT merge many acceptance criteria into one test case.
 - Keep negative role tests separate from positive functional tests.
 - Keep navigation and test logic in the same testcase output, with navigation first and then feature steps.
@@ -275,15 +275,6 @@ For EVERY test case with ui_context, try to include:
 - SECOND navigation step = console node
 - THIRD navigation step = nav_option node
 - FOURTH navigation step = screen node
-
-IMPORTANT RULES:
-- Do NOT assume any UI structure.
-- Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
-- Do NOT include ui_node_id values.
-- Focus on functional behavior derived from the requirements only.
-- Prefer one focused test case per acceptance criterion.
-- Do NOT merge many acceptance criteria into one test case.
-- Keep negative role tests separate from positive functional tests.
 
 OUTPUT SCHEMA:
 {
