@@ -24,7 +24,7 @@
     "us_id": "US-4",
     "title": "Delete MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL"],
+    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD"],
     "target_type": "modal"
   },
   {
