@@ -3,171 +3,1033 @@
     "us_id": "US-1",
     "title": "Create MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "MOD-MM-CREATE"],
-    "target_type": "modal"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "MOD-MM-CREATE"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM dashboard",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Create MM popup",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "MOD-MM-CREATE"
+        ]
+      },
+      {
+        "label": "New MM detail after create",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "Dashboard entry with MM ID",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "EL-MM-ID"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-2",
     "title": "View MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "SCR-MM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM dashboard",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "MM detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "MM ID link to detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "EL-MM-ID",
+          "SCR-MM-DETAIL"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-3",
     "title": "Edit MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-EDIT"],
-    "target_type": "modal"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "SCR-MM-DETAIL",
+      "MOD-MM-EDIT"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "Edit MM popup",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "MOD-MM-EDIT"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-4",
     "title": "Delete MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "EL-MM-ID"],
-    "target_type": "modal"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "SCR-MM-DETAIL",
+      "MOD-MM-DELETE"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "Delete MM confirmation popup",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "MOD-MM-DELETE"
+        ]
+      },
+      {
+        "label": "Back to MM dashboard after delete",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-5",
     "title": "MM Dashboard",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM dashboard",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Search MM dashboard",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "EL-MM-SEARCH",
+          "EL-MM-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "Reset MM search",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "EL-MM-RESET"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-6",
     "title": "Create Action for MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "MOD-MM-ACTION-CREATE"],
-    "target_type": "modal"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "SCR-MM-DETAIL",
+      "MOD-MM-ACTION-CREATE"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "Create MM action popup",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "MOD-MM-ACTION-CREATE"
+        ]
+      },
+      {
+        "label": "MM action list after save",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "COMP-MM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "MM action detail via ID",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "EL-MM-ACTION-ID",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-7",
     "title": "View Action for MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "SCR-MM-DETAIL",
+      "SCR-MM-ACTION-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM detail with action list",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "COMP-MM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "MM action detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "MM action ID link to detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "EL-MM-ACTION-ID",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-8",
     "title": "Edit Action for MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "SCR-MM-DETAIL",
+      "SCR-MM-ACTION-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM detail with action list",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "COMP-MM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "MM action detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Edit action control on detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL",
+          "EL-MM-ACTION-EDIT"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-9",
     "title": "Delete Action for MM",
     "module": "MM",
-    "expected_navigation": ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "SCR-MM-DETAIL", "SCR-MM-ACTION-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-D",
+      "OPT-MM",
+      "SCR-MM-DASHBOARD",
+      "SCR-MM-DETAIL",
+      "SCR-MM-ACTION-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "MM detail with action list",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "COMP-MM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "MM action detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Delete action control on detail",
+        "path": [
+          "CONSOLE-D",
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL",
+          "EL-MM-ACTION-DELETE"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
-
   {
     "us_id": "US-10",
     "title": "Create AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "MOD-AM-CREATE"],
-    "target_type": "modal"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "MOD-AM-CREATE"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM dashboard",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Create AM popup",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "MOD-AM-CREATE"
+        ]
+      },
+      {
+        "label": "New AM detail after create",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "Dashboard entry with AM ID",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "EL-AM-ID"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-11",
     "title": "View AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "SCR-AM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM dashboard",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "AM detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "AM ID link to detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "EL-AM-ID",
+          "SCR-AM-DETAIL"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-12",
     "title": "Edit AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "SCR-AM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "Edit AM button on detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "EL-AM-EDIT"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-13",
     "title": "Delete AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "SCR-AM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "Delete AM button on detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "EL-AM-DELETE"
+        ]
+      },
+      {
+        "label": "Back to AM dashboard after delete",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-14",
     "title": "AM Dashboard",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM dashboard",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Search AM dashboard",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "EL-AM-SEARCH",
+          "EL-AM-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "Reset AM search",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "EL-AM-RESET"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-15",
     "title": "Create Action for AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "SCR-AM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "Add action button on AM detail",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "EL-AM-ADD-ACTION"
+        ]
+      },
+      {
+        "label": "AM action list after save",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "COMP-AM-ACTION-LIST"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-16",
     "title": "View Action for AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "SCR-AM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM detail with action list",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "COMP-AM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "AM action ID link",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "EL-AM-ACTION-ID"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-17",
     "title": "Edit Action for AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "SCR-AM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM detail with action list",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "COMP-AM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "AM action ID link",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "EL-AM-ACTION-ID"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-18",
     "title": "Delete Action for AM",
     "module": "AM",
-    "expected_navigation": ["CONSOLE-M", "OPT-AM", "SCR-AM-DASHBOARD", "SCR-AM-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-M",
+      "OPT-AM",
+      "SCR-AM-DASHBOARD",
+      "SCR-AM-DETAIL"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "AM detail with action list",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "COMP-AM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "AM action ID link",
+        "path": [
+          "CONSOLE-M",
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "SCR-AM-DETAIL",
+          "EL-AM-ACTION-ID"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
-
   {
     "us_id": "US-19",
     "title": "View Calendar View",
     "module": "CALENDAR",
-    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "expected_navigation": [
+      "CONSOLE-C",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "Calendar view",
+        "path": [
+          "CONSOLE-C",
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ]
+      },
+      {
+        "label": "Previous months",
+        "path": [
+          "CONSOLE-C",
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-LEFT"
+        ]
+      },
+      {
+        "label": "Future months",
+        "path": [
+          "CONSOLE-C",
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-RIGHT"
+        ]
+      }
+    ],
     "target_type": "screen"
   },
   {
     "us_id": "US-20",
     "title": "Search for other Calendar Views",
     "module": "CALENDAR",
-    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "expected_navigation": [
+      "CONSOLE-C",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "Calendar view",
+        "path": [
+          "CONSOLE-C",
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ]
+      },
+      {
+        "label": "Search calendar",
+        "path": [
+          "CONSOLE-C",
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-SEARCH",
+          "EL-CALENDAR-SEARCH-BTN"
+        ]
+      }
+    ],
     "target_type": "screen"
   },
   {
     "us_id": "US-21",
     "title": "Drag and Drop Meetings within Calendar View",
     "module": "CALENDAR",
-    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "expected_navigation": [
+      "CONSOLE-C",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "Calendar view",
+        "path": [
+          "CONSOLE-C",
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ]
+      }
+    ],
     "target_type": "screen"
   },
   {
     "us_id": "US-22",
-    "title": "Cancel, Accept or Decline Meetings within Calendar View",
+    "title": "Cancel Accept or Decline Meetings within Calendar View",
     "module": "CALENDAR",
-    "expected_navigation": ["CONSOLE-C", "OPT-CALENDAR", "SCR-CALENDAR"],
+    "expected_navigation": [
+      "CONSOLE-C",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "Calendar view",
+        "path": [
+          "CONSOLE-C",
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ]
+      }
+    ],
     "target_type": "screen"
   },
-
   {
     "us_id": "US-23",
     "title": "Evaluate Employees",
     "module": "EVALUATION",
-    "expected_navigation": ["CONSOLE-E", "OPT-EVALUATE", "SCR-EVALUATE-DASHBOARD", "SCR-EVALUATE-DETAIL"],
-    "target_type": "screen"
+    "expected_navigation": [
+      "CONSOLE-E",
+      "OPT-EVALUATE",
+      "SCR-EVALUATE-DASHBOARD"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "Evaluate employees dashboard",
+        "path": [
+          "CONSOLE-E",
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Location filter search",
+        "path": [
+          "CONSOLE-E",
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD",
+          "EL-EVAL-LOCATION",
+          "EL-EVAL-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "Employee search",
+        "path": [
+          "CONSOLE-E",
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD",
+          "EL-EVAL-SEARCH",
+          "EL-EVAL-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "Evaluation page",
+        "path": [
+          "CONSOLE-E",
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD",
+          "SCR-EVALUATE-DETAIL"
+        ]
+      },
+      {
+        "label": "Save evaluation",
+        "path": [
+          "CONSOLE-E",
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD",
+          "SCR-EVALUATE-DETAIL",
+          "EL-EVAL-SAVE"
+        ]
+      },
+      {
+        "label": "Cancel evaluation",
+        "path": [
+          "CONSOLE-E",
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD",
+          "SCR-EVALUATE-DETAIL",
+          "EL-EVAL-CANCEL"
+        ]
+      },
+      {
+        "label": "Evaluation dashboard list with ID",
+        "path": [
+          "CONSOLE-E",
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD",
+          "COMP-EVAL-LIST",
+          "EL-EVAL-ID"
+        ]
+      }
+    ],
+    "target_type": "mixed"
   },
   {
     "us_id": "US-24",
     "title": "View My Evaluations",
     "module": "MY_EVALUATIONS",
-    "expected_navigation": ["CONSOLE-E", "OPT-MY-EVAL", "SCR-MY-EVAL-DASHBOARD", "SCR-MY-EVAL-DETAIL", "MOD-EVAL-APPEAL"],
+    "expected_navigation": [
+      "CONSOLE-E",
+      "OPT-MY-EVAL",
+      "SCR-MY-EVAL-DASHBOARD"
+    ],
+    "allowed_navigation_paths": [
+      {
+        "label": "My evaluations dashboard",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD"
+        ]
+      },
+      {
+        "label": "My evaluations list",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD",
+          "COMP-MY-EVAL-LIST"
+        ]
+      },
+      {
+        "label": "My evaluation detail",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD",
+          "SCR-MY-EVAL-DETAIL"
+        ]
+      },
+      {
+        "label": "Back to My Evaluations dashboard",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD",
+          "SCR-MY-EVAL-DETAIL",
+          "EL-MY-EVAL-BACK"
+        ]
+      },
+      {
+        "label": "Appeal popup",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD",
+          "SCR-MY-EVAL-DETAIL",
+          "MOD-EVAL-APPEAL"
+        ]
+      },
+      {
+        "label": "Appeal cancel",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD",
+          "SCR-MY-EVAL-DETAIL",
+          "MOD-EVAL-APPEAL",
+          "EL-EVAL-APPEAL-CANCEL"
+        ]
+      },
+      {
+        "label": "Appeal empty/save",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD",
+          "SCR-MY-EVAL-DETAIL",
+          "MOD-EVAL-APPEAL",
+          "EL-EVAL-APPEAL-SAVE"
+        ]
+      },
+      {
+        "label": "Appeal comment and save",
+        "path": [
+          "CONSOLE-E",
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD",
+          "SCR-MY-EVAL-DETAIL",
+          "MOD-EVAL-APPEAL",
+          "FIELD-EVAL-APPEAL-COMMENT",
+          "EL-EVAL-APPEAL-SAVE"
+        ]
+      }
+    ],
     "target_type": "mixed"
   }
 ]
