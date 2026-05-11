@@ -1363,26 +1363,50 @@ if run_bulk_button:
 
 if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_df.empty:
     st.subheader("Bulk Summary")
-    st.dataframe(st.session_state.bulk_summary_df, use_container_width=True)
 
-    c1, c2, c3, c4 = st.columns(4)
-    summary_for_metrics = st.session_state.bulk_summary_df
-
+    summary_for_metrics = st.session_state.bulk_summary_df.copy()
     with_ui_row = summary_for_metrics[summary_for_metrics["variant"] == "with_ui_context"]
     without_ui_row = summary_for_metrics[summary_for_metrics["variant"] == "without_ui_context"]
 
-    if not with_ui_row.empty:
-        c1.metric("Avg AC Coverage with UI", f"{with_ui_row.iloc[0]['avg_ac_coverage_pct']}%")
-        c2.metric("Avg Role Coverage with UI", f"{with_ui_row.iloc[0]['avg_role_coverage_pct']}%")
-        c3.metric("Avg Nav Correctness with UI", f"{with_ui_row.iloc[0]['avg_navigation_correctness_pct']}%")
-        c4.metric("Avg Overall with UI", f"{with_ui_row.iloc[0]['avg_overall_score_pct']}%")
+    def _fmt_pct(value):
+        try:
+            if pd.isna(value):
+                return "N/A"
+            return f"{float(value):.2f}%"
+        except Exception:
+            return "N/A"
 
-    if not without_ui_row.empty:
-        st.caption(
-            f"Without UI context: AC Coverage {without_ui_row.iloc[0]['avg_ac_coverage_pct']}%, "
-            f"Role Coverage {without_ui_row.iloc[0]['avg_role_coverage_pct']}%, "
-            f"Overall Score {without_ui_row.iloc[0]['avg_overall_score_pct']}%."
-        )
+    def _row_or_none(df):
+        return None if df.empty else df.iloc[0]
+
+    with_ui = _row_or_none(with_ui_row)
+    without_ui = _row_or_none(without_ui_row)
+
+    st.markdown("### Variant comparison")
+    left_col, right_col = st.columns(2)
+
+    with left_col:
+        st.markdown("#### With UI Context")
+        if with_ui is not None:
+            st.metric("AC Coverage", _fmt_pct(with_ui["avg_ac_coverage_pct"]))
+            st.metric("Role Coverage", _fmt_pct(with_ui["avg_role_coverage_pct"]))
+            st.metric("Navigation Correctness", _fmt_pct(with_ui["avg_navigation_correctness_pct"]))
+            st.metric("Overall Score", _fmt_pct(with_ui["avg_overall_score_pct"]))
+        else:
+            st.warning("No results for with_ui_context.")
+
+    with right_col:
+        st.markdown("#### Without UI Context")
+        if without_ui is not None:
+            st.metric("AC Coverage", _fmt_pct(without_ui["avg_ac_coverage_pct"]))
+            st.metric("Role Coverage", _fmt_pct(without_ui["avg_role_coverage_pct"]))
+            st.metric("Navigation Correctness", _fmt_pct(without_ui["avg_navigation_correctness_pct"]))
+            st.metric("Overall Score", _fmt_pct(without_ui["avg_overall_score_pct"]))
+        else:
+            st.warning("No results for without_ui_context.")
+
+    st.markdown("### Summary table")
+    st.dataframe(st.session_state.bulk_summary_df, use_container_width=True)
 
     summary_csv = st.session_state.bulk_summary_df.to_csv(index=False).encode("utf-8")
     st.download_button(
