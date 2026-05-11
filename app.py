@@ -736,6 +736,106 @@ def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
     return dedup
 
 
+
+def testcase_full_text(tc: Dict[str, Any]) -> str:
+    """Collects title, type, navigation steps, normal steps and expected results."""
+    parts = [str(tc.get("title", "")), str(tc.get("type", ""))]
+    for key in ["navigation_steps", "steps_only", "steps"]:
+        for s in tc.get(key, []) or []:
+            if isinstance(s, dict):
+                parts.append(str(s.get("step", "")))
+                parts.append(str(s.get("expected", "")))
+            else:
+                parts.append(str(s))
+    return normalize_text(" ".join(parts))
+
+
+def extract_primary_roles_from_story(story: str) -> List[str]:
+    """
+    Extracts the role(s) from the User Story part before "I want".
+
+    Examples:
+    - "As a Director I want ..." -> ["director"]
+    - "As a Director/Manager/Agent I want ..." -> ["agent", "director", "manager"]
+    """
+    txt = normalize_text(story)
+    m = re.search(r"\bas\s+(?:a|an)?\s*(.*?)\s+i\s+want\b", txt)
+    if m:
+        role_part = m.group(1)
+        roles = [r for r in ROLE_WORDS if r in role_part]
+        if roles:
+            return sorted(set(roles))
+
+    # Fallback: use any role mentioned in the story text.
+    roles = [r for r in ROLE_WORDS if r in txt]
+    return sorted(set(roles))
+
+
+def roles_mentioned_in_testcase(tc: Dict[str, Any]) -> List[str]:
+    txt = testcase_full_text(tc)
+    return sorted({r for r in ROLE_WORDS if r in txt})
+
+
+def should_skip_navigation_evaluation(tc: Dict[str, Any], primary_roles: List[str]) -> (bool, str):
+    """
+    Decides whether a test case should be excluded from Navigation Correctness.
+
+    Reason:
+    Navigation Correctness checks whether a user reaches the functional UI path
+    of the User Story. Permission/access test cases often intentionally verify
+    that a role cannot reach or use a function. Those cases are still valid for
+    AC Coverage and Role Coverage, but they should not lower Navigation
+    Correctness.
+
+    Examples skipped for US-1:
+    - Manager can view the MM module but cannot create an MM
+    - Agent cannot view the MM module
+    - Only Director can create an MM, tested with Manager login
+    """
+    txt = testcase_full_text(tc)
+    tc_roles = roles_mentioned_in_testcase(tc)
+    primary = set(primary_roles or [])
+
+    # If the User Story has a clear primary role and the test case is mainly
+    # about another role, this is usually a permission/scope test, not a
+    # navigation test for the main feature path.
+    if primary:
+        non_primary_roles = [r for r in tc_roles if r not in primary]
+        if non_primary_roles:
+            return True, f"Skipped permission/scope test for non-primary role(s): {', '.join(non_primary_roles)}"
+
+    # Access-denial tests should not be counted as failed navigation.
+    access_denial_patterns = [
+        "not visible",
+        "not available",
+        "not accessible",
+        "cannot view",
+        "can not view",
+        "not view",
+        "does not have permission",
+        "do not have permission",
+        "no permission",
+        "permission denied",
+        "access denied",
+        "is denied",
+        "action is denied",
+        "denied or unavailable",
+        "unavailable for",
+        "restricted control",
+        "has viewing permission",
+        "viewing permissions",
+    ]
+    if any(p in txt for p in access_denial_patterns):
+        return True, "Skipped permission/access-denial test"
+
+    # Titles like "Only a Director can create" are permission rules. If they
+    # are tested through alternative roles, the first rule above catches them;
+    # this fallback catches similar formulations.
+    if "only" in txt and any(r in txt for r in ROLE_WORDS) and any(v in txt for v in [" create", " edit", " delete", " view"]):
+        return True, "Skipped role-permission rule test"
+
+    return False, ""
+
 def is_subsequence(expected: List[str], actual: List[str]) -> bool:
     """
     True, wenn expected in actual in gleicher Reihenfolge vorkommt.
@@ -771,7 +871,7 @@ def navigation_subsequence_score(expected: List[str], actual: List[str]) -> floa
     return matched / len(expected)
 
 
-def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
+def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
     ref = find_nav_reference(us_id_value)
     if not ref:
         return {
@@ -806,15 +906,21 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
 
     evaluated_cases = 0
     correct_cases = 0
+    skipped_cases = 0
     details = []
+    primary_roles = extract_primary_roles_from_story(story)
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
-        can_evaluate = len(actual) > 0
+        skip_nav, skip_reason = should_skip_navigation_evaluation(tc, primary_roles)
+        can_evaluate = (len(actual) > 0) and not skip_nav
 
         best_score = 0.0
         best_expected = []
         is_correct = False
+
+        if skip_nav:
+            skipped_cases += 1
 
         if can_evaluate:
             evaluated_cases += 1
@@ -841,7 +947,8 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "expected": best_expected,
             "can_evaluate": can_evaluate,
             "is_correct": is_correct,
-            "match_score": round(best_score, 2)
+            "match_score": round(best_score, 2),
+            "skip_reason": skip_reason
         })
 
     correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
@@ -850,8 +957,9 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         "correctness_pct": correctness_pct,
         "correct_count": correct_cases,
         "evaluated_count": evaluated_cases,
+        "skipped_count": skipped_cases,
         "details": details,
-        "note": None if evaluated_cases else "No actual navigation could be extracted from generated test cases."
+        "note": None if evaluated_cases else "No evaluable navigation test cases found. Permission/access-denial tests may have been skipped."
     }
 
 
@@ -907,7 +1015,7 @@ def evaluate_role_coverage(story: str, ac_blob: str, cases: List[Dict[str, Any]]
 def evaluate_all(us_id_value: str, story: str, ac_blob: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "ac": evaluate_ac_coverage(us_id_value, cases),
-        "navigation": evaluate_navigation_correctness(us_id_value, cases),
+        "navigation": evaluate_navigation_correctness(us_id_value, cases, story),
         "role": evaluate_role_coverage(story, ac_blob, cases)
     }
 
