@@ -20,7 +20,7 @@
     { "id": "EL-MM-SEARCH-BTN", "type": "element", "name": "MM Search Button", "parent": "SCR-MM-DASHBOARD" },
     { "id": "EL-MM-RESET", "type": "element", "name": "MM Reset Button", "parent": "SCR-MM-DASHBOARD" },
 
-    { "id": "MOD-MM-CREATE", "type": "modal", "name": "Create MM Popup", "parent": "SCR-MM-DASHBOARD" },
+    { "id": "MOD-MM-CREATE", "type": "modal", "name": "Create MM Popup", "parent": "EL-MM-CREATE" },
     { "id": "FIELD-MM-TITLE", "type": "input", "name": "Title", "required": true, "parent": "MOD-MM-CREATE" },
     { "id": "FIELD-MM-DEADLINE", "type": "input", "name": "Deadline", "required": true, "parent": "MOD-MM-CREATE" },
     { "id": "FIELD-MM-LOCATION", "type": "select", "name": "Location", "required": true, "parent": "MOD-MM-CREATE" },
@@ -28,18 +28,18 @@
     { "id": "EL-MM-CREATE-SAVE", "type": "element", "name": "Create Button", "parent": "MOD-MM-CREATE" },
     { "id": "EL-MM-CREATE-CANCEL", "type": "element", "name": "Cancel Button", "parent": "MOD-MM-CREATE" },
 
-    { "id": "SCR-MM-DETAIL", "type": "screen", "name": "MM Detail", "parent": "SCR-MM-DASHBOARD" },
+    { "id": "SCR-MM-DETAIL", "type": "screen", "name": "MM Detail", "parent": "EL-MM-ID" },
     { "id": "EL-MM-EDIT", "type": "element", "name": "Edit MM Button", "parent": "SCR-MM-DETAIL" },
     { "id": "EL-MM-DELETE", "type": "element", "name": "Delete MM Button", "parent": "SCR-MM-DETAIL" },
     { "id": "EL-MM-ADD-ACTION", "type": "element", "name": "Add Action Button", "parent": "SCR-MM-DETAIL" },
     { "id": "COMP-MM-ACTION-LIST", "type": "component", "name": "List of MM Actions", "parent": "SCR-MM-DETAIL" },
     { "id": "EL-MM-ACTION-ID", "type": "element", "name": "MM Action ID Link", "parent": "COMP-MM-ACTION-LIST" },
 
-    { "id": "MOD-MM-EDIT", "type": "modal", "name": "Edit MM Popup", "parent": "SCR-MM-DETAIL" },
+    { "id": "MOD-MM-EDIT", "type": "modal", "name": "Edit MM Popup", "parent": "EL-MM-EDIT" },
     { "id": "EL-MM-EDIT-SAVE", "type": "element", "name": "Save MM Edit Button", "parent": "MOD-MM-EDIT" },
     { "id": "EL-MM-EDIT-CANCEL", "type": "element", "name": "Cancel MM Edit Button", "parent": "MOD-MM-EDIT" },
 
-    { "id": "MOD-MM-DELETE", "type": "modal", "name": "Delete MM Confirmation Popup", "parent": "SCR-MM-DETAIL" },
+    { "id": "MOD-MM-DELETE", "type": "modal", "name": "Delete MM Confirmation Popup", "parent": "EL-MM-DELETE" },
     { "id": "EL-MM-DELETE-YES", "type": "element", "name": "Yes Button", "parent": "MOD-MM-DELETE" },
     { "id": "EL-MM-DELETE-NO", "type": "element", "name": "No Button", "parent": "MOD-MM-DELETE" },
 
@@ -51,7 +51,7 @@
     { "id": "EL-MM-ACTION-SAVE", "type": "element", "name": "Save Action Button", "parent": "MOD-MM-ACTION-CREATE" },
     { "id": "EL-MM-ACTION-CANCEL", "type": "element", "name": "Cancel Action Button", "parent": "MOD-MM-ACTION-CREATE" },
 
-    { "id": "SCR-MM-ACTION-DETAIL", "type": "screen", "name": "MM Action Detail", "parent": "SCR-MM-DETAIL" },
+    { "id": "SCR-MM-ACTION-DETAIL", "type": "screen", "name": "MM Action Detail", "parent": "EL-MM-ACTION-ID" },
     { "id": "EL-MM-ACTION-EDIT", "type": "element", "name": "Edit Action Button", "parent": "SCR-MM-ACTION-DETAIL" },
     { "id": "EL-MM-ACTION-DELETE", "type": "element", "name": "Delete Action Button", "parent": "SCR-MM-ACTION-DETAIL" },
 
