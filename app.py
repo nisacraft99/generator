@@ -560,74 +560,178 @@ def find_nav_reference(us_id_value: str) -> Optional[Dict[str, Any]]:
             return item
     return None
 
-def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[str]:
+def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
+    """
+    Infers one or more UI node IDs from a generated test step.
+
+    Important: a single test step can imply multiple nodes, e.g.
+    "Click Create MM Button" + "Create MM Popup appears" implies both
+    EL-MM-CREATE and MOD-MM-CREATE. Navigation Correctness should count the
+    reached target modal/screen, not only the high-level dashboard path.
+    """
     text = normalize_text(f"{step_text} {expected_text}")
+    nodes: List[str] = []
 
+    def add(node_id: str):
+        if node_id and node_id not in nodes:
+            nodes.append(node_id)
+
+    # Consoles
     if "director console" in text:
-        return "CONSOLE-D"
+        add("CONSOLE-D")
     if "manager console" in text:
-        return "CONSOLE-M"
+        add("CONSOLE-M")
     if "calendar console" in text:
-        return "CONSOLE-C"
+        add("CONSOLE-C")
     if "evaluation console" in text:
-        return "CONSOLE-E"
+        add("CONSOLE-E")
 
-    if "manager meeting" in text or "manager meetings" in text:
-        return "OPT-MM"
-    if "agent meeting" in text or "agent meetings" in text:
-        return "OPT-AM"
+    # Navigation options / modules
+    if "manager meeting" in text or "manager meetings" in text or "mm module" in text:
+        add("OPT-MM")
+    if "agent meeting" in text or "agent meetings" in text or "am module" in text:
+        add("OPT-AM")
     if "calendar view" in text or ("calendar" in text and "option" in text):
-        return "OPT-CALENDAR"
+        add("OPT-CALENDAR")
     if "evaluate employees" in text:
-        return "OPT-EVALUATE"
+        add("OPT-EVALUATE")
+    if "my evaluations" in text:
+        add("OPT-MY-EVAL")
 
+    # Screens
     if "mm dashboard" in text:
-        return "SCR-MM-DASHBOARD"
+        add("SCR-MM-DASHBOARD")
     if "am dashboard" in text:
-        return "SCR-AM-DASHBOARD"
-    if "mm detail" in text or "existing mm id" in text or "open an existing mm" in text:
-        return "SCR-MM-DETAIL"
-    if "am detail" in text or "existing am id" in text or "open an existing am" in text:
-        return "SCR-AM-DETAIL"
+        add("SCR-AM-DASHBOARD")
+    if "mm detail" in text or "mm detail menu" in text or "existing mm id" in text or "open an existing mm" in text:
+        add("SCR-MM-DETAIL")
+    if "am detail" in text or "am detail menu" in text or "existing am id" in text or "open an existing am" in text:
+        add("SCR-AM-DETAIL")
     if "calendar" in text and "displayed" in text:
-        return "SCR-CALENDAR"
+        add("SCR-CALENDAR")
     if "evaluate employees dashboard" in text:
-        return "SCR-EVALUATE-DASHBOARD"
+        add("SCR-EVALUATE-DASHBOARD")
+    if "evaluation page" in text:
+        add("SCR-EVALUATION-DETAIL")
+    if "my evaluations dashboard" in text:
+        add("SCR-MY-EVAL-DASHBOARD")
 
-    return None
+    # MM modals and elements
+    if "create mm button" in text or "click create mm" in text:
+        add("EL-MM-CREATE")
+    if "create mm popup" in text or "create mm pop up" in text or "create mm modal" in text:
+        add("MOD-MM-CREATE")
+    if "edit mm button" in text or "click edit" in text and "mm" in text:
+        add("EL-MM-EDIT")
+    if "edit mm popup" in text or "edit mm pop up" in text or "edit mm modal" in text:
+        add("MOD-MM-EDIT")
+    if "delete mm button" in text or ("click delete" in text and "mm" in text):
+        add("EL-MM-DELETE")
+    if "delete mm confirmation" in text or "sure to delete this mm" in text:
+        add("MOD-MM-DELETE")
+    if "add action button" in text and "mm" in text:
+        add("EL-MM-ADD-ACTION")
+    if ("create action" in text or "add action" in text) and "mm" in text and ("popup" in text or "window" in text or "appears" in text):
+        add("MOD-MM-ACTION-CREATE")
+    if "mm action detail" in text or ("action details" in text and "mm" in text):
+        add("SCR-MM-ACTION-DETAIL")
+
+    # AM modals and elements
+    if "create am button" in text or "click create am" in text:
+        add("EL-AM-CREATE")
+    if "create am popup" in text or "create am pop up" in text or "create am modal" in text:
+        add("MOD-AM-CREATE")
+    if "edit am button" in text or "click edit" in text and "am" in text:
+        add("EL-AM-EDIT")
+    if "edit am popup" in text or "edit am pop up" in text or "edit am modal" in text:
+        add("MOD-AM-EDIT")
+    if "delete am button" in text or ("click delete" in text and "am" in text):
+        add("EL-AM-DELETE")
+    if "delete am confirmation" in text or "sure to delete this am" in text:
+        add("MOD-AM-DELETE")
+    if "add action button" in text and "am" in text:
+        add("EL-AM-ADD-ACTION")
+    if ("create action" in text or "add action" in text) and "am" in text and ("popup" in text or "window" in text or "appears" in text):
+        add("MOD-AM-ACTION-CREATE")
+    if "am action detail" in text or ("action details" in text and "am" in text):
+        add("SCR-AM-ACTION-DETAIL")
+
+    return nodes
+
+
+def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[str]:
+    """Backward-compatible helper: returns the first inferred node, if any."""
+    nodes = infer_nodes_from_step_text(step_text, expected_text)
+    return nodes[0] if nodes else None
+
+
+def _append_node(path: List[str], node: Optional[str]):
+    if node and node != "LOGIN":
+        path.append(node)
+
+
+def _expand_action_node(node: str) -> List[str]:
+    """
+    Some generated outputs contain the clicked button node, but the navigation
+    reference expects the resulting modal/screen. This maps action elements to
+    their target nodes so the evaluation can recognize the reached UI state.
+    """
+    mapping = {
+        "EL-MM-CREATE": "MOD-MM-CREATE",
+        "EL-MM-EDIT": "MOD-MM-EDIT",
+        "EL-MM-DELETE": "MOD-MM-DELETE",
+        "EL-MM-ADD-ACTION": "MOD-MM-ACTION-CREATE",
+        "EL-AM-CREATE": "MOD-AM-CREATE",
+        "EL-AM-EDIT": "MOD-AM-EDIT",
+        "EL-AM-DELETE": "MOD-AM-DELETE",
+        "EL-AM-ADD-ACTION": "MOD-AM-ACTION-CREATE",
+    }
+    if node in mapping:
+        return [node, mapping[node]]
+    return [node]
+
 
 def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
-    path = []
+    """
+    Extracts the actual navigation path from a generated test case.
 
-    # 1) ui_node_id aus navigation_steps
-    for s in tc.get("navigation_steps", []) or []:
-        node = s.get("ui_node_id")
-        if node and node != "LOGIN":
-            path.append(node)
+    Previous version only looked at navigation_steps first and ignored normal
+    steps if navigation_steps already existed. That caused cases like US-1 to
+    stop at SCR-MM-DASHBOARD even though the normal steps clearly clicked
+    Create MM Button and reached MOD-MM-CREATE.
 
-    # 2) fallback: navigation_steps Text
-    if not path:
-        for s in tc.get("navigation_steps", []) or []:
-            inferred = infer_node_from_step_text(
-                s.get("step", ""),
-                s.get("expected", "")
-            )
-            if inferred:
-                path.append(inferred)
+    This version evaluates BOTH navigation_steps and normal steps.
+    """
+    path: List[str] = []
 
-    # 3) fallback: erste steps
-    if not path:
-        for s in (tc.get("steps", []) or [])[:6]:
-            inferred = infer_node_from_step_text(
-                s.get("step", ""),
-                s.get("expected", "")
-            )
-            if inferred:
-                path.append(inferred)
+    all_steps = []
+    all_steps.extend(tc.get("navigation_steps", []) or [])
+    all_steps.extend(tc.get("steps_only", []) or [])
 
-    dedup = []
+    # In older normalized cases, steps already contains navigation + test steps.
+    # Add it too, but dedup later.
+    all_steps.extend(tc.get("steps", []) or [])
+
+    for s in all_steps:
+        explicit_node = s.get("ui_node_id") if isinstance(s, dict) else None
+        if explicit_node and explicit_node != "LOGIN":
+            for expanded in _expand_action_node(explicit_node):
+                _append_node(path, expanded)
+
+        inferred_nodes = infer_nodes_from_step_text(
+            s.get("step", "") if isinstance(s, dict) else str(s),
+            s.get("expected", "") if isinstance(s, dict) else ""
+        )
+        for node in inferred_nodes:
+            for expanded in _expand_action_node(node):
+                _append_node(path, expanded)
+
+    # Deduplicate while preserving order. We remove repeated nodes globally,
+    # not only consecutive duplicates, because normalized test cases often store
+    # navigation_steps and steps with the same content.
+    dedup: List[str] = []
     for p in path:
-        if not dedup or dedup[-1] != p:
+        if p not in dedup:
             dedup.append(p)
     return dedup
 
