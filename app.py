@@ -10,6 +10,7 @@ import re
 from typing import Dict, List, Any, Optional
 
 import streamlit as st
+import pandas as pd
 from dotenv import load_dotenv
 
 from reportlab.platypus import (
@@ -205,6 +206,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 UI_CONTEXT_PATH = "ui_context.json"
 NAV_REFERENCE_PATH = "navigation_reference.json"
 AC_KEYWORDS_PATH = "ac_keywords.json"
+BULK_USERSTORIES_PATH = "bulk_userstories.json"
 
 def load_json_file(path: str, default: Any):
     try:
@@ -805,6 +807,212 @@ def evaluate_all(us_id_value: str, story: str, ac_blob: str, cases: List[Dict[st
         "role": evaluate_role_coverage(story, ac_blob, cases)
     }
 
+
+# ======================= BULK EVALUATION HELPERS =======================
+def load_bulk_userstories(source: Any) -> List[Dict[str, Any]]:
+    """
+    Loads multiple user stories from either a path or an uploaded JSON file.
+
+    Expected JSON format:
+    [
+      {
+        "id": "US-1",
+        "title": "Create MM",
+        "story": "As a ...",
+        "acceptance_criteria": ["AC 1", "AC 2"]
+      }
+    ]
+    """
+    try:
+        if isinstance(source, str):
+            with open(source, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = json.load(source)
+    except Exception as e:
+        raise ValueError(f"Could not read bulk user stories JSON: {e}")
+
+    if not isinstance(data, list):
+        raise ValueError("Bulk user stories JSON must contain a list of user stories.")
+
+    cleaned = []
+    for idx, item in enumerate(data, start=1):
+        if not isinstance(item, dict):
+            raise ValueError(f"Entry {idx} is not a JSON object.")
+
+        us_id_bulk = str(item.get("id", "")).strip()
+        title = str(item.get("title", "")).strip()
+        story = str(item.get("story", "")).strip()
+        acs = item.get("acceptance_criteria", [])
+
+        if not us_id_bulk:
+            raise ValueError(f"Entry {idx} is missing 'id'.")
+        if not story:
+            raise ValueError(f"Entry {idx} is missing 'story'.")
+        if not isinstance(acs, list) or not acs:
+            raise ValueError(f"Entry {idx} must contain a non-empty list 'acceptance_criteria'.")
+
+        ac_blob = "\n".join(str(ac).strip() for ac in acs if str(ac).strip())
+        if not ac_blob:
+            raise ValueError(f"Entry {idx} has no usable acceptance criteria.")
+
+        cleaned.append({
+            "id": us_id_bulk,
+            "title": title,
+            "story": story,
+            "ac_blob": ac_blob,
+            "acceptance_criteria_count": len([ac for ac in acs if str(ac).strip()])
+        })
+
+    return cleaned
+
+
+def _metric_or_none(evaluation: Dict[str, Any], section: str, key: str) -> Optional[float]:
+    try:
+        value = evaluation.get(section, {}).get(key)
+        if value is None:
+            return None
+        return float(value)
+    except Exception:
+        return None
+
+
+def _overall_score(ac_pct: Optional[float], role_pct: Optional[float], nav_pct: Optional[float]) -> Optional[float]:
+    """
+    Simple combined score for a run.
+    It averages all available metric percentages.
+    Navigation is often N/A without UI context; in that case it is not included.
+    """
+    values = [v for v in [ac_pct, role_pct, nav_pct] if v is not None]
+    if not values:
+        return None
+    return round(sum(values) / len(values), 2)
+
+
+def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> pd.DataFrame:
+    """
+    For every user story and every repetition, run both variants:
+    - without UI context
+    - with UI context
+
+    Then evaluate each output and return one result row per generated output.
+    """
+    rows = []
+    total_runs = len(userstories) * repetitions * 2
+    done = 0
+
+    progress = st.progress(0)
+    status = st.empty()
+
+    variants = [
+        ("without_ui_context", False),
+        ("with_ui_context", True),
+    ]
+
+    for rep in range(1, repetitions + 1):
+        for item in userstories:
+            for variant_name, use_ui in variants:
+                done += 1
+                status.write(
+                    f"Bulk run {done}/{total_runs}: {item['id']} — {variant_name} — repetition {rep}/{repetitions}"
+                )
+                progress.progress(done / total_runs)
+
+                try:
+                    cases, open_q = generate_cases(
+                        story=item["story"],
+                        ac_blob=item["ac_blob"],
+                        use_ui_context=use_ui,
+                    )
+
+                    evaluation = evaluate_all(
+                        us_id_value=item["id"],
+                        story=item["story"],
+                        ac_blob=item["ac_blob"],
+                        cases=cases,
+                    )
+
+                    ac_pct = _metric_or_none(evaluation, "ac", "overall_pct")
+                    role_pct = _metric_or_none(evaluation, "role", "overall_pct")
+                    nav_pct = _metric_or_none(evaluation, "navigation", "correctness_pct")
+
+                    rows.append({
+                        "repetition": rep,
+                        "us_id": item["id"],
+                        "title": item.get("title", ""),
+                        "variant": variant_name,
+                        "use_ui_context": use_ui,
+                        "acceptance_criteria_count": item.get("acceptance_criteria_count"),
+                        "testcase_count": len(cases),
+                        "ac_coverage_pct": ac_pct,
+                        "role_coverage_pct": role_pct,
+                        "navigation_correctness_pct": nav_pct,
+                        "overall_score_pct": _overall_score(ac_pct, role_pct, nav_pct),
+                        "open_questions_count": len(open_q or []),
+                        "error": "",
+                    })
+
+                except Exception as e:
+                    rows.append({
+                        "repetition": rep,
+                        "us_id": item.get("id", ""),
+                        "title": item.get("title", ""),
+                        "variant": variant_name,
+                        "use_ui_context": use_ui,
+                        "acceptance_criteria_count": item.get("acceptance_criteria_count"),
+                        "testcase_count": 0,
+                        "ac_coverage_pct": None,
+                        "role_coverage_pct": None,
+                        "navigation_correctness_pct": None,
+                        "overall_score_pct": None,
+                        "open_questions_count": 0,
+                        "error": str(e),
+                    })
+
+    progress.progress(1.0)
+    status.write("Bulk evaluation finished ✅")
+
+    return pd.DataFrame(rows)
+
+
+def summarize_bulk_results(results_df: pd.DataFrame) -> pd.DataFrame:
+    if results_df.empty:
+        return pd.DataFrame()
+
+    summary = results_df.groupby("variant", dropna=False).agg(
+        runs=("variant", "count"),
+        user_stories=("us_id", "nunique"),
+        avg_testcase_count=("testcase_count", "mean"),
+        avg_ac_coverage_pct=("ac_coverage_pct", "mean"),
+        std_ac_coverage_pct=("ac_coverage_pct", "std"),
+        avg_role_coverage_pct=("role_coverage_pct", "mean"),
+        std_role_coverage_pct=("role_coverage_pct", "std"),
+        avg_navigation_correctness_pct=("navigation_correctness_pct", "mean"),
+        std_navigation_correctness_pct=("navigation_correctness_pct", "std"),
+        avg_overall_score_pct=("overall_score_pct", "mean"),
+        std_overall_score_pct=("overall_score_pct", "std"),
+        failed_runs=("error", lambda values: sum(bool(str(v).strip()) for v in values)),
+    ).reset_index()
+
+    return summary.round(2)
+
+
+def summarize_bulk_by_user_story(results_df: pd.DataFrame) -> pd.DataFrame:
+    if results_df.empty:
+        return pd.DataFrame()
+
+    by_us = results_df.groupby(["us_id", "title", "variant"], dropna=False).agg(
+        runs=("variant", "count"),
+        avg_testcase_count=("testcase_count", "mean"),
+        avg_ac_coverage_pct=("ac_coverage_pct", "mean"),
+        avg_role_coverage_pct=("role_coverage_pct", "mean"),
+        avg_navigation_correctness_pct=("navigation_correctness_pct", "mean"),
+        avg_overall_score_pct=("overall_score_pct", "mean"),
+        failed_runs=("error", lambda values: sum(bool(str(v).strip()) for v in values)),
+    ).reset_index()
+
+    return by_us.round(2)
+
 # ======================= PDF BUILDER =======================
 def build_pdf(
     story_text: str,
@@ -1083,3 +1291,125 @@ if st.session_state.last_pdf:
         file_name=f"test_design_{us_id}_{st.session_state.last_variant or 'result'}.pdf",
         mime="application/pdf",
     )
+
+
+# ======================= BULK EVALUATION UI =======================
+st.markdown("---")
+st.subheader("Bulk Evaluation 📊")
+st.write(
+    "This runs all user stories in a bulk JSON file. For every user story, the tool generates "
+    "test cases once without UI context and once with UI context. You can repeat the whole run "
+    "multiple times to get more stable average scores."
+)
+
+bulk_repetitions = st.number_input(
+    "How many repetitions per variant?",
+    min_value=1,
+    max_value=20,
+    value=3,
+    step=1,
+    help="Example: 3 repetitions with 24 user stories means 24 × 2 variants × 3 = 144 LLM calls."
+)
+
+bulk_uploaded_file = st.file_uploader(
+    "Optional: upload bulk_userstories.json. If nothing is uploaded, the app tries to use the local bulk_userstories.json file.",
+    type=["json"],
+    key="bulk_userstories_upload",
+)
+
+try:
+    if bulk_uploaded_file is not None:
+        preview_userstories = load_bulk_userstories(bulk_uploaded_file)
+        bulk_uploaded_file.seek(0)
+        st.info(f"Uploaded bulk file contains {len(preview_userstories)} user stories.")
+    elif os.path.exists(BULK_USERSTORIES_PATH):
+        preview_userstories = load_bulk_userstories(BULK_USERSTORIES_PATH)
+        st.info(f"Local {BULK_USERSTORIES_PATH} contains {len(preview_userstories)} user stories.")
+    else:
+        preview_userstories = []
+        st.warning(f"No uploaded file and no local {BULK_USERSTORIES_PATH} found.")
+except Exception as e:
+    preview_userstories = []
+    st.error(f"Could not preview bulk user stories: {e}")
+
+estimated_calls = len(preview_userstories) * int(bulk_repetitions) * 2
+st.caption(f"Estimated LLM calls: {estimated_calls}")
+
+run_bulk_button = st.button(
+    "run bulk evaluation 🚀",
+    disabled=not (client and preview_userstories),
+)
+
+if run_bulk_button:
+    try:
+        # Reload file so the stream position is correct.
+        if bulk_uploaded_file is not None:
+            bulk_uploaded_file.seek(0)
+            bulk_userstories = load_bulk_userstories(bulk_uploaded_file)
+        else:
+            bulk_userstories = load_bulk_userstories(BULK_USERSTORIES_PATH)
+
+        with st.spinner("Running bulk evaluation. This may take several minutes..."):
+            results_df = run_bulk_evaluation(bulk_userstories, int(bulk_repetitions))
+            summary_df = summarize_bulk_results(results_df)
+            by_us_df = summarize_bulk_by_user_story(results_df)
+
+        st.session_state.bulk_results_df = results_df
+        st.session_state.bulk_summary_df = summary_df
+        st.session_state.bulk_by_us_df = by_us_df
+
+    except Exception as e:
+        st.error(f"Bulk evaluation failed: {e}")
+
+if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_df.empty:
+    st.subheader("Bulk Summary")
+    st.dataframe(st.session_state.bulk_summary_df, use_container_width=True)
+
+    c1, c2, c3, c4 = st.columns(4)
+    summary_for_metrics = st.session_state.bulk_summary_df
+
+    with_ui_row = summary_for_metrics[summary_for_metrics["variant"] == "with_ui_context"]
+    without_ui_row = summary_for_metrics[summary_for_metrics["variant"] == "without_ui_context"]
+
+    if not with_ui_row.empty:
+        c1.metric("Avg AC Coverage with UI", f"{with_ui_row.iloc[0]['avg_ac_coverage_pct']}%")
+        c2.metric("Avg Role Coverage with UI", f"{with_ui_row.iloc[0]['avg_role_coverage_pct']}%")
+        c3.metric("Avg Nav Correctness with UI", f"{with_ui_row.iloc[0]['avg_navigation_correctness_pct']}%")
+        c4.metric("Avg Overall with UI", f"{with_ui_row.iloc[0]['avg_overall_score_pct']}%")
+
+    if not without_ui_row.empty:
+        st.caption(
+            f"Without UI context: AC Coverage {without_ui_row.iloc[0]['avg_ac_coverage_pct']}%, "
+            f"Role Coverage {without_ui_row.iloc[0]['avg_role_coverage_pct']}%, "
+            f"Overall Score {without_ui_row.iloc[0]['avg_overall_score_pct']}%."
+        )
+
+    summary_csv = st.session_state.bulk_summary_df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "download bulk summary CSV",
+        data=summary_csv,
+        file_name="bulk_evaluation_summary.csv",
+        mime="text/csv",
+    )
+
+if "bulk_by_us_df" in st.session_state and not st.session_state.bulk_by_us_df.empty:
+    with st.expander("Bulk results by User Story"):
+        st.dataframe(st.session_state.bulk_by_us_df, use_container_width=True)
+        by_us_csv = st.session_state.bulk_by_us_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "download user-story summary CSV",
+            data=by_us_csv,
+            file_name="bulk_evaluation_by_user_story.csv",
+            mime="text/csv",
+        )
+
+if "bulk_results_df" in st.session_state and not st.session_state.bulk_results_df.empty:
+    with st.expander("Raw bulk result rows"):
+        st.dataframe(st.session_state.bulk_results_df, use_container_width=True)
+        raw_csv = st.session_state.bulk_results_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "download raw bulk results CSV",
+            data=raw_csv,
+            file_name="bulk_evaluation_raw_results.csv",
+            mime="text/csv",
+        )
