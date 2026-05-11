@@ -771,40 +771,65 @@ def extract_primary_roles_from_story(story: str) -> List[str]:
     return sorted(set(roles))
 
 
-def roles_mentioned_in_testcase(tc: Dict[str, Any]) -> List[str]:
+def login_roles_in_testcase(tc: Dict[str, Any]) -> List[str]:
+    """
+    Extracts roles only when they are used as actual test actors.
+
+    Important: We must NOT count words such as "Manager Meeting" as the
+    Manager role. Otherwise every MM test case would look like a Manager test
+    and would be skipped from Navigation Correctness.
+    """
     txt = testcase_full_text(tc)
-    return sorted({r for r in ROLE_WORDS if r in txt})
+    found = set()
+
+    for role in ROLE_WORDS:
+        actor_patterns = [
+            rf"\blog\s*in\s*as\s+(?:a\s+|an\s+)?{role}\b",
+            rf"\blogin\s*as\s+(?:a\s+|an\s+)?{role}\b",
+            rf"\blogged\s*in\s*as\s+(?:a\s+|an\s+)?{role}\b",
+            rf"\b{role}\s+session\b",
+            rf"\buser\s+with\s+the\s+role\s+{role}\b",
+            rf"\bas\s+(?:a\s+|an\s+)?{role}\b",
+        ]
+        if any(re.search(pattern, txt) for pattern in actor_patterns):
+            found.add(role)
+
+    return sorted(found)
+
+
+def roles_mentioned_in_testcase(tc: Dict[str, Any]) -> List[str]:
+    """Backward-compatible name used by the role/navigation logic."""
+    return login_roles_in_testcase(tc)
 
 
 def should_skip_navigation_evaluation(tc: Dict[str, Any], primary_roles: List[str]) -> (bool, str):
     """
-    Decides whether a test case should be excluded from Navigation Correctness.
+    Excludes permission/access tests from Navigation Correctness.
 
-    Reason:
-    Navigation Correctness checks whether a user reaches the functional UI path
-    of the User Story. Permission/access test cases often intentionally verify
-    that a role cannot reach or use a function. Those cases are still valid for
-    AC Coverage and Role Coverage, but they should not lower Navigation
-    Correctness.
+    Navigation Correctness should measure whether a generated test case can
+    describe the path to the function under test. It should not punish cases
+    whose purpose is to prove that another role cannot access or use that
+    function.
 
-    Examples skipped for US-1:
-    - Manager can view the MM module but cannot create an MM
-    - Agent cannot view the MM module
-    - Only Director can create an MM, tested with Manager login
+    The skip decision is based on actor/login roles, not on every role word in
+    the text. This prevents false skipping caused by module names such as
+    "Manager Meeting".
     """
     txt = testcase_full_text(tc)
-    tc_roles = roles_mentioned_in_testcase(tc)
+    actor_roles = login_roles_in_testcase(tc)
     primary = set(primary_roles or [])
 
-    # If the User Story has a clear primary role and the test case is mainly
-    # about another role, this is usually a permission/scope test, not a
-    # navigation test for the main feature path.
+    # If the test case is executed by a non-primary actor role, it is usually a
+    # permission/scope case for this User Story. Example: US-1 primary role is
+    # Director; Manager/Agent tests verify restrictions and should not reduce
+    # Navigation Correctness.
     if primary:
-        non_primary_roles = [r for r in tc_roles if r not in primary]
+        non_primary_roles = [r for r in actor_roles if r not in primary]
         if non_primary_roles:
-            return True, f"Skipped permission/scope test for non-primary role(s): {', '.join(non_primary_roles)}"
+            return True, f"Skipped permission/scope test for non-primary actor role(s): {', '.join(non_primary_roles)}"
 
-    # Access-denial tests should not be counted as failed navigation.
+    # Clear access-denial tests should not be counted as failed navigation.
+    # Keep this list specific; do not skip every generic negative/boundary test.
     access_denial_patterns = [
         "not visible",
         "not available",
@@ -812,27 +837,25 @@ def should_skip_navigation_evaluation(tc: Dict[str, Any], primary_roles: List[st
         "cannot view",
         "can not view",
         "not view",
+        "cannot access",
+        "can not access",
         "does not have permission",
         "do not have permission",
         "no permission",
         "permission denied",
         "access denied",
-        "is denied",
         "action is denied",
         "denied or unavailable",
         "unavailable for",
         "restricted control",
         "has viewing permission",
         "viewing permissions",
+        "blocked from viewing",
+        "module is not visible",
+        "module is not accessible",
     ]
     if any(p in txt for p in access_denial_patterns):
         return True, "Skipped permission/access-denial test"
-
-    # Titles like "Only a Director can create" are permission rules. If they
-    # are tested through alternative roles, the first rule above catches them;
-    # this fallback catches similar formulations.
-    if "only" in txt and any(r in txt for r in ROLE_WORDS) and any(v in txt for v in [" create", " edit", " delete", " view"]):
-        return True, "Skipped role-permission rule test"
 
     return False, ""
 
