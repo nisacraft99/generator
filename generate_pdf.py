@@ -94,7 +94,7 @@ def read_user_story_from_stdin() -> Dict[str, Any]:
 # -------------------------------
 # Call Model → JSON
 # -------------------------------
-def call_model(payload: dict, model="gpt-4o-mini", temperature=0.1, max_retries=2) -> dict:
+def call_model(payload: dict, model="gpt-5.4-mini", temperature=0.1, max_retries=2) -> dict:
     if not client:
         raise RuntimeError("No OpenAI client available. Set OPENAI_API_KEY in .env.")
 
