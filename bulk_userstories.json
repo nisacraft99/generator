@@ -1,0 +1,393 @@
+[
+  {
+    "id": "US-1",
+    "title": "Create MM",
+    "story": "As a Director I want to create a Manager Meeting (MM) so that I can plan meetings with my managers",
+    "acceptance_criteria": [
+      "when clicking „create MM“ button inside MM module, a Popup appears with fields „title“, „deadline“, „location“ and „participants“ which are mandatory",
+      "title field can contain up to 50 characters",
+      "deadline field can only contain a date in the format DD/MM/YYYY",
+      "location field is a dropdown with options to select from",
+      "participants field gets filtered according to which location you selected, showing a dropdown of participants belonging to that location you selected",
+      "only a deadline in the future can be selected",
+      "after clicking the „create“ button within the Pop-Up, the user is redirected to a menu within the newly created MM, where he can add actions to it",
+      "only a user with the role director can create an MM",
+      "a user with the role manager has viewing permissions, but can not create an MM",
+      "a user with the role agent can not view the MM module",
+      "a newly created MM gets an ID and appears in the dashboard of the MM module"
+    ]
+  },
+  {
+    "id": "US-2",
+    "title": "View MM",
+    "story": "As a Director I want to view a Manager Meeting (MM) so that I can view details of created MM",
+    "acceptance_criteria": [
+      "when clicking on the ID of an existing MM inside MM dashboard, the user is redirected to the MM of the ID he clicked on",
+      "in the menu of the MM the user clicked on, he can see the title, deadline, location and participants of the MM",
+      "a user with the role director can view all MM that were created for any manager",
+      "a user with the role manager can only view MM that he was assigned to",
+      "a user with the role agent can not view any MM"
+    ]
+  },
+  {
+    "id": "US-3",
+    "title": "Edit MM",
+    "story": "As a Director I want to edit a Manager Meeting (MM) so that I can replan meetings with my managers",
+    "acceptance_criteria": [
+      "when clicking on the ID of an existing MM inside MM module, the user is redirected to the MM of the ID he clicked on",
+      "in the menu of the MM the user clicked on, there is an „edit“ button",
+      "after clicking the „edit“ button, the user can change the deadline of the created MM, but only change it to another date in the future",
+      "after clicking the „edit“ button, a user can change the title of the MM to another title with a maximum of 50 characters",
+      "after clicking the „edit“ button, a user can change the participants of the MM",
+      "a user can NOT change the location or the ID of an MM",
+      "only a user with the role director can edit an MM",
+      "a user with the role manager has viewing permissions, but can not edit an MM"
+    ]
+  },
+  {
+    "id": "US-4",
+    "title": "Delete MM",
+    "story": "As a Director I want to delete a Manager Meeting (MM) so that I can delete meetings with my managers",
+    "acceptance_criteria": [
+      "in the menu of the MM the user clicked on, there is a „delete“ button",
+      "after clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this MM?“ with the buttons „yes“ and „no“",
+      "after clicking the „no“ button, the Pop-Up disappears and the user is redirected to the MM",
+      "after clicking the „yes“ button, the pop-up disappears, the MM is deleted and the user is redirected to the MM dashboard",
+      "only a user with the role director can delete an MM",
+      "a user with the role manager has viewing permissions, but can not delete an MM"
+    ]
+  },
+  {
+    "id": "US-5",
+    "title": "MM Dashboard",
+    "story": "As a Director I want to see the Manager Meeting (MM) Dashboard so that I can search for meetings with my managers",
+    "acceptance_criteria": [
+      "the MM dashboard shows all already created MM",
+      "the MM are shown in a list, sorted by their IDs",
+      "the list is in the form of a table, with the columns „ID“, „title“, „location“, „participants“ and „deadline“",
+      "each MM is in a row, with the information like ID, title, participants etc. shown in each column",
+      "there is a search bar above where you can type in the title or ID of an MM and a search button",
+      "after typing in information into the search bar and clicking the search button, the list of MM is refreshed, showing only the MM that match the criteria you searched for",
+      "there is a reset button next to the search bar, and when you click on it all MM are shown again and the search is undone",
+      "only a user with the role director can see all MM in the dashboard",
+      "a user with the role manager can only see MM to which he was assigned to in the dashboard",
+      "a user with the role agent can not see the MM dashboard at all"
+    ]
+  },
+  {
+    "id": "US-6",
+    "title": "Create Action for an MM",
+    "story": "As a Director I want to create an action for a Manager Meeting (MM) so that I can specify actions for meetings with my managers",
+    "acceptance_criteria": [
+      "when opening an existing MM, there is a button inside of it called „add action“",
+      "when clicking the „add action“ button, a new window appears where you can fill in fields to create an action",
+      "the fields are called „topic“, „root cause“ and „action“ which are free text fields with a maximum number of 200 characters each",
+      "there is a dropdown field called „urgency“ and when you click on it you can select from the options low, medium and high",
+      "at the end of the page, there is a „save“ and a „cancel“ button",
+      "when clicking the „save“ button, the action is saved to the MM and displayed in the MM’s list of actions",
+      "a newly created action gets an ID that appears next to each action in the MM details page",
+      "when clicking the „cancel“ button, the user is redirected to the MM and the action was not created",
+      "only directors can create actions for MM",
+      "managers can view actions of MM they are assigned to, but can not create any"
+    ]
+  },
+  {
+    "id": "US-7",
+    "title": "View Action for an MM",
+    "story": "As a Director I want to view an action for a Manager Meeting (MM) so that I can view actions for meetings with my managers",
+    "acceptance_criteria": [
+      "when opening an existing MM, there is a list of actions that were created for it",
+      "the actions are sorted by urgency, with the actions with high urgency appearing at the top of the list, while the actions with medium and low urgency appear below the high urgency ones",
+      "the list of actions has the columns „action ID“, „topic“ and „urgency“",
+      "when clicking on an existing action, the user is redirected to the actions details",
+      "the details contain all the data that were filled into the fields when the action was created",
+      "a user with the role director can view all actions of MM that were created for any manager",
+      "a user with the role manager can only view actions of MM that he was assigned to",
+      "a user with the role agent can not view any MM actions"
+    ]
+  },
+  {
+    "id": "US-8",
+    "title": "Edit Action for an MM",
+    "story": "As a Director I want to edit an action for a Manager Meeting (MM) so that I can change actions for meetings with my managers",
+    "acceptance_criteria": [
+      "when opening an existing MM, there is a list of actions that were created for it",
+      "next to every action, there is an „edit“ button",
+      "when clicking the „edit“ button, a new window appears where you can edit the action",
+      "all fields are prefilled with the information that was filled when the action was created",
+      "the fields „topic“, „root cause“ and „action“ can be edited and have a maximum number of 200 characters each",
+      "there is a dropdown field called „urgency“ that is prefilled with the urgency level you selected before, and you can change the urgency",
+      "at the end of the page, there is a „save“ and a „cancel“ button",
+      "when clicking the „save“ button, the edited action is saved to the MM and the updated action is displayed in the MM’s list of actions",
+      "when clicking the „cancel“ button, the user is redirected to the MM and the action was not edited",
+      "only directors can edit actions for MM",
+      "managers can view actions of MM they are assigned to, but can not edit any"
+    ]
+  },
+  {
+    "id": "US-9",
+    "title": "Delete Action for an MM",
+    "story": "As a Director I want to delete an action for a Manager Meeting (MM) so that I can remove actions for meetings with my managers",
+    "acceptance_criteria": [
+      "when opening an existing MM, there is a list of actions that were created for it",
+      "next to every action, there is a „delete“ button",
+      "when clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this action?“ with the buttons „yes“ and „no“",
+      "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the MM",
+      "after clicking the „yes“ button, the pop-up disappears, the action is deleted and the action does not appear inside the MM anymore",
+      "only a user with the role director can delete an action of an MM",
+      "a user with the role manager can not delete an action of an MM"
+    ]
+  },
+  {
+    "id": "US-10",
+    "title": "Create AM",
+    "story": "As a Manager I want to create an Agent Meeting (AM) so that I can plan meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "when clicking „create AM“ button inside AM module, a Popup appears with fields „title“, „deadline“, „location“, „subdivision“ and „participants“ which are mandatory",
+      "title field can contain up to 50 characters",
+      "deadline field can only contain a date in the format DD/MM/YYYY",
+      "location field is a dropdown with options to select from",
+      "subdivision field gets filtered according to which location you selected, showing a dropdown of subdivisions belonging to that location you selected",
+      "participants field gets filtered according to which location you selected, showing a dropdown of participants belonging to that location you selected",
+      "if you select a subdivision, the participants field gets deactivated and nothing can be filled into it",
+      "if you select a participant, the subdivision field gets deactivated and nothing can be filled into it",
+      "only a deadline in the future can be selected",
+      "after clicking the „create“ button within the Pop-Up, the user is redirected to a menu within the newly created AM, where he can add actions to it",
+      "only a user with the role manager can create an AM",
+      "a user with the role manager can only select participants or subdivisions of which he has permission to view",
+      "a user with the role director has viewing permissions, but can not create an AM",
+      "a user with the role agent can view the AM module, but can not create an AM",
+      "a newly created AM gets an ID and appears in the dashboard of the AM module"
+    ]
+  },
+  {
+    "id": "US-11",
+    "title": "View AM",
+    "story": "As a Manager I want to view an Agent Meeting (AM) so that I can view details of created AM",
+    "acceptance_criteria": [
+      "when clicking on the ID of an existing AM inside AM dashboard, the user is redirected to the AM of the ID he clicked on",
+      "in the menu of the AM the user clicked on, he can see the title, deadline, location and participants/subdivision of the AM",
+      "a user with the role director can view all AM that were created for any agent",
+      "a user with the role manager can only view AM that he created",
+      "a user with the role agent can only view AM he was assigned to"
+    ]
+  },
+  {
+    "id": "US-12",
+    "title": "Edit AM",
+    "story": "As a Manager I want to edit an Agent Meeting (AM) so that I can replan meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "when clicking on the ID of an existing AM inside AM module, the user is redirected to the AM of the ID he clicked on",
+      "in the menu of the AM the user clicked on, there is an „edit“ button",
+      "after clicking the „edit“ button, the user can change the deadline of the created AM, but only change it to another date in the future",
+      "after clicking the „edit“ button, a user can change the title of the AM to another title with a maximum of 50 characters",
+      "after clicking the „edit“ button, a user can change the participants/subdivision of the AM",
+      "a user can NOT change the location or the ID of an AM",
+      "only a user with the role manager can edit an AM",
+      "a user with the role director has viewing permissions, but can not edit an AM"
+    ]
+  },
+  {
+    "id": "US-13",
+    "title": "Delete AM",
+    "story": "As a Manager I want to delete an Agent Meeting (AM) so that I can delete meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "when clicking on the ID of an existing AM inside AM module, the user is redirected to the AM of the ID he clicked on",
+      "in the menu of the AM the user clicked on, there is a „delete“ button",
+      "after clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this AM?“ with the buttons „yes“ and „no“",
+      "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the AM",
+      "after clicking the „yes“ button, the pop-up disappears, the AM is deleted and the user is redirected to the AM dashboard",
+      "only a user with the role manager can delete an AM",
+      "a user with the role director has viewing permissions, but can not delete an AM"
+    ]
+  },
+  {
+    "id": "US-14",
+    "title": "AM Dashboard",
+    "story": "As a Manager I want to see the Agent Meeting (AM) Dashboard so that I can search for meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "the AM dashboard shows all already created AM",
+      "the AM are shown in a list, sorted by their IDs",
+      "the list is in the form of a table, with the columns „ID“, „title“, „location“, „participants/subdivision“ and „deadline“",
+      "each AM is in a row, with the information like ID, title, participants etc. shown in each column",
+      "there is a search bar above where you can type in the title or ID of an AM and a search button",
+      "after typing in information into the search bar and clicking the search button, the list of AM is refreshed, showing only the AM that match the criteria you searched for",
+      "there is a reset button next to the search bar, and when you click on it all AM are shown again and the search is undone",
+      "only a user with the role director can see all AM in the dashboard",
+      "a user with the role manager can only see AM which he created in the dashboard",
+      "a user with the role agent can only see AM created for him in the dashboard"
+    ]
+  },
+  {
+    "id": "US-15",
+    "title": "Create Action for an AM",
+    "story": "As a Manager I want to create an action for an Agent Meeting (AM) so that I can specify actions for meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "when opening an existing AM, there is a button inside of it called „add action“",
+      "when clicking the „add action“ button, a new window appears where you can fill in fields to create an action",
+      "the fields are called „topic“, „root cause“ and „action“ which are free text fields with a maximum number of 200 characters each",
+      "there is a dropdown field called „urgency“ and when you click on it you can select from the options low, medium and high",
+      "at the end of the page, there is a „save“ and a „cancel“ button",
+      "when clicking the „save“ button, the action is saved to the AM and displayed in the AM’s list of actions",
+      "a newly created action gets an ID that appears next to each action in the AM details page",
+      "when clicking the „cancel“ button, the user is redirected to the AM and the action was not created",
+      "directors can view all actions of any AM, but not create any",
+      "managers can create actions for any AM they created",
+      "agents can not create any actions for any AM"
+    ]
+  },
+  {
+    "id": "US-16",
+    "title": "View Action for an AM",
+    "story": "As a Manager I want to view an action for an Agent Meeting (AM) so that I can view actions for meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "when opening an existing AM, there is a list of actions that were created for it",
+      "the actions are sorted by urgency, with the actions with high urgency appearing at the top of the list, while the actions with medium and low urgency appear below the high urgency ones",
+      "the list of actions has the columns „action ID“, „topic“ and „urgency“",
+      "when clicking on an existing action, the user is redirected to the actions details",
+      "the details contain all the data that were filled into the fields when the action was created",
+      "a user with the role director can view all actions of AM that were created by any manager",
+      "a user with the role manager can only view actions of AM that he created",
+      "a user with the role agent can only view actions of AM he is assigned to"
+    ]
+  },
+  {
+    "id": "US-17",
+    "title": "Edit Action for an AM",
+    "story": "As a Manager I want to edit an action for an Agent Meeting (AM) so that I can change actions for meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "when opening an existing AM, there is a list of actions that were created for it",
+      "next to every action, there is an „edit“ button",
+      "when clicking the „edit“ button, a new window appears where you can edit the action",
+      "all fields are prefilled with the information that was filled when the action was created",
+      "the fields „topic“, „root cause“ and „action“ can be edited and have a maximum number of 200 characters each",
+      "there is a dropdown field called „urgency“ that is prefilled with the urgency level you selected before, and you can change the urgency",
+      "at the end of the page, there is a „save“ and a „cancel“ button",
+      "when clicking the „save“ button, the edited action is saved to the AM and the updated action is displayed in the AM’s list of actions",
+      "when clicking the „cancel“ button, the user is redirected to the AM and the action was not edited",
+      "directors can not edit actions for AM",
+      "managers can edit actions of AM that they created",
+      "agents can not edit any actions of any AM"
+    ]
+  },
+  {
+    "id": "US-18",
+    "title": "Delete Action for an AM",
+    "story": "As a Manager I want to delete an action for an Agent Meeting (AM) so that I can remove actions for meetings with my subordinate agents",
+    "acceptance_criteria": [
+      "when opening an existing AM, there is a list of actions that were created for it",
+      "next to every action, there is a „delete“ button",
+      "when clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this action?“ with the buttons „yes“ and „no“",
+      "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the AM",
+      "after clicking the „yes“ button, the pop-up disappears, the action is deleted and the action does not appear inside the AM anymore",
+      "a user with the role director can not delete any actions of any AM",
+      "a user with the role manager can delete an action of an AM that he created",
+      "a user with the role agent can not delete any actions of any AM"
+    ]
+  },
+  {
+    "id": "US-19",
+    "title": "View Calendar View",
+    "story": "As a Director/Manager/Agent I want to see MM/AM inside a calendar view so that I can easily see the schedule for upcoming MM/AM",
+    "acceptance_criteria": [
+      "the calendar view shows the current month’s schedule of the logged in user by default",
+      "there are arrows on top of the calendar",
+      "when clicking the left arrow, the user can see the past months’ schedule up to 3 months ago",
+      "when clicking the right arrow, the user can see the future month’s schedule up to 6 months ahead",
+      "MM are marked red in the calendar, AM are marked blue and they appear in the calendar for the day they were scheduled for",
+      "directors can see MM they created for other managers by default",
+      "managers can see MM that were created for them, and AM that they created for their subordinate agents",
+      "agents can only see AM that were created for them"
+    ]
+  },
+  {
+    "id": "US-20",
+    "title": "Search for other Calendar Views",
+    "story": "As a Director/Manager I want to search for other users Calendar Views so that I can inform myself about their schedules",
+    "acceptance_criteria": [
+      "there is a search bar above the calendar view",
+      "when clicking the search bar, the logged in user can type in the name of another user",
+      "after searching for a user and clicking the search button, the calendar view shows the calendar of the searched user",
+      "directors can search for the calendar view of any manager and any agent",
+      "managers can only search for the calendar view of subordinate agents",
+      "agents can not see the search bar and can not see other users’ calendars",
+      "if a director types in the name of a user that does not exist and searches, there is an error message displayed saying „The user you searched for does not exist“",
+      "if a manager types in the name of a user that does not exist, there is an error message displayed saying „The user you searched for does not exist“",
+      "if a manager types in the name of a user that is not his subordinate, there is an error message displayed saying „You do not have permission to view this user’s calendar“"
+    ]
+  },
+  {
+    "id": "US-21",
+    "title": "Drag and Drop Meetings within Calendar View",
+    "story": "As a Director/Manager I want to drag and drop meetings inside Calendar View so that I can reschedule meetings with my subordinates",
+    "acceptance_criteria": [
+      "an MM or AM can only be dragged and dropped to a date that is in the future or today",
+      "a manager can not drag and drop any MM at all",
+      "a manager can drag and drop an AM that he created to another day within the calendar view",
+      "a director can drag and drop AM created by any manager to another day within the calendar view",
+      "a director can drag and drop any MM he created to another day within the calendar view",
+      "an agent can not drag and drop any AM at all",
+      "when a meeting gets rescheduled, all participants of the meeting get a notification „RESCHEDULED: MM/AM with the title …“"
+    ]
+  },
+  {
+    "id": "US-22",
+    "title": "Cancel, Accept or Decline Meetings within Calendar View",
+    "story": "As a Director/Manager/Agent I want to cancel, accept or decline meetings inside Calendar View so that I can notify other users if I can partake in meetings",
+    "acceptance_criteria": [
+      "in the calendar view, an MM or AM can be accepted or declined",
+      "a director can view all MM and AM, but can only cancel meetings and can not accept or decline them",
+      "a manager can accept or decline MM he was assigned to, and cancel AM that he created",
+      "an agent can accept or decline AM he was assigned to, and can not cancel any meeting",
+      "when a user accepts a meeting, the creator of the meeting gets a notification „ACCEPTED: User [surname, first name] accepted the MM/AM with the title …“",
+      "when a user declines a meeting, the creator of the meeting gets a notification „DECLINED: User [surname, first name] declined the MM/AM with the title …“",
+      "when a meeting gets cancelled, all participants who accepted the meeting or did not accept/decline yet get a notification „CANCELLED: MM/AM with the title …“",
+      "when a meeting gets cancelled, all participants who declined the meeting do not get any notification at all"
+    ]
+  },
+  {
+    "id": "US-23",
+    "title": "Evaluate Employees",
+    "story": "As a Director/Manager I want to evaluate managers/subordinate agents so that I can assess their performance",
+    "acceptance_criteria": [
+      "in the „Evaluate Employees“ dashboard, a logged in director can see a filter named „location“, a search bar and a „search“ button",
+      "when a director enters a location into the filter and clicking the search button, managers appear that belong to the selected location",
+      "in the search bar, the logged in director can search for managers",
+      "a director can only evaluate managers, not agents",
+      "when director clicks on a manager, he gets redirected to the evaluation page of that manager",
+      "a manager can NOT see the location filter",
+      "a manager can see the search bar and the „search“ button",
+      "a manager can search for his subordinate agents and can not search for any other user",
+      "a manager can only evaluate agents",
+      "when manager searches for an agent that is his subordinate, he gets redirected to the evaluation page of that agent",
+      "in the evaluation page, the logged in user sees the following fields and a scale to select from: efficiency (scale 1 to 5) reliability (scale 1 to 5) communication (scale 1 to 5) comment (a mandatory free-text field with a maximum of 300 characters)",
+      "all fields are mandatory except the comment field",
+      "if a mandatory field is not filled and the user clicks „save“ button, an error message appears saying „Please fill all mandatory fields“",
+      "there is a save and cancel button at the end of the page",
+      "when clicking „save“, the user gets redirected to the „Evaluate Employees“ dashboard and the evaluation is saved and a notification appears saying „the evaluation was successfully saved“",
+      "after an evaluation was successfully saved, it gets an ID and appears in the „Evaluate Employees“ dashboard",
+      "the dashboard shows a list of evaluations created by the logged in user, with the columns „ID“, „date“ and „employee“",
+      "when clicking „cancel“, the user gets redirected to the „Evaluate Employees“ dashboard and the evaluation is not saved",
+      "when an evaluation was successfully saved, the evaluated user gets a notification saying „EVALUATION: A new evaluation was created for you“"
+    ]
+  },
+  {
+    "id": "US-24",
+    "title": "View My Evaluations",
+    "story": "As a Manager/Agent I want to view evaluations created for me so that I can be informed about my performance",
+    "acceptance_criteria": [
+      "in the „My Evaluations“ dashboard, a logged in manager or agent can view evaluations created for himself",
+      "the evaluations are sorted by the date when they were created",
+      "the columns in the „My Evaluations“ dashboard are „ID“ and „date“, showing the ID and date of the created evaluation",
+      "when clicking on an evaluation, the user sees the following aspects, and the score that the creator of the evaluation selected: efficiency (scale 1 to 5) reliability (scale 1 to 5) communication (scale 1 to 5) comment (text with a maximum of 300 characters)",
+      "there is a „back“ and an „appeal“ button at the end of the page",
+      "when clicking „back“, the user gets redirected to the „My Evaluations“ dashboard",
+      "when clicking „appeal“, a pop-up appears with a mandatory free-text field with a maximum of 500 characters, along with a save and cancel button",
+      "after clicking cancel, the pop-up disappears and nothing was sent",
+      "when clicking „save“ after entering nothing into the field, an error message appears saying „To raise an appeal, a comment is mandatory“",
+      "when entering a text into the field and clicking „save“ the user gets a notification saying „The appeal was successfully sent“",
+      "when an appeal was sent, the creator of the evaluation gets a notification saying „EVALUATION: A user you evaluated has raised an appeal“",
+      "an appeal can only be raised for evaluations that are not older than 1 week"
+    ]
+  }
+]
