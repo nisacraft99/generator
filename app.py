@@ -174,9 +174,13 @@ st.markdown("""
 
 st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="mock-label">user story id (z. B. US-4)</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-label">user story id (optional; needed for evaluation, e.g. US-4)</div>', unsafe_allow_html=True)
 us_id = st.text_input(
-    "", key="us_id_input", label_visibility="collapsed", placeholder="US-4", value="US-4"
+    "",
+    key="us_id_input",
+    label_visibility="collapsed",
+    placeholder="US-4 (optional)",
+    value=""
 )
 
 st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True)
@@ -976,19 +980,19 @@ col1, col2, col3 = st.columns(3)
 with col1:
     clicked_without = st.button(
         "export without UI ✨",
-        disabled=not (us_id.strip() and user_story.strip() and ac_text.strip())
+        disabled=not (user_story.strip() and ac_text.strip())
     )
 
 with col2:
     clicked_with = st.button(
         "export with UI 🧠✨",
-        disabled=not (us_id.strip() and user_story.strip() and ac_text.strip())
+        disabled=not (user_story.strip() and ac_text.strip())
     )
 
 with col3:
     clicked_eval = st.button(
         "evaluate current output 📊",
-        disabled=not bool(st.session_state.last_cases)
+        disabled=not (bool(st.session_state.last_cases) and us_id.strip())
     )
 
 st.markdown('</div>', unsafe_allow_html=True)
@@ -998,7 +1002,7 @@ if clicked_without or clicked_with:
 
     with st.spinner("Generating test cases and building PDF..."):
         cases, open_q = generate_cases(user_story, ac_text, use_ui_context=use_ui)
-        pdf_bytes = build_pdf(user_story, ac_text, cases, open_q, evaluation=None, us_id_value=us_id)
+        pdf_bytes = build_pdf(user_story, ac_text, cases, open_q, evaluation=None, us_id_value=us_id.strip())
 
         st.session_state.last_pdf = pdf_bytes
         st.session_state.last_open_questions = open_q
@@ -1008,7 +1012,11 @@ if clicked_without or clicked_with:
         st.session_state.last_evaluation = None
 
 if clicked_eval and st.session_state.last_cases:
-    evaluation = evaluate_all(us_id, user_story, ac_text, st.session_state.last_cases)
+    if not us_id.strip():
+        st.warning("Please enter a User Story ID before running the evaluation. The ID is only required for evaluation, not for PDF generation.")
+        st.stop()
+
+    evaluation = evaluate_all(us_id.strip(), user_story, ac_text, st.session_state.last_cases)
     st.session_state.last_evaluation = evaluation
     st.session_state.last_pdf = build_pdf(
         user_story,
@@ -1016,7 +1024,7 @@ if clicked_eval and st.session_state.last_cases:
         st.session_state.last_cases,
         st.session_state.last_open_questions,
         evaluation=evaluation,
-        us_id_value=us_id
+        us_id_value=us_id.strip()
     )
 
 # ======================= OUTPUT =======================
