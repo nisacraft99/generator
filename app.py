@@ -228,59 +228,65 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
 
-SYSTEM_PROMPT_WITH_UI = """
+SYSTEM_PROMPT_BASE = """
 You are a senior test engineer.
 Return ONLY valid JSON (no markdown, no prose).
 
-You may receive a UI structure as 'ui_context' (JSON with nodes and relationships).
-If ui_context is provided, you MUST use it to generate concrete navigation.
+TASK:
+Generate manual test cases from the provided user story and acceptance criteria.
+The only experimental difference between the two variants is whether the payload contains ui_context.
 
-STRICT UI RULES (MANDATORY):
-- Do NOT invent menus/screens/buttons/fields that are not present in ui_context.nodes.
-- Every navigation step SHOULD include 'ui_node_id' that matches an existing ui_context.nodes[].id when possible.
-- Navigation must be explicit and beginner-friendly.
-- Generic steps like "Navigate to X" are NOT allowed if ui_context provides the path elements.
+INPUTS:
+- story: the user story.
+- acceptance_criteria: list of acceptance criteria.
+- ui_context: optional JSON with nodes and relationships of the application UI.
+
+UI CONTEXT RULES:
+- If ui_context is provided, use only nodes and relationships from ui_context for concrete navigation.
+- If ui_context is provided, do NOT invent menus, workspaces, screens, buttons, fields, popups, modules, or navigation paths that are not present in ui_context.nodes.
+- If ui_context is provided, every concrete UI step SHOULD include a ui_node_id that exactly matches an existing ui_context.nodes[].id.
+- If ui_context is not provided, do NOT invent concrete UI names or ui_node_id values. In that case use ui_node_id:null and keep navigation generic.
+- Generic steps like "go to the function" are not allowed when ui_context provides concrete path elements.
+
+NEUTRAL WORKSPACE NAMES:
+- The application uses neutral workspace names, not role-based console names.
+- Use the workspace names exactly as they appear in ui_context.
+- Do NOT write "Director Console", "Manager Console", "Calendar Console", or "Evaluation Console".
+- The neutral workspace names are:
+  - Operations
+  - Coordination
+  - Scheduling
+  - Performance
+
+ROLE AND NAVIGATION RULES:
+- Login role and UI location are separate concepts.
+- The login role determines permissions.
+- The UI context determines where a feature is located.
+- Do NOT choose a workspace only because it sounds similar to the login role.
+- For Manager Meeting (MM), follow the path provided by ui_context under Operations / Manager Meeting when ui_context is available.
+- For Agent Meeting (AM), follow the path provided by ui_context under Coordination / Agent Meeting when ui_context is available.
+- For Calendar, follow the path provided by ui_context under Scheduling / Calendar when ui_context is available.
+- For Evaluate Employees and My Evaluations, follow the path provided by ui_context under Performance when ui_context is available.
+- For negative permission tests, use the correct feature location but verify that the logged-in role cannot perform the restricted action.
+- If a role has viewing permission but not create/edit/delete permission, test the missing control, disabled control, or denied action. Do not replace the role with another role.
 
 TEST CASE GRANULARITY RULES:
-- VERY IMPORTANT: Give one focused test case per acceptance criterion. If less Testcases are in Output than there are acceptance criteria, the output is INVALID.
-- Do NOT merge many acceptance criteria into one test case.
-- Keep negative role tests separate from positive functional tests.
-- Keep navigation and test logic in the same testcase output, with navigation first and then feature steps.
+- Give one focused test case per acceptance criterion whenever possible.
+- If fewer test cases are generated than acceptance criteria, this is usually invalid unless multiple acceptance criteria are inseparably linked.
+- Do NOT merge unrelated acceptance criteria into one test case.
+- Keep negative role/permission tests separate from positive functional tests.
+- Keep navigation/setup and test logic in the same test case output.
 
-COVERAGE IS THE TOP PRIORITY:
-- Every acceptance criterion MUST be covered explicitly in the testcase set.
-- The test cases must cover all roles mentioned in the user story and acceptance criteria.
+ROLE COVERAGE RULES:
+- The test cases must cover all roles mentioned as actors or permission rules in the user story and acceptance criteria.
+- Do NOT combine multiple roles into one actor step such as "Log in as Manager/Agent".
+- If both Manager and Agent must be tested, create separate test cases or separate explicit steps for each role.
+- Use explicit actor steps such as "Log in as Manager" and "Log in as Agent".
+
+COVERAGE RULES:
+- Every acceptance criterion MUST be covered explicitly in the generated test case set.
 - If needed, create additional test cases to cover uncovered acceptance criteria.
-
-ROLE AND OWNERSHIP RULES:
-- Role mention does NOT imply role-owned navigation.
-- If a feature belongs to a specific console/module, all navigation must follow that feature's owning console.
-- Manager Meeting (MM) belongs to Director Console.
-- Agent Meeting (AM) belongs to Manager Console.
-- A manager negative test for MM may log in as Manager, but must not invent a Manager Console path to MM if such a path does not exist.
-- For negative permission tests, do not replace the generated role with a fallback role.
-- If a user has viewing permission but not create/edit/delete permission, test the missing control or denied action, not full module denial.
-
-IMPORTANT: Feature ownership and login role are separate.
-
-The login role determines permissions.
-The feature location in ui_context determines navigation.
-
-Do NOT navigate to a role's own console only because the test logs in with that role.
-
-If the user story is about Manager Meeting (MM), all roles must navigate through:
-LOGIN -> Director Console -> Manager Meetings -> MM Dashboard
-
-A Manager test case for MM must still use the Director Console path, because MM is located there.
-So a Manager can open the Director Console.
-The Manager role is only used to verify restricted permissions.
-
-NAVIGATION IS STRONGLY PREFERRED:
-For EVERY test case with ui_context, try to include:
-- FIRST navigation step = login
-- SECOND navigation step = console node
-- THIRD navigation step = nav_option node
-- FOURTH navigation step = screen node
+- Be specific and observable in expected results.
 
 OUTPUT SCHEMA:
 {
@@ -291,57 +297,25 @@ OUTPUT SCHEMA:
       "priority":"High|Medium|Low",
       "type":"Functional|Negative|Boundary",
       "navigation_steps":[
-        {"step":"string","expected":"string","ui_node_id":"string"}
+        {"step":"string","expected":"string","ui_node_id":"string|null"}
       ],
       "steps":[
-        {"step":"string","expected":"string","ui_node_id":"string"}
+        {"step":"string","expected":"string","ui_node_id":"string|null"}
       ]
     }
   ],
   "open_questions":[]
 }
+
+JSON RULES:
+- Return valid JSON only.
+- Do not include markdown.
+- Do not include code fences.
 """
 
-SYSTEM_PROMPT_NO_UI = """
-You are a senior test engineer.
-Return ONLY valid JSON (no markdown, no prose).
-
-Generate test cases based ONLY on the provided user story and acceptance criteria.
-
-
-TEST CASE GRANULARITY RULES:
-- Very important: Prefer one focused test case per acceptance criterion.
-- Do NOT merge many acceptance criteria into one test case.
-- Keep negative role tests separate from positive functional tests.
-- Keep navigation and test logic in the same testcase output, with navigation first and then feature steps.
-- Do NOT assume any UI structure.
-- Do NOT invent menus, screens, consoles, dashboards, popups, or navigation paths.
-- Do NOT include ui_node_id values.
-- Focus on functional behavior derived from the requirements only.
-- Do NOT merge many acceptance criteria into one test case.
-- Keep negative role tests separate from positive functional tests.
-
-COVERAGE IS THE TOP PRIORITY:
-- Every acceptance criterion MUST be covered explicitly in the testcase set.
-- The test cases must cover all roles mentioned in the user story and acceptance criteria.
-- If needed, create additional test cases to cover uncovered acceptance criteria.
-
-OUTPUT SCHEMA:
-{
-  "test_cases":[
-    {
-      "id":"TC-1",
-      "title":"string",
-      "priority":"High|Medium|Low",
-      "type":"Functional|Negative|Boundary",
-      "steps":[
-        {"step":"string","expected":"string","ui_node_id":null}
-      ]
-    }
-  ],
-  "open_questions":[]
-}
-"""
+# Both variants use the same prompt. The only difference is that the with-UI variant receives ui_context in the payload.
+SYSTEM_PROMPT_WITH_UI = SYSTEM_PROMPT_BASE
+SYSTEM_PROMPT_NO_UI = SYSTEM_PROMPT_BASE
 
 # ======================= GENERATOR HELPERS =======================
 def _json_from_text(txt: str) -> dict:
@@ -576,7 +550,18 @@ def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
         if node_id and node_id not in nodes:
             nodes.append(node_id)
 
-    # Consoles
+    # Neutral workspaces / consoles
+    if "operations" in text or "operations workspace" in text:
+        add("CONSOLE-D")
+    if "coordination" in text or "coordination workspace" in text:
+        add("CONSOLE-M")
+    if "scheduling" in text or "scheduling workspace" in text:
+        add("CONSOLE-C")
+    if "performance" in text or "performance workspace" in text:
+        add("CONSOLE-E")
+
+    # Backward-compatible fallback for older generated outputs only.
+    # The prompt no longer instructs the model to use these names.
     if "director console" in text:
         add("CONSOLE-D")
     if "manager console" in text:
@@ -612,7 +597,7 @@ def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
     if "evaluate employees dashboard" in text:
         add("SCR-EVALUATE-DASHBOARD")
     if "evaluation page" in text:
-        add("SCR-EVALUATION-DETAIL")
+        add("SCR-EVALUATE-DETAIL")
     if "my evaluations dashboard" in text:
         add("SCR-MY-EVAL-DASHBOARD")
 
@@ -781,6 +766,18 @@ def login_roles_in_testcase(tc: Dict[str, Any]) -> List[str]:
     """
     txt = testcase_full_text(tc)
     found = set()
+
+    # Explicitly handle combined actor wording. The prompt discourages this,
+    # but older or imperfect generations may still contain it.
+    combined_patterns = [
+        ("manager", "agent", [r"\bmanager\s*/\s*agent\b", r"\bmanager\s+or\s+agent\b", r"\bmanager\s+and\s+agent\b"]),
+        ("director", "manager", [r"\bdirector\s*/\s*manager\b", r"\bdirector\s+or\s+manager\b", r"\bdirector\s+and\s+manager\b"]),
+        ("director", "agent", [r"\bdirector\s*/\s*agent\b", r"\bdirector\s+or\s+agent\b", r"\bdirector\s+and\s+agent\b"]),
+    ]
+    for r1, r2, pats in combined_patterns:
+        if any(re.search(pat, txt) for pat in pats):
+            found.add(r1)
+            found.add(r2)
 
     for role in ROLE_WORDS:
         actor_patterns = [
@@ -988,9 +985,32 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
 
 
 def extract_required_roles(story: str, ac_blob: str) -> List[str]:
+    """
+    Extracts required roles from actor/permission wording only.
+
+    Important: module names such as "Manager Meeting" or "Agent Meeting"
+    must not be counted as Manager/Agent roles.
+    """
     text = normalize_text(story + " " + ac_blob)
-    found = [r for r in ROLE_WORDS if r in text]
-    return sorted(list(set(found)))
+    found = set()
+
+    for role in ROLE_WORDS:
+        patterns = [
+            rf"\bas\s+(?:a|an)?\s*{role}\b",
+            rf"\buser\s+with\s+the\s+role\s+{role}\b",
+            rf"\b{role}\s+can\b",
+            rf"\b{role}s\s+can\b",
+            rf"\b{role}\s+cannot\b",
+            rf"\b{role}s\s+cannot\b",
+            rf"\b{role}\s+can\s+not\b",
+            rf"\b{role}s\s+can\s+not\b",
+            rf"\bonly\s+(?:a\s+|an\s+)?(?:user\s+with\s+the\s+role\s+)?{role}\b",
+            rf"\blogged\s+in\s+{role}\b",
+        ]
+        if any(re.search(pat, text) for pat in patterns):
+            found.add(role)
+
+    return sorted(found)
 
 def step_implies_role(step_text: str, expected_text: str, role: str) -> bool:
     combined = normalize_text(f"{step_text} {expected_text}")
