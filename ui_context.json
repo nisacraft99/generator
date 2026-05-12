@@ -4,25 +4,25 @@
     {
       "id": "CONSOLE-D",
       "type": "console",
-      "name": "Director Console",
+      "name": "Operations",
       "parent": null
     },
     {
       "id": "CONSOLE-M",
       "type": "console",
-      "name": "Manager Console",
+      "name": "Coordination",
       "parent": null
     },
     {
       "id": "CONSOLE-C",
       "type": "console",
-      "name": "Calendar Console",
+      "name": "Scheduling",
       "parent": null
     },
     {
       "id": "CONSOLE-E",
       "type": "console",
-      "name": "Evaluation Console",
+      "name": "Performance",
       "parent": null
     },
     {
