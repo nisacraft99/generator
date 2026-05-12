@@ -204,7 +204,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================= FILE LOADERS =======================
 UI_CONTEXT_PATH = "ui_context.json"
-NAV_REFERENCE_PATH = "navigation_reference.json"
+NAV_TARGETS_PATH = "navigation_targets.json"
 AC_KEYWORDS_PATH = "ac_keywords.json"
 BULK_USERSTORIES_PATH = "bulk_userstories.json"
 
@@ -216,11 +216,11 @@ def load_json_file(path: str, default: Any):
         return default
 
 UI_CONTEXT = load_json_file(UI_CONTEXT_PATH, {})
-NAV_REFERENCE = load_json_file(NAV_REFERENCE_PATH, [])
+NAV_TARGETS = load_json_file(NAV_TARGETS_PATH, {})
 AC_KEYWORDS = load_json_file(AC_KEYWORDS_PATH, {})
 
 st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', [])) if isinstance(UI_CONTEXT, dict) else 0}")
-st.caption(f"Navigation references loaded: {len(NAV_REFERENCE) if isinstance(NAV_REFERENCE, list) else 0}")
+st.caption(f"Navigation targets loaded: {len(NAV_TARGETS) if isinstance(NAV_TARGETS, dict) else 0}")
 st.caption(f"AC keyword sets loaded: {len(AC_KEYWORDS) if isinstance(AC_KEYWORDS, dict) else 0}")
 
 # ======================= OPENAI SETUP =======================
@@ -530,494 +530,165 @@ def evaluate_ac_coverage(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[
         "note": None
     }
 
-def find_nav_reference(us_id_value: str) -> Optional[Dict[str, Any]]:
-    for item in NAV_REFERENCE:
-        if str(item.get("us_id", "")).strip().lower() == us_id_value.strip().lower():
-            return item
+
+def find_navigation_targets(us_id_value: str) -> Optional[Dict[str, Any]]:
+    """Returns target-based navigation reference for a User Story."""
+    if not isinstance(NAV_TARGETS, dict):
+        return None
+    direct = NAV_TARGETS.get(us_id_value.strip())
+    if direct:
+        return direct
+    # Case-insensitive fallback
+    for key, value in NAV_TARGETS.items():
+        if str(key).strip().lower() == us_id_value.strip().lower():
+            return value
     return None
 
-def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
+
+def _norm_list(values: Any) -> List[str]:
+    if not values:
+        return []
+    if isinstance(values, list):
+        return [str(v) for v in values if str(v).strip()]
+    return [str(values)]
+
+
+def _text_contains_any(text: str, keywords: List[str]) -> bool:
+    return any(normalize_text(k) in text for k in keywords if normalize_text(k))
+
+
+def _keyword_score(text: str, keywords: List[str]) -> int:
+    return sum(1 for k in keywords if normalize_text(k) and normalize_text(k) in text)
+
+
+def _target_required_nodes(target: Dict[str, Any]) -> List[str]:
+    # required_nodes = all nodes that should be reached for this target.
+    # target_nodes is accepted as a legacy/simpler name.
+    return _norm_list(target.get("required_nodes") or target.get("target_nodes"))
+
+
+def _select_best_navigation_target(tc: Dict[str, Any], ref: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Infers one or more UI node IDs from a generated test step.
-
-    Important: a single test step can imply multiple nodes, e.g.
-    "Click Create MM Button" + "Create MM Popup appears" implies both
-    EL-MM-CREATE and MOD-MM-CREATE. Navigation Correctness should count the
-    reached target modal/screen, not only the high-level dashboard path.
+    Selects the most relevant navigation target based on the test case text.
+    This avoids evaluating every test case against one overly long path.
     """
-    text = normalize_text(f"{step_text} {expected_text}")
-    nodes: List[str] = []
-
-    def add(node_id: str):
-        if node_id and node_id not in nodes:
-            nodes.append(node_id)
-
-    # Neutral workspaces / consoles
-    if "operations" in text or "operations workspace" in text:
-        add("CONSOLE-D")
-    if "coordination" in text or "coordination workspace" in text:
-        add("CONSOLE-M")
-    if "scheduling" in text or "scheduling workspace" in text:
-        add("CONSOLE-C")
-    if "performance" in text or "performance workspace" in text:
-        add("CONSOLE-E")
-
-    # Backward-compatible fallback for older generated outputs only.
-    # The prompt no longer instructs the model to use these names.
-    if "director console" in text:
-        add("CONSOLE-D")
-    if "manager console" in text:
-        add("CONSOLE-M")
-    if "calendar console" in text:
-        add("CONSOLE-C")
-    if "evaluation console" in text:
-        add("CONSOLE-E")
-
-    # Navigation options / modules
-    if "manager meeting" in text or "manager meetings" in text or "mm module" in text:
-        add("OPT-MM")
-    if "agent meeting" in text or "agent meetings" in text or "am module" in text:
-        add("OPT-AM")
-    if "calendar view" in text or ("calendar" in text and "option" in text):
-        add("OPT-CALENDAR")
-    if "evaluate employees" in text:
-        add("OPT-EVALUATE")
-    if "my evaluations" in text:
-        add("OPT-MY-EVAL")
-
-    # Screens
-    if "mm dashboard" in text:
-        add("SCR-MM-DASHBOARD")
-    if "am dashboard" in text:
-        add("SCR-AM-DASHBOARD")
-    if "mm detail" in text or "mm detail menu" in text or "existing mm id" in text or "open an existing mm" in text:
-        add("SCR-MM-DETAIL")
-    if "am detail" in text or "am detail menu" in text or "existing am id" in text or "open an existing am" in text:
-        add("SCR-AM-DETAIL")
-    if "calendar" in text and "displayed" in text:
-        add("SCR-CALENDAR")
-    if "evaluate employees dashboard" in text:
-        add("SCR-EVALUATE-DASHBOARD")
-    if "evaluation page" in text:
-        add("SCR-EVALUATE-DETAIL")
-    if "my evaluations dashboard" in text:
-        add("SCR-MY-EVAL-DASHBOARD")
-
-    # MM modals and elements
-    if "create mm button" in text or "click create mm" in text:
-        add("EL-MM-CREATE")
-    if "create mm popup" in text or "create mm pop up" in text or "create mm modal" in text:
-        add("MOD-MM-CREATE")
-    if "edit mm button" in text or "click edit" in text and "mm" in text:
-        add("EL-MM-EDIT")
-    if "edit mm popup" in text or "edit mm pop up" in text or "edit mm modal" in text:
-        add("MOD-MM-EDIT")
-    if "delete mm button" in text or ("click delete" in text and "mm" in text):
-        add("EL-MM-DELETE")
-    if "delete mm confirmation" in text or "sure to delete this mm" in text:
-        add("MOD-MM-DELETE")
-    if "add action button" in text and "mm" in text:
-        add("EL-MM-ADD-ACTION")
-    if ("create action" in text or "add action" in text) and "mm" in text and ("popup" in text or "window" in text or "appears" in text):
-        add("MOD-MM-ACTION-CREATE")
-    if "mm action detail" in text or ("action details" in text and "mm" in text):
-        add("SCR-MM-ACTION-DETAIL")
-
-    # AM modals and elements
-    if "create am button" in text or "click create am" in text:
-        add("EL-AM-CREATE")
-    if "create am popup" in text or "create am pop up" in text or "create am modal" in text:
-        add("MOD-AM-CREATE")
-    if "edit am button" in text or "click edit" in text and "am" in text:
-        add("EL-AM-EDIT")
-    if "edit am popup" in text or "edit am pop up" in text or "edit am modal" in text:
-        add("MOD-AM-EDIT")
-    if "delete am button" in text or ("click delete" in text and "am" in text):
-        add("EL-AM-DELETE")
-    if "delete am confirmation" in text or "sure to delete this am" in text:
-        add("MOD-AM-DELETE")
-    if "add action button" in text and "am" in text:
-        add("EL-AM-ADD-ACTION")
-    if ("create action" in text or "add action" in text) and "am" in text and ("popup" in text or "window" in text or "appears" in text):
-        add("MOD-AM-ACTION-CREATE")
-    if "am action detail" in text or ("action details" in text and "am" in text):
-        add("SCR-AM-ACTION-DETAIL")
-
-    return nodes
-
-
-def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[str]:
-    """Backward-compatible helper: returns the first inferred node, if any."""
-    nodes = infer_nodes_from_step_text(step_text, expected_text)
-    return nodes[0] if nodes else None
-
-
-def _ui_parent_map() -> Dict[str, Optional[str]]:
-    """Returns {node_id: parent_id} from the loaded UI context."""
-    if not isinstance(UI_CONTEXT, dict):
+    targets = ref.get("targets", []) or []
+    if not targets:
         return {}
-    mapping: Dict[str, Optional[str]] = {}
-    for node in UI_CONTEXT.get("nodes", []) or []:
-        if isinstance(node, dict) and node.get("id"):
-            mapping[str(node.get("id"))] = node.get("parent")
-    return mapping
 
-
-def _expand_with_ancestors(node_id: str) -> List[str]:
-    """
-    Expands a node to its parent chain in root-to-leaf order.
-
-    This fixes cases where the model assigns one combined step to a nav option,
-    e.g. "Open Coordination and select Agent Meeting" with ui_node_id=OPT-AM.
-    The raw extraction may then see OPT-AM before CONSOLE-M. By expanding via
-    parent links, the path becomes CONSOLE-M -> OPT-AM.
-    """
-    parents = _ui_parent_map()
-    if not node_id or node_id not in parents:
-        return [node_id] if node_id else []
-
-    chain: List[str] = []
-    seen = set()
-    current: Optional[str] = node_id
-    while current and current not in seen:
-        seen.add(current)
-        chain.append(current)
-        current = parents.get(current)
-
-    return list(reversed(chain))
-
-
-def _dedup_preserve_order(items: List[str]) -> List[str]:
-    result: List[str] = []
-    for item in items:
-        if item and item not in result:
-            result.append(item)
-    return result
-
-
-def _append_node(path: List[str], node: Optional[str]):
-    if node and node != "LOGIN":
-        path.append(node)
-
-
-def _expand_action_node(node: str) -> List[str]:
-    """
-    Some generated outputs contain the clicked button node, but the navigation
-    reference expects the resulting modal/screen. This maps action elements to
-    their target nodes so the evaluation can recognize the reached UI state.
-    """
-    mapping = {
-        "EL-MM-CREATE": "MOD-MM-CREATE",
-        "EL-MM-EDIT": "MOD-MM-EDIT",
-        "EL-MM-DELETE": "MOD-MM-DELETE",
-        "EL-MM-ADD-ACTION": "MOD-MM-ACTION-CREATE",
-        "EL-AM-CREATE": "MOD-AM-CREATE",
-        "EL-AM-EDIT": "MOD-AM-EDIT",
-        "EL-AM-DELETE": "MOD-AM-DELETE",
-        "EL-AM-ADD-ACTION": "MOD-AM-ACTION-CREATE",
-    }
-    if node in mapping:
-        return [node, mapping[node]]
-    return [node]
-
-
-def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
-    """
-    Extracts the actual navigation path from a generated test case.
-
-    Previous version only looked at navigation_steps first and ignored normal
-    steps if navigation_steps already existed. That caused cases like US-1 to
-    stop at SCR-MM-DASHBOARD even though the normal steps clearly clicked
-    Create MM Button and reached MOD-MM-CREATE.
-
-    This version evaluates BOTH navigation_steps and normal steps.
-    """
-    path: List[str] = []
-
-    all_steps = []
-    all_steps.extend(tc.get("navigation_steps", []) or [])
-    all_steps.extend(tc.get("steps_only", []) or [])
-
-    # In older normalized cases, steps already contains navigation + test steps.
-    # Add it too, but dedup later.
-    all_steps.extend(tc.get("steps", []) or [])
-
-    for s in all_steps:
-        explicit_node = s.get("ui_node_id") if isinstance(s, dict) else None
-        if explicit_node and explicit_node != "LOGIN":
-            for expanded in _expand_action_node(explicit_node):
-                _append_node(path, expanded)
-
-        inferred_nodes = infer_nodes_from_step_text(
-            s.get("step", "") if isinstance(s, dict) else str(s),
-            s.get("expected", "") if isinstance(s, dict) else ""
-        )
-        for node in inferred_nodes:
-            for expanded in _expand_action_node(node):
-                _append_node(path, expanded)
-
-    # Expand each detected node through the UI parent chain. This makes the
-    # actual path robust when the model combines multiple UI actions into one
-    # step or assigns the child node before the parent node.
-    expanded_path: List[str] = []
-    for p in path:
-        for expanded in _expand_with_ancestors(p):
-            expanded_path.append(expanded)
-
-    # Deduplicate while preserving order. We remove repeated nodes globally,
-    # not only consecutive duplicates, because normalized test cases often store
-    # navigation_steps and steps with the same content.
-    return _dedup_preserve_order(expanded_path)
-
-
-
-def testcase_full_text(tc: Dict[str, Any]) -> str:
-    """Collects title, type, navigation steps, normal steps and expected results."""
-    parts = [str(tc.get("title", "")), str(tc.get("type", ""))]
-    for key in ["navigation_steps", "steps_only", "steps"]:
-        for s in tc.get(key, []) or []:
-            if isinstance(s, dict):
-                parts.append(str(s.get("step", "")))
-                parts.append(str(s.get("expected", "")))
-            else:
-                parts.append(str(s))
-    return normalize_text(" ".join(parts))
-
-
-def extract_primary_roles_from_story(story: str) -> List[str]:
-    """
-    Extracts the role(s) from the User Story part before "I want".
-
-    Examples:
-    - "As a Director I want ..." -> ["director"]
-    - "As a Director/Manager/Agent I want ..." -> ["agent", "director", "manager"]
-    """
-    txt = normalize_text(story)
-    m = re.search(r"\bas\s+(?:a|an)?\s*(.*?)\s+i\s+want\b", txt)
-    if m:
-        role_part = m.group(1)
-        roles = [r for r in ROLE_WORDS if r in role_part]
-        if roles:
-            return sorted(set(roles))
-
-    # Fallback: use any role mentioned in the story text.
-    roles = [r for r in ROLE_WORDS if r in txt]
-    return sorted(set(roles))
-
-
-def login_roles_in_testcase(tc: Dict[str, Any]) -> List[str]:
-    """
-    Extracts roles only when they are used as actual test actors.
-
-    Important: We must NOT count words such as "Manager Meeting" as the
-    Manager role. Otherwise every MM test case would look like a Manager test
-    and would be skipped from Navigation Correctness.
-    """
     txt = testcase_full_text(tc)
-    found = set()
+    default_label = str(ref.get("default_target", "")).strip().lower()
 
-    # Explicitly handle combined actor wording. The prompt discourages this,
-    # but older or imperfect generations may still contain it.
-    combined_patterns = [
-        ("manager", "agent", [r"\bmanager\s*/\s*agent\b", r"\bmanager\s+or\s+agent\b", r"\bmanager\s+and\s+agent\b"]),
-        ("director", "manager", [r"\bdirector\s*/\s*manager\b", r"\bdirector\s+or\s+manager\b", r"\bdirector\s+and\s+manager\b"]),
-        ("director", "agent", [r"\bdirector\s*/\s*agent\b", r"\bdirector\s+or\s+agent\b", r"\bdirector\s+and\s+agent\b"]),
-    ]
-    for r1, r2, pats in combined_patterns:
-        if any(re.search(pat, txt) for pat in pats):
-            found.add(r1)
-            found.add(r2)
+    scored = []
+    for idx, target in enumerate(targets):
+        keywords = _norm_list(target.get("keywords"))
+        score = _keyword_score(txt, keywords)
+        # Small bonus for default target, used only as tie-breaker/fallback.
+        if default_label and str(target.get("label", "")).strip().lower() == default_label:
+            score += 0.1
+        scored.append((score, idx, target))
 
-    for role in ROLE_WORDS:
-        actor_patterns = [
-            rf"\blog\s*in\s*as\s+(?:a\s+|an\s+)?{role}\b",
-            rf"\blogin\s*as\s+(?:a\s+|an\s+)?{role}\b",
-            rf"\blogged\s*in\s*as\s+(?:a\s+|an\s+)?{role}\b",
-            rf"\b{role}\s+session\b",
-            rf"\buser\s+with\s+the\s+role\s+{role}\b",
-            rf"\bas\s+(?:a\s+|an\s+)?{role}\b",
-        ]
-        if any(re.search(pattern, txt) for pattern in actor_patterns):
-            found.add(role)
+    scored.sort(key=lambda x: (x[0], -x[1]), reverse=True)
+    best_score, _, best_target = scored[0]
 
-    return sorted(found)
+    # If no target keyword matched, use the configured default, otherwise first target.
+    if best_score <= 0.1:
+        for target in targets:
+            if default_label and str(target.get("label", "")).strip().lower() == default_label:
+                return target
+        return targets[0]
+
+    return best_target
 
 
-def roles_mentioned_in_testcase(tc: Dict[str, Any]) -> List[str]:
-    """Backward-compatible name used by the role/navigation logic."""
-    return login_roles_in_testcase(tc)
-
-
-def should_skip_navigation_evaluation(tc: Dict[str, Any], primary_roles: List[str]) -> (bool, str):
-    """
-    Excludes permission/access tests from Navigation Correctness.
-
-    Navigation Correctness should measure whether a generated test case can
-    describe the path to the function under test. It should not punish cases
-    whose purpose is to prove that another role cannot access or use that
-    function.
-
-    The skip decision is based on actor/login roles, not on every role word in
-    the text. This prevents false skipping caused by module names such as
-    "Manager Meeting".
-    """
+def _contains_denial_language(tc: Dict[str, Any]) -> bool:
     txt = testcase_full_text(tc)
-    actor_roles = login_roles_in_testcase(tc)
-    primary = set(primary_roles or [])
-
-    # If the test case is executed by a non-primary actor role, it is usually a
-    # permission/scope case for this User Story. Example: US-1 primary role is
-    # Director; Manager/Agent tests verify restrictions and should not reduce
-    # Navigation Correctness.
-    if primary:
-        non_primary_roles = [r for r in actor_roles if r not in primary]
-        if non_primary_roles:
-            return True, f"Skipped permission/scope test for non-primary actor role(s): {', '.join(non_primary_roles)}"
-
-    # Clear access-denial tests should not be counted as failed navigation.
-    # Keep this list specific; do not skip every generic negative/boundary test.
-    access_denial_patterns = [
-        "not visible",
-        "not available",
-        "not accessible",
-        "cannot view",
-        "can not view",
-        "not view",
-        "cannot access",
-        "can not access",
-        "does not have permission",
-        "do not have permission",
-        "no permission",
-        "permission denied",
-        "access denied",
-        "action is denied",
-        "denied or unavailable",
-        "unavailable for",
-        "restricted control",
-        "has viewing permission",
-        "viewing permissions",
-        "blocked from viewing",
-        "module is not visible",
-        "module is not accessible",
+    denial_patterns = [
+        "not visible", "not available", "not accessible", "cannot", "can not",
+        "no permission", "permission denied", "access denied", "denied", "disabled",
+        "not allowed", "blocked", "unavailable", "not editable", "does not allow",
+        "prevents", "rejected", "validation"
     ]
-    if any(p in txt for p in access_denial_patterns):
-        return True, "Skipped permission/access-denial test"
-
-    return False, ""
-
-def is_subsequence(expected: List[str], actual: List[str]) -> bool:
-    """
-    True, wenn expected in actual in gleicher Reihenfolge vorkommt.
-    Zusätzliche Nodes in actual sind erlaubt.
-    Beispiel:
-    actual   = ["CONSOLE-M", "CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "EL-MM-ID"]
-    expected = ["CONSOLE-D", "OPT-MM", "SCR-MM-DASHBOARD", "EL-MM-ID"]
-    => True
-    """
-    i = 0
-    for node in actual:
-        if i < len(expected) and node == expected[i]:
-            i += 1
-    return i == len(expected)
-
-
-def navigation_subsequence_score(expected: List[str], actual: List[str]) -> float:
-    """
-    Gibt einen anteiligen Score zurück.
-    Wenn alle expected Nodes in richtiger Reihenfolge vorkommen: 1.0
-    """
-    if not expected:
-        return 0.0
-
-    matched = 0
-    i = 0
-
-    for node in actual:
-        if i < len(expected) and node == expected[i]:
-            matched += 1
-            i += 1
-
-    return matched / len(expected)
+    return any(p in txt for p in denial_patterns)
 
 
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
-    ref = find_nav_reference(us_id_value)
+    """
+    Target-based Navigation Correctness.
+
+    Old approach: compare every test case against one complete expected path.
+    Problem: complex User Stories contain dashboard, detail, popup and permission tests.
+
+    New approach: for each test case, select the relevant expected navigation TARGET
+    from navigation_targets.json and check whether the output reaches that target.
+    A test case is correct if:
+    - it references the correct module/nav option, and
+    - it reaches all required target nodes for the selected target.
+    """
+    ref = find_navigation_targets(us_id_value)
     if not ref:
         return {
             "correctness_pct": None,
             "correct_count": None,
             "evaluated_count": None,
             "details": [],
-            "note": f"No navigation reference found for {us_id_value}"
+            "note": f"No navigation targets found for {us_id_value}"
         }
 
-    # Unterstützt entweder:
-    # 1) "expected_navigation": [...]
-    # oder
-    # 2) "allowed_paths": [[...], [...]]
-    allowed_paths = []
+    module_nodes = _norm_list(ref.get("module_nodes"))
+    targets = ref.get("targets", []) or []
 
-    if ref.get("allowed_paths"):
-        allowed_paths = ref.get("allowed_paths", [])
-    elif ref.get("expected_navigation"):
-        allowed_paths = [ref.get("expected_navigation", [])]
-
-    allowed_paths = [p for p in allowed_paths if p]
-
-    if not allowed_paths:
+    if not targets:
         return {
             "correctness_pct": None,
             "correct_count": None,
             "evaluated_count": None,
             "details": [],
-            "note": f"No expected navigation path found for {us_id_value}"
+            "note": f"No target definitions found for {us_id_value}"
         }
 
     evaluated_cases = 0
     correct_cases = 0
-    skipped_cases = 0
     details = []
-    primary_roles = extract_primary_roles_from_story(story)
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
-        skip_nav, skip_reason = should_skip_navigation_evaluation(tc, primary_roles)
-        can_evaluate = (len(actual) > 0) and not skip_nav
+        target = _select_best_navigation_target(tc, ref)
+        required_nodes = _target_required_nodes(target)
+        forbidden_nodes = _norm_list(target.get("forbidden_nodes"))
 
-        best_score = 0.0
-        best_expected = []
+        can_evaluate = bool(actual) and bool(target)
+        module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
+        required_ok = all(node in actual for node in required_nodes)
+
+        forbidden_hit = any(node in actual for node in forbidden_nodes)
+        denial_ok = bool(target.get("access_denial_ok")) and _contains_denial_language(tc)
+        forbidden_ok = (not forbidden_hit) or denial_ok
+
         is_correct = False
-
-        if skip_nav:
-            skipped_cases += 1
-
         if can_evaluate:
             evaluated_cases += 1
-
-            for expected in allowed_paths:
-                score = navigation_subsequence_score(expected, actual)
-
-                if score > best_score:
-                    best_score = score
-                    best_expected = expected
-
-                if is_subsequence(expected, actual):
-                    is_correct = True
-                    best_score = 1.0
-                    best_expected = expected
-                    break
-
+            is_correct = bool(module_ok and required_ok and forbidden_ok)
             if is_correct:
                 correct_cases += 1
+
+        missing_nodes = [node for node in required_nodes if node not in actual]
 
         details.append({
             "tc_id": tc.get("id", ""),
             "actual": actual,
-            "expected": best_expected,
+            "expected": required_nodes,
+            "selected_target": target.get("label", ""),
+            "module_nodes": module_nodes,
             "can_evaluate": can_evaluate,
             "is_correct": is_correct,
-            "match_score": round(best_score, 2),
-            "skip_reason": skip_reason
+            "module_ok": module_ok,
+            "missing_nodes": missing_nodes,
+            "forbidden_nodes": forbidden_nodes,
+            "forbidden_hit": forbidden_hit,
+            "denial_ok": denial_ok,
+            "match_score": round((len(required_nodes) - len(missing_nodes)) / len(required_nodes), 2) if required_nodes else 0.0,
+            "skip_reason": "" if can_evaluate else "No actual navigation nodes extracted"
         })
 
     correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
@@ -1026,11 +697,10 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         "correctness_pct": correctness_pct,
         "correct_count": correct_cases,
         "evaluated_count": evaluated_cases,
-        "skipped_count": skipped_cases,
+        "skipped_count": 0,
         "details": details,
-        "note": None if evaluated_cases else "No evaluable navigation test cases found. Permission/access-denial tests may have been skipped."
+        "note": None if evaluated_cases else "No evaluable navigation test cases found."
     }
-
 
 
 def extract_required_roles(story: str, ac_blob: str) -> List[str]:
@@ -1577,8 +1247,9 @@ if st.session_state.last_evaluation:
             for d in ev["navigation"]["details"]:
                 st.write(
                     f"{d['tc_id']}: can_evaluate={d['can_evaluate']} "
-                    f"correct={d['is_correct']} actual={d['actual']} "
-                    f"expected={d['expected']}"
+                    f"correct={d['is_correct']} target={d.get('selected_target', '')} "
+                    f"actual={d['actual']} expected={d['expected']} "
+                    f"missing={d.get('missing_nodes', [])}"
                 )
 
     st.write(f"**Role Coverage:** {ev['role']['covered_count']}/{ev['role']['total_count']}")
