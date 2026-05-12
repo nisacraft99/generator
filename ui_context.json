@@ -28,13 +28,13 @@
     {
       "id": "OPT-MM",
       "type": "nav_option",
-      "name": "Manager Meeting",
+      "name": "Strategic Meeting",
       "parent": "CONSOLE-D"
     },
     {
       "id": "OPT-AM",
       "type": "nav_option",
-      "name": "Agent Meeting",
+      "name": "Team Meeting",
       "parent": "CONSOLE-M"
     },
     {
@@ -58,49 +58,49 @@
     {
       "id": "SCR-MM-DASHBOARD",
       "type": "screen",
-      "name": "MM Dashboard",
+      "name": "SM Dashboard",
       "parent": "OPT-MM"
     },
     {
       "id": "COMP-MM-LIST",
       "type": "component",
-      "name": "List of created MM",
+      "name": "List of created SM",
       "parent": "SCR-MM-DASHBOARD"
     },
     {
       "id": "EL-MM-ID",
       "type": "element",
-      "name": "MM ID Link",
+      "name": "SM ID Link",
       "parent": "COMP-MM-LIST"
     },
     {
       "id": "EL-MM-CREATE",
       "type": "element",
-      "name": "Create MM Button",
+      "name": "Create SM Button",
       "parent": "SCR-MM-DASHBOARD"
     },
     {
       "id": "EL-MM-SEARCH",
       "type": "element",
-      "name": "MM Search Bar",
+      "name": "SM Search Bar",
       "parent": "SCR-MM-DASHBOARD"
     },
     {
       "id": "EL-MM-SEARCH-BTN",
       "type": "element",
-      "name": "MM Search Button",
+      "name": "SM Search Button",
       "parent": "SCR-MM-DASHBOARD"
     },
     {
       "id": "EL-MM-RESET",
       "type": "element",
-      "name": "MM Reset Button",
+      "name": "SM Reset Button",
       "parent": "SCR-MM-DASHBOARD"
     },
     {
       "id": "MOD-MM-CREATE",
       "type": "modal",
-      "name": "Create MM Popup",
+      "name": "Create SM Popup",
       "parent": "EL-MM-CREATE"
     },
     {
@@ -146,19 +146,19 @@
     {
       "id": "SCR-MM-DETAIL",
       "type": "screen",
-      "name": "MM Detail",
+      "name": "SM Detail",
       "parent": "EL-MM-ID"
     },
     {
       "id": "EL-MM-EDIT",
       "type": "element",
-      "name": "Edit MM Button",
+      "name": "Edit SM Button",
       "parent": "SCR-MM-DETAIL"
     },
     {
       "id": "EL-MM-DELETE",
       "type": "element",
-      "name": "Delete MM Button",
+      "name": "Delete SM Button",
       "parent": "SCR-MM-DETAIL"
     },
     {
@@ -170,37 +170,37 @@
     {
       "id": "COMP-MM-ACTION-LIST",
       "type": "component",
-      "name": "List of MM Actions",
+      "name": "List of SM Actions",
       "parent": "SCR-MM-DETAIL"
     },
     {
       "id": "EL-MM-ACTION-ID",
       "type": "element",
-      "name": "MM Action ID Link",
+      "name": "SM Action ID Link",
       "parent": "COMP-MM-ACTION-LIST"
     },
     {
       "id": "MOD-MM-EDIT",
       "type": "modal",
-      "name": "Edit MM Popup",
+      "name": "Edit SM Popup",
       "parent": "EL-MM-EDIT"
     },
     {
       "id": "EL-MM-EDIT-SAVE",
       "type": "element",
-      "name": "Save MM Edit Button",
+      "name": "Save SM Edit Button",
       "parent": "MOD-MM-EDIT"
     },
     {
       "id": "EL-MM-EDIT-CANCEL",
       "type": "element",
-      "name": "Cancel MM Edit Button",
+      "name": "Cancel SM Edit Button",
       "parent": "MOD-MM-EDIT"
     },
     {
       "id": "MOD-MM-DELETE",
       "type": "modal",
-      "name": "Delete MM Confirmation Popup",
+      "name": "Delete SM Confirmation Popup",
       "parent": "EL-MM-DELETE"
     },
     {
@@ -218,7 +218,7 @@
     {
       "id": "MOD-MM-ACTION-CREATE",
       "type": "modal",
-      "name": "Create MM Action Popup",
+      "name": "Create SM Action Popup",
       "parent": "EL-MM-ADD-ACTION"
     },
     {
@@ -264,7 +264,7 @@
     {
       "id": "SCR-MM-ACTION-DETAIL",
       "type": "screen",
-      "name": "MM Action Detail",
+      "name": "SM Action Detail",
       "parent": "EL-MM-ACTION-ID"
     },
     {
@@ -282,25 +282,25 @@
     {
       "id": "MOD-MM-ACTION-EDIT",
       "type": "modal",
-      "name": "Edit MM Action Popup",
+      "name": "Edit SM Action Popup",
       "parent": "EL-MM-ACTION-EDIT"
     },
     {
       "id": "EL-MM-ACTION-EDIT-SAVE",
       "type": "element",
-      "name": "Save MM Action Edit Button",
+      "name": "Save SM Action Edit Button",
       "parent": "MOD-MM-ACTION-EDIT"
     },
     {
       "id": "EL-MM-ACTION-EDIT-CANCEL",
       "type": "element",
-      "name": "Cancel MM Action Edit Button",
+      "name": "Cancel SM Action Edit Button",
       "parent": "MOD-MM-ACTION-EDIT"
     },
     {
       "id": "MOD-MM-ACTION-DELETE",
       "type": "modal",
-      "name": "Delete MM Action Confirmation Popup",
+      "name": "Delete SM Action Confirmation Popup",
       "parent": "EL-MM-ACTION-DELETE"
     },
     {
@@ -318,49 +318,49 @@
     {
       "id": "SCR-AM-DASHBOARD",
       "type": "screen",
-      "name": "AM Dashboard",
+      "name": "TM Dashboard",
       "parent": "OPT-AM"
     },
     {
       "id": "COMP-AM-LIST",
       "type": "component",
-      "name": "List of created AM",
+      "name": "List of created TM",
       "parent": "SCR-AM-DASHBOARD"
     },
     {
       "id": "EL-AM-ID",
       "type": "element",
-      "name": "AM ID Link",
+      "name": "TM ID Link",
       "parent": "COMP-AM-LIST"
     },
     {
       "id": "EL-AM-CREATE",
       "type": "element",
-      "name": "Create AM Button",
+      "name": "Create TM Button",
       "parent": "SCR-AM-DASHBOARD"
     },
     {
       "id": "EL-AM-SEARCH",
       "type": "element",
-      "name": "AM Search Bar",
+      "name": "TM Search Bar",
       "parent": "SCR-AM-DASHBOARD"
     },
     {
       "id": "EL-AM-SEARCH-BTN",
       "type": "element",
-      "name": "AM Search Button",
+      "name": "TM Search Button",
       "parent": "SCR-AM-DASHBOARD"
     },
     {
       "id": "EL-AM-RESET",
       "type": "element",
-      "name": "AM Reset Button",
+      "name": "TM Reset Button",
       "parent": "SCR-AM-DASHBOARD"
     },
     {
       "id": "MOD-AM-CREATE",
       "type": "modal",
-      "name": "Create AM Popup",
+      "name": "Create TM Popup",
       "parent": "EL-AM-CREATE"
     },
     {
@@ -413,19 +413,19 @@
     {
       "id": "SCR-AM-DETAIL",
       "type": "screen",
-      "name": "AM Detail",
+      "name": "TM Detail",
       "parent": "EL-AM-ID"
     },
     {
       "id": "EL-AM-EDIT",
       "type": "element",
-      "name": "Edit AM Button",
+      "name": "Edit TM Button",
       "parent": "SCR-AM-DETAIL"
     },
     {
       "id": "EL-AM-DELETE",
       "type": "element",
-      "name": "Delete AM Button",
+      "name": "Delete TM Button",
       "parent": "SCR-AM-DETAIL"
     },
     {
@@ -437,37 +437,37 @@
     {
       "id": "COMP-AM-ACTION-LIST",
       "type": "component",
-      "name": "List of AM Actions",
+      "name": "List of TM Actions",
       "parent": "SCR-AM-DETAIL"
     },
     {
       "id": "EL-AM-ACTION-ID",
       "type": "element",
-      "name": "AM Action ID Link",
+      "name": "TM Action ID Link",
       "parent": "COMP-AM-ACTION-LIST"
     },
     {
       "id": "MOD-AM-EDIT",
       "type": "modal",
-      "name": "Edit AM Popup",
+      "name": "Edit TM Popup",
       "parent": "EL-AM-EDIT"
     },
     {
       "id": "EL-AM-EDIT-SAVE",
       "type": "element",
-      "name": "Save AM Edit Button",
+      "name": "Save TM Edit Button",
       "parent": "MOD-AM-EDIT"
     },
     {
       "id": "EL-AM-EDIT-CANCEL",
       "type": "element",
-      "name": "Cancel AM Edit Button",
+      "name": "Cancel TM Edit Button",
       "parent": "MOD-AM-EDIT"
     },
     {
       "id": "MOD-AM-DELETE",
       "type": "modal",
-      "name": "Delete AM Confirmation Popup",
+      "name": "Delete TM Confirmation Popup",
       "parent": "EL-AM-DELETE"
     },
     {
@@ -485,7 +485,7 @@
     {
       "id": "MOD-AM-ACTION-CREATE",
       "type": "modal",
-      "name": "Create AM Action Popup",
+      "name": "Create TM Action Popup",
       "parent": "EL-AM-ADD-ACTION"
     },
     {
@@ -531,7 +531,7 @@
     {
       "id": "SCR-AM-ACTION-DETAIL",
       "type": "screen",
-      "name": "AM Action Detail",
+      "name": "TM Action Detail",
       "parent": "EL-AM-ACTION-ID"
     },
     {
@@ -549,25 +549,25 @@
     {
       "id": "MOD-AM-ACTION-EDIT",
       "type": "modal",
-      "name": "Edit AM Action Popup",
+      "name": "Edit TM Action Popup",
       "parent": "EL-AM-ACTION-EDIT"
     },
     {
       "id": "EL-AM-ACTION-EDIT-SAVE",
       "type": "element",
-      "name": "Save AM Action Edit Button",
+      "name": "Save TM Action Edit Button",
       "parent": "MOD-AM-ACTION-EDIT"
     },
     {
       "id": "EL-AM-ACTION-EDIT-CANCEL",
       "type": "element",
-      "name": "Cancel AM Action Edit Button",
+      "name": "Cancel TM Action Edit Button",
       "parent": "MOD-AM-ACTION-EDIT"
     },
     {
       "id": "MOD-AM-ACTION-DELETE",
       "type": "modal",
-      "name": "Delete AM Action Confirmation Popup",
+      "name": "Delete TM Action Confirmation Popup",
       "parent": "EL-AM-ACTION-DELETE"
     },
     {
