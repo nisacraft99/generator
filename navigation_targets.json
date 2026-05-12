@@ -1,0 +1,1379 @@
+{
+  "US-1": {
+    "title": "Create MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "Create MM popup",
+    "targets": [
+      {
+        "label": "Create MM popup",
+        "keywords": [
+          "create",
+          "popup",
+          "title",
+          "deadline",
+          "location",
+          "participants",
+          "future",
+          "dd/mm/yyyy",
+          "50",
+          "mandatory"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "MOD-MM-CREATE"
+        ]
+      },
+      {
+        "label": "New MM detail after create",
+        "keywords": [
+          "redirect",
+          "newly created",
+          "add action",
+          "created mm",
+          "create button"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "MM dashboard ID/list",
+        "keywords": [
+          "id",
+          "appears",
+          "dashboard",
+          "list"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Restricted create access",
+        "keywords": [
+          "manager",
+          "agent",
+          "cannot",
+          "can not",
+          "not create",
+          "not view",
+          "permission",
+          "viewing permission"
+        ],
+        "required_nodes": [
+          "OPT-MM"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-2": {
+    "title": "View MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "MM detail",
+    "targets": [
+      {
+        "label": "MM detail",
+        "keywords": [
+          "view",
+          "detail",
+          "id",
+          "title",
+          "deadline",
+          "location",
+          "participants"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "MM dashboard visibility",
+        "keywords": [
+          "director",
+          "manager",
+          "agent",
+          "view all",
+          "assigned",
+          "cannot view"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-3": {
+    "title": "Edit MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "Edit MM popup",
+    "targets": [
+      {
+        "label": "MM detail with edit button",
+        "keywords": [
+          "edit button",
+          "menu",
+          "clicked on",
+          "existing mm"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "Edit MM popup",
+        "keywords": [
+          "edit",
+          "deadline",
+          "future",
+          "title",
+          "50",
+          "participants",
+          "location",
+          "id"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "MOD-MM-EDIT"
+        ]
+      },
+      {
+        "label": "Restricted edit access",
+        "keywords": [
+          "manager",
+          "not edit",
+          "cannot edit",
+          "viewing permission"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-4": {
+    "title": "Delete MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "Delete MM popup",
+    "targets": [
+      {
+        "label": "MM detail with delete button",
+        "keywords": [
+          "delete button",
+          "menu"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "Delete MM confirmation",
+        "keywords": [
+          "delete",
+          "popup",
+          "yes",
+          "no",
+          "sure to delete"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "MOD-MM-DELETE"
+        ]
+      },
+      {
+        "label": "MM dashboard after delete",
+        "keywords": [
+          "redirected",
+          "dashboard",
+          "deleted"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Restricted delete access",
+        "keywords": [
+          "manager",
+          "not delete",
+          "cannot delete",
+          "viewing permission"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-5": {
+    "title": "MM Dashboard",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "MM dashboard",
+    "targets": [
+      {
+        "label": "MM dashboard",
+        "keywords": [
+          "dashboard",
+          "list",
+          "table",
+          "columns",
+          "row",
+          "id",
+          "title",
+          "location",
+          "participants",
+          "deadline",
+          "sorted"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "MM search",
+        "keywords": [
+          "search",
+          "search bar",
+          "search button"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "EL-MM-SEARCH",
+          "EL-MM-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "MM reset",
+        "keywords": [
+          "reset",
+          "undo"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DASHBOARD",
+          "EL-MM-RESET"
+        ]
+      },
+      {
+        "label": "Restricted dashboard access",
+        "keywords": [
+          "agent",
+          "not see",
+          "cannot see",
+          "manager",
+          "assigned"
+        ],
+        "required_nodes": [
+          "OPT-MM"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-6": {
+    "title": "Create Action for MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "Create MM action popup",
+    "targets": [
+      {
+        "label": "MM detail add action",
+        "keywords": [
+          "existing mm",
+          "add action button"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "EL-MM-ADD-ACTION"
+        ]
+      },
+      {
+        "label": "Create MM action popup",
+        "keywords": [
+          "create action",
+          "new window",
+          "topic",
+          "root cause",
+          "action",
+          "urgency",
+          "save",
+          "cancel",
+          "200"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "MOD-MM-ACTION-CREATE"
+        ]
+      },
+      {
+        "label": "MM action list/detail",
+        "keywords": [
+          "saved",
+          "list of actions",
+          "action id",
+          "details page"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ]
+      },
+      {
+        "label": "Restricted action creation",
+        "keywords": [
+          "manager",
+          "not create",
+          "cannot create"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-7": {
+    "title": "View Action for MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "MM action detail",
+    "targets": [
+      {
+        "label": "MM detail action list",
+        "keywords": [
+          "list of actions",
+          "sorted",
+          "columns",
+          "action id",
+          "topic",
+          "urgency"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "COMP-MM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "MM action detail",
+        "keywords": [
+          "click",
+          "details",
+          "all data",
+          "created"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Restricted action view",
+        "keywords": [
+          "agent",
+          "not view",
+          "cannot view",
+          "assigned"
+        ],
+        "required_nodes": [
+          "OPT-MM"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-8": {
+    "title": "Edit Action for MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "Edit MM action popup",
+    "targets": [
+      {
+        "label": "MM action detail/list",
+        "keywords": [
+          "existing mm",
+          "list of actions",
+          "next to every action",
+          "edit button"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Edit MM action popup",
+        "keywords": [
+          "edit",
+          "prefilled",
+          "topic",
+          "root cause",
+          "action",
+          "urgency",
+          "save",
+          "cancel",
+          "200"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-ACTION-DETAIL",
+          "MOD-MM-ACTION-EDIT"
+        ]
+      },
+      {
+        "label": "Restricted action edit",
+        "keywords": [
+          "manager",
+          "not edit",
+          "cannot edit"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-ACTION-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-9": {
+    "title": "Delete Action for MM",
+    "module_nodes": [
+      "OPT-MM"
+    ],
+    "default_target": "Delete MM action popup",
+    "targets": [
+      {
+        "label": "MM action detail/list",
+        "keywords": [
+          "existing mm",
+          "list of actions",
+          "next to every action",
+          "delete button"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-DETAIL",
+          "SCR-MM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Delete MM action confirmation",
+        "keywords": [
+          "delete",
+          "popup",
+          "yes",
+          "no",
+          "sure to delete this action"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-ACTION-DETAIL",
+          "MOD-MM-ACTION-DELETE"
+        ]
+      },
+      {
+        "label": "Restricted action delete",
+        "keywords": [
+          "manager",
+          "not delete",
+          "cannot delete"
+        ],
+        "required_nodes": [
+          "OPT-MM",
+          "SCR-MM-ACTION-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-10": {
+    "title": "Create AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "Create AM popup",
+    "targets": [
+      {
+        "label": "Create AM popup",
+        "keywords": [
+          "create",
+          "popup",
+          "title",
+          "deadline",
+          "location",
+          "subdivision",
+          "participants",
+          "future",
+          "dd/mm/yyyy",
+          "50",
+          "mandatory"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "MOD-AM-CREATE"
+        ]
+      },
+      {
+        "label": "New AM detail after create",
+        "keywords": [
+          "redirect",
+          "newly created",
+          "add action",
+          "created am",
+          "create button"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "AM dashboard ID/list",
+        "keywords": [
+          "id",
+          "appears",
+          "dashboard",
+          "list"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Restricted create access",
+        "keywords": [
+          "director",
+          "agent",
+          "cannot",
+          "can not",
+          "not create",
+          "viewing permission"
+        ],
+        "required_nodes": [
+          "OPT-AM"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-11": {
+    "title": "View AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "AM detail",
+    "targets": [
+      {
+        "label": "AM detail",
+        "keywords": [
+          "view",
+          "detail",
+          "id",
+          "title",
+          "deadline",
+          "location",
+          "participants",
+          "subdivision"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "AM dashboard visibility",
+        "keywords": [
+          "director",
+          "manager",
+          "agent",
+          "view all",
+          "assigned",
+          "created"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-12": {
+    "title": "Edit AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "Edit AM popup",
+    "targets": [
+      {
+        "label": "AM detail with edit button",
+        "keywords": [
+          "edit button",
+          "menu",
+          "clicked on",
+          "existing am"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "Edit AM popup",
+        "keywords": [
+          "edit",
+          "deadline",
+          "future",
+          "title",
+          "50",
+          "participants",
+          "subdivision",
+          "location",
+          "id"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "MOD-AM-EDIT"
+        ]
+      },
+      {
+        "label": "Restricted edit access",
+        "keywords": [
+          "director",
+          "not edit",
+          "cannot edit",
+          "viewing permission"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-13": {
+    "title": "Delete AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "Delete AM popup",
+    "targets": [
+      {
+        "label": "AM detail with delete button",
+        "keywords": [
+          "delete button",
+          "menu"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "Delete AM confirmation",
+        "keywords": [
+          "delete",
+          "popup",
+          "yes",
+          "no",
+          "sure to delete"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "MOD-AM-DELETE"
+        ]
+      },
+      {
+        "label": "AM dashboard after delete",
+        "keywords": [
+          "redirected",
+          "dashboard",
+          "deleted"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Restricted delete access",
+        "keywords": [
+          "director",
+          "not delete",
+          "cannot delete",
+          "viewing permission"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-14": {
+    "title": "AM Dashboard",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "AM dashboard",
+    "targets": [
+      {
+        "label": "AM dashboard",
+        "keywords": [
+          "dashboard",
+          "list",
+          "table",
+          "columns",
+          "row",
+          "id",
+          "title",
+          "location",
+          "participants",
+          "subdivision",
+          "deadline",
+          "sorted",
+          "director",
+          "manager",
+          "agent"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DASHBOARD"
+        ]
+      },
+      {
+        "label": "AM search",
+        "keywords": [
+          "search",
+          "search bar",
+          "search button"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "EL-AM-SEARCH",
+          "EL-AM-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "AM reset",
+        "keywords": [
+          "reset",
+          "undo"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DASHBOARD",
+          "EL-AM-RESET"
+        ]
+      }
+    ]
+  },
+  "US-15": {
+    "title": "Create Action for AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "Create AM action popup",
+    "targets": [
+      {
+        "label": "AM detail add action",
+        "keywords": [
+          "existing am",
+          "add action button"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "EL-AM-ADD-ACTION"
+        ]
+      },
+      {
+        "label": "Create AM action popup",
+        "keywords": [
+          "create action",
+          "new window",
+          "topic",
+          "root cause",
+          "action",
+          "urgency",
+          "save",
+          "cancel",
+          "200"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "MOD-AM-ACTION-CREATE"
+        ]
+      },
+      {
+        "label": "AM action list/detail",
+        "keywords": [
+          "saved",
+          "list of actions",
+          "action id",
+          "details page"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ]
+      },
+      {
+        "label": "Restricted action creation",
+        "keywords": [
+          "director",
+          "agent",
+          "not create",
+          "cannot create"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-16": {
+    "title": "View Action for AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "AM action detail",
+    "targets": [
+      {
+        "label": "AM detail action list",
+        "keywords": [
+          "list of actions",
+          "sorted",
+          "columns",
+          "action id",
+          "topic",
+          "urgency"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "COMP-AM-ACTION-LIST"
+        ]
+      },
+      {
+        "label": "AM action detail",
+        "keywords": [
+          "click",
+          "details",
+          "all data",
+          "created"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "SCR-AM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Action visibility by role",
+        "keywords": [
+          "director",
+          "manager",
+          "agent",
+          "assigned",
+          "created"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-17": {
+    "title": "Edit Action for AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "Edit AM action popup",
+    "targets": [
+      {
+        "label": "AM action detail/list",
+        "keywords": [
+          "existing am",
+          "list of actions",
+          "next to every action",
+          "edit button"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "SCR-AM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Edit AM action popup",
+        "keywords": [
+          "edit",
+          "prefilled",
+          "topic",
+          "root cause",
+          "action",
+          "urgency",
+          "save",
+          "cancel",
+          "200"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-ACTION-DETAIL",
+          "MOD-AM-ACTION-EDIT"
+        ]
+      },
+      {
+        "label": "Restricted action edit",
+        "keywords": [
+          "director",
+          "agent",
+          "not edit",
+          "cannot edit"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-ACTION-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-18": {
+    "title": "Delete Action for AM",
+    "module_nodes": [
+      "OPT-AM"
+    ],
+    "default_target": "Delete AM action popup",
+    "targets": [
+      {
+        "label": "AM action detail/list",
+        "keywords": [
+          "existing am",
+          "list of actions",
+          "next to every action",
+          "delete button"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-DETAIL",
+          "SCR-AM-ACTION-DETAIL"
+        ]
+      },
+      {
+        "label": "Delete AM action confirmation",
+        "keywords": [
+          "delete",
+          "popup",
+          "yes",
+          "no",
+          "sure to delete this action"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-ACTION-DETAIL",
+          "MOD-AM-ACTION-DELETE"
+        ]
+      },
+      {
+        "label": "Restricted action delete",
+        "keywords": [
+          "director",
+          "agent",
+          "not delete",
+          "cannot delete"
+        ],
+        "required_nodes": [
+          "OPT-AM",
+          "SCR-AM-ACTION-DETAIL"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-19": {
+    "title": "View Calendar View",
+    "module_nodes": [
+      "OPT-CALENDAR"
+    ],
+    "default_target": "Calendar view",
+    "targets": [
+      {
+        "label": "Calendar view",
+        "keywords": [
+          "calendar",
+          "current month",
+          "schedule",
+          "mm",
+          "am",
+          "marked red",
+          "marked blue",
+          "director",
+          "manager",
+          "agent"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ]
+      },
+      {
+        "label": "Calendar month navigation",
+        "keywords": [
+          "left arrow",
+          "right arrow",
+          "past months",
+          "future months"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ]
+      }
+    ]
+  },
+  "US-20": {
+    "title": "Search for other Calendar Views",
+    "module_nodes": [
+      "OPT-CALENDAR"
+    ],
+    "default_target": "Calendar search",
+    "targets": [
+      {
+        "label": "Calendar search",
+        "keywords": [
+          "search",
+          "search bar",
+          "search button",
+          "searched user",
+          "other users"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-SEARCH",
+          "EL-CALENDAR-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "Calendar access/error",
+        "keywords": [
+          "does not exist",
+          "no permission",
+          "not subordinate",
+          "agent can not",
+          "agent cannot"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-21": {
+    "title": "Drag and Drop Meetings within Calendar View",
+    "module_nodes": [
+      "OPT-CALENDAR"
+    ],
+    "default_target": "Calendar drag and drop",
+    "targets": [
+      {
+        "label": "Calendar drag and drop",
+        "keywords": [
+          "drag",
+          "drop",
+          "reschedule",
+          "future",
+          "today",
+          "notification"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-MEETING"
+        ]
+      },
+      {
+        "label": "Restricted drag and drop",
+        "keywords": [
+          "manager cannot",
+          "agent cannot",
+          "not drag"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-22": {
+    "title": "Cancel, Accept or Decline Meetings within Calendar View",
+    "module_nodes": [
+      "OPT-CALENDAR"
+    ],
+    "default_target": "Calendar meeting actions",
+    "targets": [
+      {
+        "label": "Calendar meeting actions",
+        "keywords": [
+          "accept",
+          "decline",
+          "cancel",
+          "notification",
+          "accepted",
+          "declined",
+          "cancelled"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-MEETING"
+        ]
+      },
+      {
+        "label": "Accept meeting",
+        "keywords": [
+          "accept"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-ACCEPT"
+        ]
+      },
+      {
+        "label": "Decline meeting",
+        "keywords": [
+          "decline"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-DECLINE"
+        ]
+      },
+      {
+        "label": "Cancel meeting",
+        "keywords": [
+          "cancel"
+        ],
+        "required_nodes": [
+          "OPT-CALENDAR",
+          "SCR-CALENDAR",
+          "EL-CALENDAR-CANCEL"
+        ]
+      }
+    ]
+  },
+  "US-23": {
+    "title": "Evaluate Employees",
+    "module_nodes": [
+      "OPT-EVALUATE"
+    ],
+    "default_target": "Evaluation page",
+    "targets": [
+      {
+        "label": "Evaluate dashboard",
+        "keywords": [
+          "dashboard",
+          "location",
+          "filter",
+          "search bar",
+          "search button",
+          "list",
+          "id",
+          "date",
+          "employee"
+        ],
+        "required_nodes": [
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Employee search",
+        "keywords": [
+          "search",
+          "manager",
+          "agent",
+          "subordinate",
+          "location"
+        ],
+        "required_nodes": [
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD",
+          "EL-EVAL-SEARCH",
+          "EL-EVAL-SEARCH-BTN"
+        ]
+      },
+      {
+        "label": "Evaluation page/form",
+        "keywords": [
+          "evaluation page",
+          "efficiency",
+          "reliability",
+          "communication",
+          "comment",
+          "scale",
+          "mandatory",
+          "save",
+          "cancel"
+        ],
+        "required_nodes": [
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DETAIL"
+        ]
+      },
+      {
+        "label": "Evaluation saved",
+        "keywords": [
+          "save",
+          "successfully saved",
+          "notification",
+          "id"
+        ],
+        "required_nodes": [
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Evaluation access/error",
+        "keywords": [
+          "cannot search",
+          "not fill",
+          "error message",
+          "mandatory field"
+        ],
+        "required_nodes": [
+          "OPT-EVALUATE",
+          "SCR-EVALUATE-DASHBOARD"
+        ],
+        "access_denial_ok": true
+      }
+    ]
+  },
+  "US-24": {
+    "title": "View My Evaluations",
+    "module_nodes": [
+      "OPT-MY-EVAL"
+    ],
+    "default_target": "My evaluations dashboard",
+    "targets": [
+      {
+        "label": "My evaluations dashboard",
+        "keywords": [
+          "dashboard",
+          "view evaluations",
+          "sorted",
+          "columns",
+          "id",
+          "date",
+          "created for himself"
+        ],
+        "required_nodes": [
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD"
+        ]
+      },
+      {
+        "label": "My evaluation detail",
+        "keywords": [
+          "clicking on an evaluation",
+          "sees",
+          "efficiency",
+          "reliability",
+          "communication",
+          "comment",
+          "back button",
+          "appeal button",
+          "detail"
+        ],
+        "required_nodes": [
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DETAIL"
+        ]
+      },
+      {
+        "label": "Back to my evaluations",
+        "keywords": [
+          "back"
+        ],
+        "required_nodes": [
+          "OPT-MY-EVAL",
+          "SCR-MY-EVAL-DASHBOARD"
+        ]
+      },
+      {
+        "label": "Appeal popup",
+        "keywords": [
+          "appeal",
+          "popup",
+          "comment",
+          "500",
+          "save",
+          "cancel",
+          "mandatory",
+          "older than 1 week",
+          "successfully sent"
+        ],
+        "required_nodes": [
+          "OPT-MY-EVAL",
+          "MOD-EVAL-APPEAL"
+        ]
+      }
+    ]
+  }
+}
