@@ -247,6 +247,8 @@ UI CONTEXT RULES:
 - If ui_context is provided, every concrete UI step SHOULD include a ui_node_id that exactly matches an existing ui_context.nodes[].id.
 - If ui_context is not provided, do NOT invent concrete UI names or ui_node_id values. In that case use ui_node_id:null and keep navigation generic.
 - Generic steps like "go to the function" are not allowed when ui_context provides concrete path elements.
+- If ui_context is provided, do not combine workspace opening and navigation option selection in one step. Use separate steps, e.g. first open the workspace node, then select the module/nav option node.
+- If ui_context is provided, preserve the UI order from relationships/parents: workspace -> navigation option -> dashboard/screen -> clickable element -> resulting screen/modal.
 
 NEUTRAL WORKSPACE NAMES:
 - The application uses neutral workspace names, not role-based console names.
@@ -650,6 +652,49 @@ def infer_node_from_step_text(step_text: str, expected_text: str) -> Optional[st
     return nodes[0] if nodes else None
 
 
+def _ui_parent_map() -> Dict[str, Optional[str]]:
+    """Returns {node_id: parent_id} from the loaded UI context."""
+    if not isinstance(UI_CONTEXT, dict):
+        return {}
+    mapping: Dict[str, Optional[str]] = {}
+    for node in UI_CONTEXT.get("nodes", []) or []:
+        if isinstance(node, dict) and node.get("id"):
+            mapping[str(node.get("id"))] = node.get("parent")
+    return mapping
+
+
+def _expand_with_ancestors(node_id: str) -> List[str]:
+    """
+    Expands a node to its parent chain in root-to-leaf order.
+
+    This fixes cases where the model assigns one combined step to a nav option,
+    e.g. "Open Coordination and select Agent Meeting" with ui_node_id=OPT-AM.
+    The raw extraction may then see OPT-AM before CONSOLE-M. By expanding via
+    parent links, the path becomes CONSOLE-M -> OPT-AM.
+    """
+    parents = _ui_parent_map()
+    if not node_id or node_id not in parents:
+        return [node_id] if node_id else []
+
+    chain: List[str] = []
+    seen = set()
+    current: Optional[str] = node_id
+    while current and current not in seen:
+        seen.add(current)
+        chain.append(current)
+        current = parents.get(current)
+
+    return list(reversed(chain))
+
+
+def _dedup_preserve_order(items: List[str]) -> List[str]:
+    result: List[str] = []
+    for item in items:
+        if item and item not in result:
+            result.append(item)
+    return result
+
+
 def _append_node(path: List[str], node: Optional[str]):
     if node and node != "LOGIN":
         path.append(node)
@@ -711,14 +756,18 @@ def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
             for expanded in _expand_action_node(node):
                 _append_node(path, expanded)
 
+    # Expand each detected node through the UI parent chain. This makes the
+    # actual path robust when the model combines multiple UI actions into one
+    # step or assigns the child node before the parent node.
+    expanded_path: List[str] = []
+    for p in path:
+        for expanded in _expand_with_ancestors(p):
+            expanded_path.append(expanded)
+
     # Deduplicate while preserving order. We remove repeated nodes globally,
     # not only consecutive duplicates, because normalized test cases often store
     # navigation_steps and steps with the same content.
-    dedup: List[str] = []
-    for p in path:
-        if p not in dedup:
-            dedup.append(p)
-    return dedup
+    return _dedup_preserve_order(expanded_path)
 
 
 
