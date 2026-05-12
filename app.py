@@ -531,6 +531,197 @@ def evaluate_ac_coverage(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[
     }
 
 
+
+# ======================= NAVIGATION EXTRACTION HELPERS =======================
+
+def _ui_nodes() -> List[Dict[str, Any]]:
+    if isinstance(UI_CONTEXT, dict):
+        nodes = UI_CONTEXT.get("nodes", []) or []
+        return [n for n in nodes if isinstance(n, dict) and n.get("id")]
+    return []
+
+
+def _node_ids() -> set:
+    return {str(n.get("id")) for n in _ui_nodes()}
+
+
+def _parent_map() -> Dict[str, Optional[str]]:
+    return {str(n.get("id")): n.get("parent") for n in _ui_nodes()}
+
+
+def _node_name_map() -> Dict[str, str]:
+    return {str(n.get("id")): str(n.get("name", "")) for n in _ui_nodes()}
+
+
+def _relationship_target_by_via() -> Dict[str, str]:
+    rels = UI_CONTEXT.get("relationships", []) if isinstance(UI_CONTEXT, dict) else []
+    mapping = {}
+    for rel in rels or []:
+        if not isinstance(rel, dict):
+            continue
+        via = rel.get("via")
+        to = rel.get("to")
+        if via and to:
+            mapping[str(via)] = str(to)
+    return mapping
+
+
+def _ancestor_chain(node_id: str) -> List[str]:
+    """Returns ancestors from root to node, based on parent links in ui_context."""
+    parents = _parent_map()
+    valid_ids = _node_ids()
+    chain = []
+    current = node_id
+    seen = set()
+    while current and current in valid_ids and current not in seen:
+        seen.add(current)
+        chain.append(current)
+        current = parents.get(current)
+    return list(reversed(chain))
+
+
+def _append_unique(path: List[str], node_id: Optional[str]):
+    if node_id and node_id != "LOGIN" and node_id not in path:
+        path.append(node_id)
+
+
+def _append_chain(path: List[str], node_id: Optional[str]):
+    if not node_id or node_id == "LOGIN":
+        return
+    chain = _ancestor_chain(str(node_id)) or [str(node_id)]
+    for n in chain:
+        _append_unique(path, n)
+
+
+def _expand_via_node(node_id: str) -> List[str]:
+    """If a node is a button/link that opens/navigates to a target, include the target too."""
+    rel_map = _relationship_target_by_via()
+    target = rel_map.get(str(node_id))
+    if target and target != node_id:
+        return [str(node_id), target]
+    return [str(node_id)]
+
+
+def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
+    """
+    Infers UI node IDs from natural-language test steps.
+
+    It uses neutral workspace names (Operations, Coordination, Scheduling, Performance),
+    UI node names from ui_context, and a few explicit aliases. It deliberately does NOT
+    map actor roles like "Log in as Director" to console nodes.
+    """
+    text = normalize_text(f"{step_text} {expected_text}")
+    found: List[str] = []
+
+    def add(node_id: str):
+        if node_id and node_id in _node_ids() and node_id not in found:
+            found.append(node_id)
+
+    # Neutral workspace aliases. These require workspace/console wording so that
+    # ordinary business words such as "performance" do not accidentally become navigation.
+    if re.search(r"\boperations\s+(workspace|console|hub)\b", text):
+        add("CONSOLE-D")
+    if re.search(r"\bcoordination\s+(workspace|console|hub)\b", text):
+        add("CONSOLE-M")
+    if re.search(r"\bscheduling\s+(workspace|console|hub)\b", text):
+        add("CONSOLE-C")
+    if re.search(r"\bperformance\s+(workspace|console|hub)\b", text):
+        add("CONSOLE-E")
+
+    # Backwards-compatible old console names, in case older outputs still use them.
+    if "director console" in text:
+        add("CONSOLE-D")
+    if "manager console" in text:
+        add("CONSOLE-M")
+    if "calendar console" in text:
+        add("CONSOLE-C")
+    if "evaluation console" in text:
+        add("CONSOLE-E")
+
+    # Generic node-name matching for non-console nodes. Sort by name length so specific
+    # names like "AM Search Button" are found before generic names.
+    nodes = _ui_nodes()
+    nodes_sorted = sorted(nodes, key=lambda n: len(str(n.get("name", ""))), reverse=True)
+    for node in nodes_sorted:
+        node_id = str(node.get("id"))
+        node_type = str(node.get("type", ""))
+        name = normalize_text(str(node.get("name", "")))
+        if not name:
+            continue
+        # Console names are handled above with stricter aliases.
+        if node_type == "console":
+            continue
+        # Avoid very short or overly generic direct matches unless they are distinctive IDs.
+        if len(name) < 4:
+            continue
+        if name in text:
+            add(node_id)
+
+    # Helpful aliases where the generated wording often differs from exact node names.
+    alias_map = {
+        "OPT-MM": ["mm module", "manager meetings"],
+        "OPT-AM": ["am module", "agent meetings"],
+        "SCR-MM-DASHBOARD": ["manager meeting dashboard"],
+        "SCR-AM-DASHBOARD": ["agent meeting dashboard"],
+        "SCR-MM-DETAIL": ["mm detail menu", "manager meeting detail", "selected mm"],
+        "SCR-AM-DETAIL": ["am detail menu", "agent meeting detail", "selected am"],
+        "MOD-MM-CREATE": ["create mm pop up", "create manager meeting popup"],
+        "MOD-AM-CREATE": ["create am pop up", "create agent meeting popup"],
+        "MOD-MM-EDIT": ["edit mm pop up", "edit manager meeting popup"],
+        "MOD-AM-EDIT": ["edit am pop up", "edit agent meeting popup"],
+        "MOD-MM-DELETE": ["delete mm popup", "delete manager meeting popup"],
+        "MOD-AM-DELETE": ["delete am popup", "delete agent meeting popup"],
+        "MOD-EVAL-APPEAL": ["appeal pop up", "appeal modal"],
+        "SCR-MY-EVAL-DASHBOARD": ["my evaluation dashboard"],
+        "SCR-MY-EVAL-DETAIL": ["my evaluation detail", "evaluation detail opens"],
+        "SCR-EVALUATE-DASHBOARD": ["evaluate employee dashboard"],
+        "SCR-EVALUATE-DETAIL": ["employee evaluation page", "evaluation detail page"],
+    }
+    for node_id, aliases in alias_map.items():
+        if node_id in _node_ids() and any(normalize_text(a) in text for a in aliases):
+            add(node_id)
+
+    return found
+
+
+def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
+    """
+    Extracts a normalized actual navigation path from generated test cases.
+
+    The function combines explicit ui_node_id values and inferred nodes from text.
+    It then uses ui_context parent links and relationships to normalize order, e.g.
+    OPT-AM automatically contributes CONSOLE-M -> OPT-AM.
+    """
+    path: List[str] = []
+    valid_ids = _node_ids()
+
+    all_steps: List[Any] = []
+    all_steps.extend(tc.get("navigation_steps", []) or [])
+    all_steps.extend(tc.get("steps_only", []) or [])
+    all_steps.extend(tc.get("steps", []) or [])
+
+    for s in all_steps:
+        if isinstance(s, dict):
+            step_text = s.get("step", "") or ""
+            expected_text = s.get("expected", "") or ""
+            explicit = s.get("ui_node_id")
+        else:
+            step_text = str(s)
+            expected_text = ""
+            explicit = None
+
+        candidates: List[str] = []
+        if explicit and explicit != "LOGIN" and str(explicit) in valid_ids:
+            candidates.append(str(explicit))
+        candidates.extend(infer_nodes_from_step_text(step_text, expected_text))
+
+        for node in candidates:
+            for expanded in _expand_via_node(node):
+                _append_chain(path, expanded)
+
+    return path
+
+
 def find_navigation_targets(us_id_value: str) -> Optional[Dict[str, Any]]:
     """Returns target-based navigation reference for a User Story."""
     if not isinstance(NAV_TARGETS, dict):
