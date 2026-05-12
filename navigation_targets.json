@@ -1,13 +1,13 @@
 {
   "US-1": {
-    "title": "Create MM",
+    "title": "Create SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "Create MM popup",
+    "default_target": "Create SM popup",
     "targets": [
       {
-        "label": "Create MM popup",
+        "label": "Create SM popup",
         "keywords": [
           "create",
           "popup",
@@ -16,7 +16,7 @@
           "location",
           "participants",
           "future",
-          "dd/mm/yyyy",
+          "dd/sm/yyyy",
           "50",
           "mandatory"
         ],
@@ -27,12 +27,12 @@
         ]
       },
       {
-        "label": "New MM detail after create",
+        "label": "New SM detail after create",
         "keywords": [
           "redirect",
           "newly created",
           "add action",
-          "created mm",
+          "created sm",
           "create button"
         ],
         "required_nodes": [
@@ -41,7 +41,7 @@
         ]
       },
       {
-        "label": "MM dashboard ID/list",
+        "label": "SM dashboard ID/list",
         "keywords": [
           "id",
           "appears",
@@ -73,14 +73,14 @@
     ]
   },
   "US-2": {
-    "title": "View MM",
+    "title": "View SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "MM detail",
+    "default_target": "SM detail",
     "targets": [
       {
-        "label": "MM detail",
+        "label": "SM detail",
         "keywords": [
           "view",
           "detail",
@@ -96,7 +96,7 @@
         ]
       },
       {
-        "label": "MM dashboard visibility",
+        "label": "SM dashboard visibility",
         "keywords": [
           "director",
           "manager",
@@ -114,19 +114,19 @@
     ]
   },
   "US-3": {
-    "title": "Edit MM",
+    "title": "Edit SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "Edit MM popup",
+    "default_target": "Edit SM popup",
     "targets": [
       {
-        "label": "MM detail with edit button",
+        "label": "SM detail with edit button",
         "keywords": [
           "edit button",
           "menu",
           "clicked on",
-          "existing mm"
+          "existing sm"
         ],
         "required_nodes": [
           "OPT-MM",
@@ -134,7 +134,7 @@
         ]
       },
       {
-        "label": "Edit MM popup",
+        "label": "Edit SM popup",
         "keywords": [
           "edit",
           "deadline",
@@ -168,14 +168,14 @@
     ]
   },
   "US-4": {
-    "title": "Delete MM",
+    "title": "Delete SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "Delete MM popup",
+    "default_target": "Delete SM popup",
     "targets": [
       {
-        "label": "MM detail with delete button",
+        "label": "SM detail with delete button",
         "keywords": [
           "delete button",
           "menu"
@@ -186,7 +186,7 @@
         ]
       },
       {
-        "label": "Delete MM confirmation",
+        "label": "Delete SM confirmation",
         "keywords": [
           "delete",
           "popup",
@@ -201,7 +201,7 @@
         ]
       },
       {
-        "label": "MM dashboard after delete",
+        "label": "SM dashboard after delete",
         "keywords": [
           "redirected",
           "dashboard",
@@ -229,14 +229,14 @@
     ]
   },
   "US-5": {
-    "title": "MM Dashboard",
+    "title": "SM Dashboard",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "MM dashboard",
+    "default_target": "SM dashboard",
     "targets": [
       {
-        "label": "MM dashboard",
+        "label": "SM dashboard",
         "keywords": [
           "dashboard",
           "list",
@@ -256,7 +256,7 @@
         ]
       },
       {
-        "label": "MM search",
+        "label": "SM search",
         "keywords": [
           "search",
           "search bar",
@@ -270,7 +270,7 @@
         ]
       },
       {
-        "label": "MM reset",
+        "label": "SM reset",
         "keywords": [
           "reset",
           "undo"
@@ -298,16 +298,16 @@
     ]
   },
   "US-6": {
-    "title": "Create Action for MM",
+    "title": "Create Action for SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "Create MM action popup",
+    "default_target": "Create SM action popup",
     "targets": [
       {
-        "label": "MM detail add action",
+        "label": "SM detail add action",
         "keywords": [
-          "existing mm",
+          "existing sm",
           "add action button"
         ],
         "required_nodes": [
@@ -317,7 +317,7 @@
         ]
       },
       {
-        "label": "Create MM action popup",
+        "label": "Create SM action popup",
         "keywords": [
           "create action",
           "new window",
@@ -336,7 +336,7 @@
         ]
       },
       {
-        "label": "MM action list/detail",
+        "label": "SM action list/detail",
         "keywords": [
           "saved",
           "list of actions",
@@ -364,14 +364,14 @@
     ]
   },
   "US-7": {
-    "title": "View Action for MM",
+    "title": "View Action for SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "MM action detail",
+    "default_target": "SM action detail",
     "targets": [
       {
-        "label": "MM detail action list",
+        "label": "SM detail action list",
         "keywords": [
           "list of actions",
           "sorted",
@@ -387,7 +387,7 @@
         ]
       },
       {
-        "label": "MM action detail",
+        "label": "SM action detail",
         "keywords": [
           "click",
           "details",
@@ -416,16 +416,16 @@
     ]
   },
   "US-8": {
-    "title": "Edit Action for MM",
+    "title": "Edit Action for SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "Edit MM action popup",
+    "default_target": "Edit SM action popup",
     "targets": [
       {
-        "label": "MM action detail/list",
+        "label": "SM action detail/list",
         "keywords": [
-          "existing mm",
+          "existing sm",
           "list of actions",
           "next to every action",
           "edit button"
@@ -437,7 +437,7 @@
         ]
       },
       {
-        "label": "Edit MM action popup",
+        "label": "Edit SM action popup",
         "keywords": [
           "edit",
           "prefilled",
@@ -471,16 +471,16 @@
     ]
   },
   "US-9": {
-    "title": "Delete Action for MM",
+    "title": "Delete Action for SM",
     "module_nodes": [
       "OPT-MM"
     ],
-    "default_target": "Delete MM action popup",
+    "default_target": "Delete SM action popup",
     "targets": [
       {
-        "label": "MM action detail/list",
+        "label": "SM action detail/list",
         "keywords": [
-          "existing mm",
+          "existing sm",
           "list of actions",
           "next to every action",
           "delete button"
@@ -492,7 +492,7 @@
         ]
       },
       {
-        "label": "Delete MM action confirmation",
+        "label": "Delete SM action confirmation",
         "keywords": [
           "delete",
           "popup",
@@ -522,14 +522,14 @@
     ]
   },
   "US-10": {
-    "title": "Create AM",
+    "title": "Create TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "Create AM popup",
+    "default_target": "Create TM popup",
     "targets": [
       {
-        "label": "Create AM popup",
+        "label": "Create TM popup",
         "keywords": [
           "create",
           "popup",
@@ -539,7 +539,7 @@
           "subdivision",
           "participants",
           "future",
-          "dd/mm/yyyy",
+          "dd/sm/yyyy",
           "50",
           "mandatory"
         ],
@@ -550,12 +550,12 @@
         ]
       },
       {
-        "label": "New AM detail after create",
+        "label": "New TM detail after create",
         "keywords": [
           "redirect",
           "newly created",
           "add action",
-          "created am",
+          "created tm",
           "create button"
         ],
         "required_nodes": [
@@ -564,7 +564,7 @@
         ]
       },
       {
-        "label": "AM dashboard ID/list",
+        "label": "TM dashboard ID/list",
         "keywords": [
           "id",
           "appears",
@@ -594,14 +594,14 @@
     ]
   },
   "US-11": {
-    "title": "View AM",
+    "title": "View TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "AM detail",
+    "default_target": "TM detail",
     "targets": [
       {
-        "label": "AM detail",
+        "label": "TM detail",
         "keywords": [
           "view",
           "detail",
@@ -618,7 +618,7 @@
         ]
       },
       {
-        "label": "AM dashboard visibility",
+        "label": "TM dashboard visibility",
         "keywords": [
           "director",
           "manager",
@@ -636,19 +636,19 @@
     ]
   },
   "US-12": {
-    "title": "Edit AM",
+    "title": "Edit TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "Edit AM popup",
+    "default_target": "Edit TM popup",
     "targets": [
       {
-        "label": "AM detail with edit button",
+        "label": "TM detail with edit button",
         "keywords": [
           "edit button",
           "menu",
           "clicked on",
-          "existing am"
+          "existing tm"
         ],
         "required_nodes": [
           "OPT-AM",
@@ -656,7 +656,7 @@
         ]
       },
       {
-        "label": "Edit AM popup",
+        "label": "Edit TM popup",
         "keywords": [
           "edit",
           "deadline",
@@ -691,14 +691,14 @@
     ]
   },
   "US-13": {
-    "title": "Delete AM",
+    "title": "Delete TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "Delete AM popup",
+    "default_target": "Delete TM popup",
     "targets": [
       {
-        "label": "AM detail with delete button",
+        "label": "TM detail with delete button",
         "keywords": [
           "delete button",
           "menu"
@@ -709,7 +709,7 @@
         ]
       },
       {
-        "label": "Delete AM confirmation",
+        "label": "Delete TM confirmation",
         "keywords": [
           "delete",
           "popup",
@@ -724,7 +724,7 @@
         ]
       },
       {
-        "label": "AM dashboard after delete",
+        "label": "TM dashboard after delete",
         "keywords": [
           "redirected",
           "dashboard",
@@ -752,14 +752,14 @@
     ]
   },
   "US-14": {
-    "title": "AM Dashboard",
+    "title": "TM Dashboard",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "AM dashboard",
+    "default_target": "TM dashboard",
     "targets": [
       {
-        "label": "AM dashboard",
+        "label": "TM dashboard",
         "keywords": [
           "dashboard",
           "list",
@@ -783,7 +783,7 @@
         ]
       },
       {
-        "label": "AM search",
+        "label": "TM search",
         "keywords": [
           "search",
           "search bar",
@@ -797,7 +797,7 @@
         ]
       },
       {
-        "label": "AM reset",
+        "label": "TM reset",
         "keywords": [
           "reset",
           "undo"
@@ -811,16 +811,16 @@
     ]
   },
   "US-15": {
-    "title": "Create Action for AM",
+    "title": "Create Action for TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "Create AM action popup",
+    "default_target": "Create TM action popup",
     "targets": [
       {
-        "label": "AM detail add action",
+        "label": "TM detail add action",
         "keywords": [
-          "existing am",
+          "existing tm",
           "add action button"
         ],
         "required_nodes": [
@@ -830,7 +830,7 @@
         ]
       },
       {
-        "label": "Create AM action popup",
+        "label": "Create TM action popup",
         "keywords": [
           "create action",
           "new window",
@@ -849,7 +849,7 @@
         ]
       },
       {
-        "label": "AM action list/detail",
+        "label": "TM action list/detail",
         "keywords": [
           "saved",
           "list of actions",
@@ -878,14 +878,14 @@
     ]
   },
   "US-16": {
-    "title": "View Action for AM",
+    "title": "View Action for TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "AM action detail",
+    "default_target": "TM action detail",
     "targets": [
       {
-        "label": "AM detail action list",
+        "label": "TM detail action list",
         "keywords": [
           "list of actions",
           "sorted",
@@ -901,7 +901,7 @@
         ]
       },
       {
-        "label": "AM action detail",
+        "label": "TM action detail",
         "keywords": [
           "click",
           "details",
@@ -932,16 +932,16 @@
     ]
   },
   "US-17": {
-    "title": "Edit Action for AM",
+    "title": "Edit Action for TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "Edit AM action popup",
+    "default_target": "Edit TM action popup",
     "targets": [
       {
-        "label": "AM action detail/list",
+        "label": "TM action detail/list",
         "keywords": [
-          "existing am",
+          "existing tm",
           "list of actions",
           "next to every action",
           "edit button"
@@ -953,7 +953,7 @@
         ]
       },
       {
-        "label": "Edit AM action popup",
+        "label": "Edit TM action popup",
         "keywords": [
           "edit",
           "prefilled",
@@ -988,16 +988,16 @@
     ]
   },
   "US-18": {
-    "title": "Delete Action for AM",
+    "title": "Delete Action for TM",
     "module_nodes": [
       "OPT-AM"
     ],
-    "default_target": "Delete AM action popup",
+    "default_target": "Delete TM action popup",
     "targets": [
       {
-        "label": "AM action detail/list",
+        "label": "TM action detail/list",
         "keywords": [
-          "existing am",
+          "existing tm",
           "list of actions",
           "next to every action",
           "delete button"
@@ -1009,7 +1009,7 @@
         ]
       },
       {
-        "label": "Delete AM action confirmation",
+        "label": "Delete TM action confirmation",
         "keywords": [
           "delete",
           "popup",
@@ -1052,8 +1052,8 @@
           "calendar",
           "current month",
           "schedule",
-          "mm",
-          "am",
+          "sm",
+          "tm",
           "marked red",
           "marked blue",
           "director",
