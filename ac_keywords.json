@@ -26,10 +26,10 @@
       "keywords": [
         "deadline",
         "date",
-        "dd/sm/yyyy"
+        "dd/mm/yyyy"
       ],
       "phrases": [
-        "dd/sm/yyyy"
+        "dd/mm/yyyy"
       ],
       "mode": "exact"
     },
