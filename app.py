@@ -478,6 +478,20 @@ def collect_all_generated_text(cases: List[Dict[str, Any]]) -> str:
             parts.append(s.get("expected", ""))
     return normalize_text(" ".join(parts))
 
+
+
+def testcase_full_text(tc: Dict[str, Any]) -> str:
+    """Collects title, type, navigation steps, normal steps and expected results."""
+    parts = [str(tc.get("title", "")), str(tc.get("type", ""))]
+    for key in ["navigation_steps", "steps_only", "steps"]:
+        for s in tc.get(key, []) or []:
+            if isinstance(s, dict):
+                parts.append(str(s.get("step", "")))
+                parts.append(str(s.get("expected", "")))
+            else:
+                parts.append(str(s))
+    return normalize_text(" ".join(parts))
+
 def keyword_matches(keyword: str, haystack: str) -> bool:
     keyword = normalize_text(keyword)
     if not keyword:
