@@ -253,7 +253,7 @@ UI CONTEXT RULES:
 NEUTRAL WORKSPACE NAMES:
 - The application uses neutral workspace names, not role-based console names.
 - Use the workspace names exactly as they appear in ui_context.
-- Do NOT write "Director Console", "Manager Console", "Calendar Console", or "Evaluation Console".
+- Do NOT write role-based console names. Use the neutral workspace names from ui_context instead.
 - The neutral workspace names are:
   - Operations
   - Coordination
@@ -265,8 +265,8 @@ ROLE AND NAVIGATION RULES:
 - The login role determines permissions.
 - The UI context determines where a feature is located.
 - Do NOT choose a workspace only because it sounds similar to the login role.
-- For Manager Meeting (MM), follow the path provided by ui_context under Operations / Manager Meeting when ui_context is available.
-- For Agent Meeting (AM), follow the path provided by ui_context under Coordination / Agent Meeting when ui_context is available.
+- For Strategic Meeting (SM), follow the path provided by ui_context under Operations / Strategic Meeting when ui_context is available.
+- For Team Meeting (TM), follow the path provided by ui_context under Coordination / Team Meeting when ui_context is available.
 - For Calendar, follow the path provided by ui_context under Scheduling / Calendar when ui_context is available.
 - For Evaluate Employees and My Evaluations, follow the path provided by ui_context under Performance when ui_context is available.
 - For negative permission tests, use the correct feature location but verify that the logged-in role cannot perform the restricted action.
@@ -673,18 +673,18 @@ def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
 
     # Helpful aliases where the generated wording often differs from exact node names.
     alias_map = {
-        "OPT-MM": ["mm module", "manager meetings"],
-        "OPT-AM": ["am module", "agent meetings"],
-        "SCR-MM-DASHBOARD": ["manager meeting dashboard"],
-        "SCR-AM-DASHBOARD": ["agent meeting dashboard"],
-        "SCR-MM-DETAIL": ["mm detail menu", "manager meeting detail", "selected mm"],
-        "SCR-AM-DETAIL": ["am detail menu", "agent meeting detail", "selected am"],
-        "MOD-MM-CREATE": ["create mm pop up", "create manager meeting popup"],
-        "MOD-AM-CREATE": ["create am pop up", "create agent meeting popup"],
-        "MOD-MM-EDIT": ["edit mm pop up", "edit manager meeting popup"],
-        "MOD-AM-EDIT": ["edit am pop up", "edit agent meeting popup"],
-        "MOD-MM-DELETE": ["delete mm popup", "delete manager meeting popup"],
-        "MOD-AM-DELETE": ["delete am popup", "delete agent meeting popup"],
+        "OPT-MM": ["sm module", "strategic meeting", "strategic meetings"],
+        "OPT-AM": ["tm module", "team meeting", "team meetings"],
+        "SCR-MM-DASHBOARD": ["strategic meeting dashboard"],
+        "SCR-AM-DASHBOARD": ["team meeting dashboard"],
+        "SCR-MM-DETAIL": ["sm detail menu", "strategic meeting detail", "selected sm"],
+        "SCR-AM-DETAIL": ["tm detail menu", "team meeting detail", "selected tm"],
+        "MOD-MM-CREATE": ["create sm pop up", "create strategic meeting popup"],
+        "MOD-AM-CREATE": ["create tm pop up", "create team meeting popup"],
+        "MOD-MM-EDIT": ["edit sm pop up", "edit strategic meeting popup"],
+        "MOD-AM-EDIT": ["edit tm pop up", "edit team meeting popup"],
+        "MOD-MM-DELETE": ["delete sm popup", "delete strategic meeting popup"],
+        "MOD-AM-DELETE": ["delete tm popup", "delete team meeting popup"],
         "MOD-EVAL-APPEAL": ["appeal pop up", "appeal modal"],
         "SCR-MY-EVAL-DASHBOARD": ["my evaluation dashboard"],
         "SCR-MY-EVAL-DETAIL": ["my evaluation detail", "evaluation detail opens"],
@@ -912,7 +912,7 @@ def extract_required_roles(story: str, ac_blob: str) -> List[str]:
     """
     Extracts required roles from actor/permission wording only.
 
-    Important: module names such as "Manager Meeting" or "Agent Meeting"
+    Important: module names such as "Strategic Meeting" or "Team Meeting"
     must not be counted as Manager/Agent roles.
     """
     text = normalize_text(story + " " + ac_blob)
@@ -996,7 +996,7 @@ def load_bulk_userstories(source: Any) -> List[Dict[str, Any]]:
     [
       {
         "id": "US-1",
-        "title": "Create MM",
+        "title": "Create SM",
         "story": "As a ...",
         "acceptance_criteria": ["AC 1", "AC 2"]
       }
