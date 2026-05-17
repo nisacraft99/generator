@@ -250,26 +250,19 @@ UI CONTEXT RULES:
 - If ui_context is provided, do not combine workspace opening and navigation option selection in one step. Use separate steps, e.g. first open the workspace node, then select the module/nav option node.
 - If ui_context is provided, preserve the UI order from relationships/parents: workspace -> navigation option -> dashboard/screen -> clickable element -> resulting screen/modal.
 
-NEUTRAL WORKSPACE NAMES:
-- The application uses neutral workspace names, not role-based console names.
-- Use the workspace names exactly as they appear in ui_context.
-- Do NOT write role-based console names. Use the neutral workspace names from ui_context instead.
-- The neutral workspace names are:
-  - Operations
-  - Coordination
-  - Scheduling
-  - Performance
+UI NAMING RULES:
+- If ui_context is provided, use the UI names exactly as they appear in ui_context.
+- If ui_context is provided, concrete workspace, module, screen, popup, button and field names must come from ui_context.nodes.
+- If ui_context is not provided, do not use or invent concrete workspace, menu, screen, popup, button or field names that are not stated in the user story or acceptance criteria.
+- If ui_context is not provided, keep setup/navigation generic, for example: open the relevant module, open the selected item, or open the detail view.
+- Do not use ui_node_id values unless ui_context is provided.
 
 ROLE AND NAVIGATION RULES:
 - Login role and UI location are separate concepts.
 - The login role determines permissions.
-- The UI context determines where a feature is located.
-- Do NOT choose a workspace only because it sounds similar to the login role.
-- For Strategic Meeting (SM), follow the path provided by ui_context under Operations / Strategic Meeting when ui_context is available.
-- For Team Meeting (TM), follow the path provided by ui_context under Coordination / Team Meeting when ui_context is available.
-- For Calendar, follow the path provided by ui_context under Scheduling / Calendar when ui_context is available.
-- For Evaluate Employees and My Evaluations, follow the path provided by ui_context under Performance when ui_context is available.
-- For negative permission tests, use the correct feature location but verify that the logged-in role cannot perform the restricted action.
+- If ui_context is provided, the UI context determines where a feature is located.
+- If ui_context is not provided, do not infer hidden application structure beyond the user story and acceptance criteria.
+- For negative permission tests, verify that the logged-in role cannot perform the restricted action.
 - If a role has viewing permission but not create/edit/delete permission, test the missing control, disabled control, or denied action. Do not replace the role with another role.
 
 TEST CASE GRANULARITY RULES:
