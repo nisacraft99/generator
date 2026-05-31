@@ -51,7 +51,7 @@
   ],
   "US-6": [
     {"ac_id": "AC-1", "keywords": ["existing sm", "add action", "button"], "phrases": [], "mode": "semantic"},
-    {"ac_id": "AC-2", "keywords": ["new window", "create action"], "phrases": [], "mode": "semantic"},
+    {"ac_id": "AC-2", "keywords": ["popup", "add action"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-3", "keywords": ["topic", "root cause", "action", "200"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-4", "keywords": ["urgency", "dropdown", "low", "medium", "high"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-5", "keywords": ["save", "cancel", "button"], "phrases": [], "mode": "semantic"},
