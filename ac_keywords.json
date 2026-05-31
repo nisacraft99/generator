@@ -31,7 +31,7 @@
   ],
   "US-4": [
     {"ac_id": "AC-1", "keywords": ["delete", "button"], "phrases": [], "mode": "semantic"},
-    {"ac_id": "AC-2", "keywords": ["popup", "delete", "yes", "no", "are you sure to delete this sm?"], "phrases": ["are you sure to delete this sm?"], "mode": "exact"},
+    {"ac_id": "AC-2", "keywords": ["popup", "delete", "yes", "no"], "phrases": ["are you sure to delete this sm?"], "mode": "exact"},
     {"ac_id": "AC-3", "keywords": ["no", "popup disappears", "redirected", "sm"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-4", "keywords": ["yes", "deleted", "redirect", "dashboard"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-5", "keywords": ["director", "delete", "sm"], "phrases": [], "mode": "semantic"},
@@ -212,9 +212,9 @@
     {"ac_id": "AC-4", "keywords": ["director", "search", "manager", "agent"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-5", "keywords": ["manager", "search", "subordinate"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-6", "keywords": ["agent", "not see", "search bar", "other calendars"], "phrases": [], "mode": "semantic"},
-    {"ac_id": "AC-7", "keywords": ["error"], "phrases": ["the user you searched for does not exist"], "mode": "exact"},
-    {"ac_id": "AC-8", "keywords": ["error"], "phrases": ["the user you searched for does not exist"], "mode": "exact"},
-    {"ac_id": "AC-9", "keywords": ["permission"], "phrases": ["you do not have permission to view this user’s calendar"], "mode": "exact"}
+    {"ac_id": "AC-7", "keywords": ["director", "error", "user not exist"], "phrases": ["the user you searched for does not exist"], "mode": "exact"},
+    {"ac_id": "AC-8", "keywords": ["manager", "error", "user not exist"], "phrases": ["the user you searched for does not exist"], "mode": "exact"},
+    {"ac_id": "AC-9", "keywords": ["manager", "permission", "error"], "phrases": ["you do not have permission to view this user's calendar"], "mode": "exact"}
   ],
   "US-21": [
     {"ac_id": "AC-1", "keywords": ["drag", "drop", "future", "today"], "phrases": [], "mode": "semantic"},
