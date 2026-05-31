@@ -1192,6 +1192,12 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         actual = extract_actual_nav_path(tc)
         neg_mode = navigation_negative_mode(tc)
 
+        # If the test case actually visits navigation nodes, evaluate it normally
+        # even if it also contains denial language. Only true no-access tests
+        # (where no nodes were reached at all) get the denial-language check.
+        if neg_mode == "no_access" and actual:
+            neg_mode = "none"
+
         if uses_two_level_format:
 
             if neg_mode == "no_access":
