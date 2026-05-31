@@ -56,7 +56,7 @@
     {"ac_id": "AC-4", "keywords": ["urgency", "dropdown", "low", "medium", "high"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-5", "keywords": ["save", "cancel", "button"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-6", "keywords": ["save", "action saved", "list of actions"], "phrases": [], "mode": "semantic"},
-    {"ac_id": "AC-7", "keywords": ["action id", "details page"], "phrases": [], "mode": "semantic"},
+    {"ac_id": "AC-7", "keywords": ["action id", "next to", "detail page"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-8", "keywords": ["cancel", "redirect", "not created"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-9", "keywords": ["director", "create", "action"], "phrases": [], "mode": "semantic"},
     {"ac_id": "AC-10", "keywords": ["manager", "view", "not create"], "phrases": [], "mode": "semantic"}
