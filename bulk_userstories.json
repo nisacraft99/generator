@@ -34,7 +34,6 @@
     "title": "Edit SM",
     "story": "As a Director I want to edit a Strategic Meeting (SM) so that I can replan meetings with my managers",
     "acceptance_criteria": [
-      "when clicking on the ID of an existing SM inside SM module, the user is redirected to the SM of the ID he clicked on",
       "in the menu of the SM the user clicked on, there is an „edit“ button",
       "after clicking the „edit“ button, the user can change the deadline of the created SM, but only change it to another date in the future",
       "after clicking the „edit“ button, a user can change the title of the SM to another title with a maximum of 50 characters",
