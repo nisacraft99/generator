@@ -413,8 +413,10 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 ROLE_WORDS = ["director", "manager", "agent"]
 
 CONCEPT_ALIASES = {
-    "popup": ["popup", "pop-up", "dialog", "modal", "confirmation pop-up", "new window"],
-    "redirect": ["redirect", "redirected", "navigated", "navigate", "navigated to", "land on"],
+    # "new window" removed — not a reliable synonym for popup/modal
+    "popup": ["popup", "pop-up", "dialog", "modal", "confirmation pop-up"],
+    # "navigate" / "navigated" / "land on" removed — too broad; every step "navigates"
+    "redirect": ["redirect", "redirected", "navigated to"],
     "dashboard": ["dashboard"],
     "detail": ["detail", "details"],
     "yes": ["yes", "yes button"],
@@ -422,40 +424,54 @@ CONCEPT_ALIASES = {
     "delete": ["delete", "deleted", "deletion"],
     "create": ["create", "created", "creation"],
     "edit": ["edit", "edited", "editing"],
-    "view": ["view", "visible", "see", "shown", "displayed", "present"],
+    # "shown", "displayed", "present" removed — match virtually every expected-result sentence
+    "view": ["view", "visible", "see"],
+    # "access denied", "not clickable", "not available" removed — too generic
     "not delete": [
         "not delete", "cannot delete", "can not delete", "unable to delete",
         "no permission to delete", "delete button is not visible",
-        "delete button not visible", "delete button is not functional",
-        "access denied", "not clickable", "not available"
+        "delete button not visible",
     ],
+    # "access denied", "not available", "not visible", "button is not present" removed — too generic
     "not create": [
         "not create", "cannot create", "can not create", "unable to create",
-        "no permission to create", "access denied", "not available", "not visible",
-        "button is not present", "button not present"
+        "no permission to create",
     ],
+    # "not visible", "not available" removed — match too broadly
     "no access": [
-        "no access", "cannot access", "can not access", "access denied",
-        "not visible", "not available"
+        "no access", "cannot access", "can not access", "access denied", "not accessible",
+    ],
+    "not view": [
+        "not view", "cannot view", "can not view", "unable to view",
+        "no permission to view",
+    ],
+    "not edit": [
+        "not edit", "cannot edit", "can not edit", "unable to edit",
+        "no permission to edit",
     ],
     "future": ["future", "in the future"],
-    "dd/mm/yyyy": ["dd/mm/yyyy", "date format", "format"],
+    # "date format", "format" removed — "format" alone matches anything
+    "dd/mm/yyyy": ["dd/mm/yyyy"],
     "button": ["button"],
     "dropdown": ["dropdown", "drop-down", "select"],
-    "filtered": ["filtered", "filter", "according to"],
-    "deactivated": ["deactivated", "disabled", "not editable", "inactive"],
+    # "according to" removed — too broad
+    "filtered": ["filtered", "filter"],
+    # "not editable" removed — keep only direct synonyms
+    "deactivated": ["deactivated", "disabled", "inactive"],
     "notification": ["notification", "notified"],
     "save": ["save", "saved"],
     "cancel": ["cancel", "cancelled"],
     "appeal": ["appeal"],
     "search": ["search", "search bar", "search button"],
     "reset": ["reset"],
-    "sorted": ["sorted", "order"],
-    "ids": ["id", "ids"],
+    # "order" removed — appears in nearly every sentence ("in order to", "order of")
+    "sorted": ["sorted", "sorted by", "sort by"],
+    # "id" removed — substring of "redirect", "dashboard", "valid" etc.
+    "ids": ["ids"],
     "50": ["50", "maximum of 50", "up to 50"],
     "200": ["200", "maximum of 200", "up to 200"],
     "300": ["300", "maximum of 300", "up to 300"],
-    "500": ["500", "maximum of 500", "up to 500"]
+    "500": ["500", "maximum of 500", "up to 500"],
 }
 
 def normalize_text(s: str) -> str:
