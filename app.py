@@ -612,7 +612,7 @@ def evaluate_ac_coverage_llm(
             resp = client.chat.completions.create(
                 model="gpt-5.4-mini",
                 temperature=0,
-                max_tokens=150,
+                max_completion_tokens=150,
                 messages=[
                     {"role": "system", "content": LLM_JUDGE_SYSTEM_PROMPT},
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
