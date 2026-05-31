@@ -1,5 +1,5 @@
 {
-  "US-1": {"title":"Create SM", "targets":["CONSOLE-O","OPT-SM","SCR-SM-DASHBOARD","MOD-SM-CREATE","SCR-SM-DETAIL"]},
+  "US-1": {"title":"Create SM", "targets":["CONSOLE-O","OPT-SM","SCR-SM-DASHBOARD","MOD-SM-CREATE"]},
   "US-2": {"title":"View SM", "targets":["CONSOLE-O","OPT-SM","SCR-SM-DETAIL"]},
   "US-3": {"title":"Edit SM", "targets":["CONSOLE-O","OPT-SM","SCR-SM-DETAIL","MOD-SM-EDIT"]},
   "US-4": {"title":"Delete SM", "targets":["CONSOLE-O","OPT-SM","SCR-SM-DETAIL","MOD-SM-DELETE"]},
