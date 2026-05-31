@@ -22,6 +22,6 @@
   "US-21": {"title": "Drag and Drop Meetings within Calendar View",  "required_per_testcase": ["CONSOLE-S","OPT-CALENDAR","SCR-CALENDAR"],"required_across_story": ["EL-CALENDAR-MEETING"]},
   "US-22": {"title": "Cancel, Accept or Decline Meetings",           "required_per_testcase": ["CONSOLE-S","OPT-CALENDAR","SCR-CALENDAR"],"required_across_story": ["EL-CALENDAR-MEETING"]},
   "US-23": {"title": "Evaluate Employees",                           "required_per_testcase": ["CONSOLE-P","OPT-EVALUATE"],               "required_across_story": ["SCR-EVALUATE-DASHBOARD","SCR-EVALUATE-DETAIL"]},
-  "US-24": {"title": "View My Evaluations",                          "required_per_testcase": ["CONSOLE-P","OPT-MY-EVAL"],                "required_across_story": ["SCR-MY-EVAL-DASHBOARD","SCR-MY-EVAL-DETAIL","MOD-EVAL-APPEAL"]}
+  "US-24": {"title": "View My Evaluations",                          "required_per_testcase": ["CONSOLE-P","OPT-MY-EVAL"],                "required_across_story": ["SCR-MY-EVAL-DASHBOARD","SCR-MY-EVAL-DETAIL","MOD-EVAL-APPEAL"]},
   "US-25": {"title": "Navigation Bar",                               "required_per_testcase": ["CONSOLE-O","CONSOLE-C","CONSOLE-S","CONSOLE-P"], "required_across_story": ["OPT-SM","OPT-TM","OPT-CALENDAR","OPT-EVALUATE","OPT-MY-EVAL","SCR-SM-DASHBOARD","SCR-TM-DASHBOARD","SCR-CALENDAR","SCR-EVALUATE-DASHBOARD","SCR-MY-EVAL-DASHBOARD"]}
 }
