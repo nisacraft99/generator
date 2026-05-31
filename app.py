@@ -366,7 +366,7 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
     try:
         resp = client.chat.completions.create(
             model="gpt-5.4-mini",
-            temperature=0.2,
+            temperature=1,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
