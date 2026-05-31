@@ -615,8 +615,7 @@ def _expand_via_node(node_id: str) -> List[str]:
 def _detect_module_scope(text: str) -> Optional[str]:
     """
     Returns a coarse module scope for text inference.
-    Internal IDs still use MM/AM, but visible names are Strategic Meeting (SM)
-    and Team Meeting (TM).
+    Detects whether a text refers to the SM or TM module.
     """
     txt = normalize_text(text)
 
@@ -655,15 +654,11 @@ def _detect_function_scope(text: str) -> str:
 
 def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
     """
-    Minimal fallback inference of UI node IDs from text.
+    Conservative fallback inference of UI node IDs from text.
 
-    Main principle for the thesis/evaluation:
-    - With UI context, the model is expected to output explicit ui_node_id values.
-    - Those explicit IDs are the primary evaluation signal.
-    - Text inference is only a small fallback for very obvious targets.
-
-    This intentionally does NOT try to reconstruct full click paths from text.
-    It only maps clearly named workspaces/modules/screens/modals.
+    The main evaluation signal should be explicit ui_node_id values generated
+    with UI context. This fallback only maps very obvious names to the NEW
+    simplified node IDs (SM/TM and neutral consoles).
     """
     text = normalize_text(f"{step_text} {expected_text}")
     found: List[str] = []
@@ -673,55 +668,92 @@ def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
         if node_id and node_id in valid_ids and node_id not in found:
             found.append(node_id)
 
-    # Workspaces: only when the neutral workspace name is explicitly used.
-    if re.search(r"\boperations\s+(workspace|hub|area)?\b", text):
-        add("CONSOLE-D")
-    if re.search(r"\bcoordination\s+(workspace|hub|area)?\b", text):
-        add("CONSOLE-M")
-    if re.search(r"\bscheduling\s+(workspace|hub|area)?\b", text):
+    # Neutral workspaces
+    if re.search(r"\boperations\b", text):
+        add("CONSOLE-O")
+    if re.search(r"\bcoordination\b", text):
         add("CONSOLE-C")
-    if re.search(r"\bperformance\s+(workspace|hub|area)?\b", text):
-        add("CONSOLE-E")
+    if re.search(r"\bscheduling\b", text):
+        add("CONSOLE-S")
+    if re.search(r"\bperformance\b", text):
+        add("CONSOLE-P")
 
-    # Strategic Meeting (internal IDs still use MM)
+    # Strategic Meeting / SM
     if re.search(r"\bstrategic meeting\b|\bsm\b", text):
-        add("OPT-MM")
+        add("OPT-SM")
         if "dashboard" in text:
-            add("SCR-MM-DASHBOARD")
+            add("SCR-SM-DASHBOARD")
         if "detail" in text or "details" in text:
-            add("SCR-MM-DETAIL")
+            add("SCR-SM-DETAIL")
+        if "list" in text and "action" not in text:
+            add("COMP-SM-LIST")
+        if "action list" in text or "list of actions" in text or "sm action list" in text:
+            add("COMP-SM-ACTION-LIST")
         if "create" in text and ("popup" in text or "modal" in text or "opens" in text or "appears" in text):
-            add("MOD-MM-CREATE")
+            if "action" in text:
+                add("MOD-SM-ACTION-CREATE")
+            else:
+                add("MOD-SM-CREATE")
         if "edit" in text and ("popup" in text or "modal" in text or "opens" in text or "appears" in text):
-            add("MOD-MM-EDIT")
+            if "action" in text:
+                add("MOD-SM-ACTION-EDIT")
+            else:
+                add("MOD-SM-EDIT")
         if "delete" in text and ("popup" in text or "modal" in text or "confirmation" in text or "opens" in text or "appears" in text):
-            add("MOD-MM-DELETE")
+            if "action" in text:
+                add("MOD-SM-ACTION-DELETE")
+            else:
+                add("MOD-SM-DELETE")
 
-    # Team Meeting (internal IDs still use AM)
+    # Team Meeting / TM
     if re.search(r"\bteam meeting\b|\btm\b", text):
-        add("OPT-AM")
+        add("OPT-TM")
         if "dashboard" in text:
-            add("SCR-AM-DASHBOARD")
+            add("SCR-TM-DASHBOARD")
         if "detail" in text or "details" in text:
-            add("SCR-AM-DETAIL")
+            add("SCR-TM-DETAIL")
+        if "list" in text and "action" not in text:
+            add("COMP-TM-LIST")
+        if "action list" in text or "list of actions" in text or "tm action list" in text:
+            add("COMP-TM-ACTION-LIST")
         if "create" in text and ("popup" in text or "modal" in text or "opens" in text or "appears" in text):
-            add("MOD-AM-CREATE")
+            if "action" in text:
+                add("MOD-TM-ACTION-CREATE")
+            else:
+                add("MOD-TM-CREATE")
         if "edit" in text and ("popup" in text or "modal" in text or "opens" in text or "appears" in text):
-            add("MOD-AM-EDIT")
+            if "action" in text:
+                add("MOD-TM-ACTION-EDIT")
+            else:
+                add("MOD-TM-EDIT")
         if "delete" in text and ("popup" in text or "modal" in text or "confirmation" in text or "opens" in text or "appears" in text):
-            add("MOD-AM-DELETE")
+            if "action" in text:
+                add("MOD-TM-ACTION-DELETE")
+            else:
+                add("MOD-TM-DELETE")
 
     # Other modules
     if "calendar" in text:
         add("OPT-CALENDAR")
-        if "view" in text or "dashboard" in text or "display" in text:
-            add("SCR-CALENDAR")
-    if "evaluate employees" in text:
+        add("SCR-CALENDAR")
+        if "search" in text:
+            add("EL-CALENDAR-SEARCH-BTN")
+        if "accept" in text:
+            add("EL-CALENDAR-ACCEPT")
+        if "decline" in text:
+            add("EL-CALENDAR-DECLINE")
+        if "cancel" in text:
+            add("EL-CALENDAR-CANCEL")
+        if "meeting" in text:
+            add("EL-CALENDAR-MEETING")
+
+    if "evaluate employees" in text or "evaluation page" in text:
         add("OPT-EVALUATE")
         if "dashboard" in text:
             add("SCR-EVALUATE-DASHBOARD")
         if "evaluation page" in text or "detail" in text:
             add("SCR-EVALUATE-DETAIL")
+
     if "my evaluations" in text or "my evaluation" in text:
         add("OPT-MY-EVAL")
         if "dashboard" in text:
@@ -813,44 +845,89 @@ def _keyword_score(text: str, keywords: List[str]) -> int:
     return sum(1 for k in keywords if normalize_text(k) and normalize_text(k) in text)
 
 
-def _target_required_nodes(target: Dict[str, Any]) -> List[str]:
-    # required_nodes = all nodes that should be reached for this target.
-    # target_nodes is accepted as a legacy/simpler name.
-    return _norm_list(target.get("required_nodes") or target.get("target_nodes"))
+def _target_required_nodes(target: Any) -> List[str]:
+    """Return required node IDs from all supported target formats.
+
+    Supported formats:
+    1) New simplest format per US:
+       {"title": "Create SM", "targets": ["CONSOLE-O", "OPT-SM", ...]}
+    2) Minimal compatible format:
+       {"label": "...", "required_nodes": ["CONSOLE-O", ...]}
+    3) Legacy format with target_nodes.
+    """
+    if not target:
+        return []
+    if isinstance(target, list):
+        return [str(v) for v in target if str(v).strip()]
+    if isinstance(target, str):
+        return [target]
+    if isinstance(target, dict):
+        return _norm_list(target.get("required_nodes") or target.get("target_nodes") or target.get("targets"))
+    return []
 
 
-def _select_best_navigation_target(tc: Dict[str, Any], ref: Dict[str, Any]) -> Dict[str, Any]:
+def _target_label(target: Any, ref: Optional[Dict[str, Any]] = None) -> str:
+    if isinstance(target, dict):
+        return str(target.get("label") or target.get("title") or (ref or {}).get("title") or "Navigation target")
+    return str((ref or {}).get("title") or "Navigation target")
+
+
+def _target_forbidden_nodes(target: Any) -> List[str]:
+    if isinstance(target, dict):
+        return _norm_list(target.get("forbidden_nodes"))
+    return []
+
+
+def _target_access_denial_ok(target: Any) -> bool:
+    return bool(isinstance(target, dict) and target.get("access_denial_ok"))
+
+
+def _select_best_navigation_target(tc: Dict[str, Any], ref: Dict[str, Any]) -> Any:
+    """Selects a navigation target and supports simplified target files.
+
+    New recommended format uses one target set per User Story:
+      "US-6": {"title":"Create Action for SM",
+               "targets":["CONSOLE-O","OPT-SM","SCR-SM-DETAIL","MOD-SM-ACTION-CREATE"]}
+
+    The function still supports the old list-of-dicts format for compatibility.
     """
-    Selects the most relevant navigation target based on the test case text.
-    This avoids evaluating every test case against one overly long path.
-    """
-    targets = ref.get("targets", []) or []
+    targets = ref.get("targets", []) if isinstance(ref, dict) else []
     if not targets:
         return {}
 
-    txt = testcase_full_text(tc)
-    default_label = str(ref.get("default_target", "")).strip().lower()
+    # New simple format: targets is directly a list of node ID strings.
+    if isinstance(targets, list) and all(isinstance(x, str) for x in targets):
+        return {"label": ref.get("title", "Navigation target"), "required_nodes": targets}
 
-    scored = []
-    for idx, target in enumerate(targets):
-        keywords = _norm_list(target.get("keywords"))
-        score = _keyword_score(txt, keywords)
-        # Small bonus for default target, used only as tie-breaker/fallback.
-        if default_label and str(target.get("label", "")).strip().lower() == default_label:
-            score += 0.1
-        scored.append((score, idx, target))
+    # Also support list of node-id lists by using the first set.
+    if isinstance(targets, list) and all(isinstance(x, list) for x in targets):
+        first = targets[0] if targets else []
+        return {"label": ref.get("title", "Navigation target"), "required_nodes": first}
 
-    scored.sort(key=lambda x: (x[0], -x[1]), reverse=True)
-    best_score, _, best_target = scored[0]
+    # Old format: targets is a list of dictionaries with labels/keywords.
+    if isinstance(targets, list) and all(isinstance(x, dict) for x in targets):
+        txt = testcase_full_text(tc)
+        default_label = str(ref.get("default_target", "")).strip().lower()
 
-    # If no target keyword matched, use the configured default, otherwise first target.
-    if best_score <= 0.1:
-        for target in targets:
+        scored = []
+        for idx, target in enumerate(targets):
+            keywords = _norm_list(target.get("keywords"))
+            score = _keyword_score(txt, keywords)
             if default_label and str(target.get("label", "")).strip().lower() == default_label:
-                return target
-        return targets[0]
+                score += 0.1
+            scored.append((score, idx, target))
 
-    return best_target
+        scored.sort(key=lambda x: (x[0], -x[1]), reverse=True)
+        best_score, _, best_target = scored[0]
+
+        if best_score <= 0.1:
+            for target in targets:
+                if default_label and str(target.get("label", "")).strip().lower() == default_label:
+                    return target
+            return targets[0]
+        return best_target
+
+    return {}
 
 
 def _contains_denial_language(tc: Dict[str, Any]) -> bool:
@@ -907,14 +984,14 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         actual = extract_actual_nav_path(tc)
         target = _select_best_navigation_target(tc, ref)
         required_nodes = _target_required_nodes(target)
-        forbidden_nodes = _norm_list(target.get("forbidden_nodes"))
+        forbidden_nodes = _target_forbidden_nodes(target)
 
         can_evaluate = bool(actual) and bool(target)
         module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
         required_ok = all(node in actual for node in required_nodes)
 
         forbidden_hit = any(node in actual for node in forbidden_nodes)
-        denial_ok = bool(target.get("access_denial_ok")) and _contains_denial_language(tc)
+        denial_ok = _target_access_denial_ok(target) and _contains_denial_language(tc)
         forbidden_ok = (not forbidden_hit) or denial_ok
 
         is_correct = False
@@ -930,7 +1007,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "tc_id": tc.get("id", ""),
             "actual": actual,
             "expected": required_nodes,
-            "selected_target": target.get("label", ""),
+            "selected_target": _target_label(target, ref),
             "module_nodes": module_nodes,
             "can_evaluate": can_evaluate,
             "is_correct": is_correct,
