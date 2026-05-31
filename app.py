@@ -1868,6 +1868,13 @@ def build_pdf(
 # ======================= EVALUATION DISPLAY HELPER =======================
 def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Evaluation"):
     """Renders evaluation metrics and details. Used by all three evaluation sections."""
+
+    def _path_str(node_ids: List[str]) -> str:
+        """Converts a list of node IDs to a readable path string with arrows."""
+        name_map = _node_name_map()
+        names = [name_map.get(nid, nid) for nid in node_ids]
+        return " → ".join(names) if names else "—"
+
     st.subheader(header)
 
     ac_metric  = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
@@ -1913,11 +1920,28 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
         st.write(f"**Navigation Correctness:** {nav['correct_count']}/{nav['evaluated_count']}{skip_note}")
         with st.expander("Navigation details"):
             for d in nav.get("details", []):
-                st.write(
-                    f"{d['tc_id']}: correct={d['is_correct']} "
-                    f"target={d.get('selected_target','')} "
-                    f"missing={d.get('missing_nodes',[])}"
-                )
+                icon = "✅" if d.get("is_correct") else "❌"
+                tc_id = d["tc_id"]
+                target = d.get("selected_target", "")
+
+                if target == "no_access_denial_check":
+                    denial = "denial language present" if d.get("denial_ok") else "⚠️ denial language missing"
+                    st.write(f"{icon} **{tc_id}** — no-access test ({denial})")
+                elif target == "required_across_story":
+                    st.write(f"{icon} **Story-level coverage**")
+                    st.caption(f"Expected: {_path_str(d.get('expected', []))}")
+                    if d.get("missing_nodes"):
+                        name_map = _node_name_map()
+                        missing_names = [name_map.get(n, n) for n in d["missing_nodes"]]
+                        st.caption(f"Missing: {' → '.join(missing_names)}")
+                else:
+                    st.write(f"{icon} **{tc_id}** — {target}")
+                    st.caption(f"Expected: {_path_str(d.get('expected', []))}")
+                    st.caption(f"Actual:   {_path_str(d.get('actual', []))}")
+                    if d.get("missing_nodes"):
+                        name_map = _node_name_map()
+                        missing_names = [name_map.get(n, n) for n in d["missing_nodes"]]
+                        st.caption(f"⚠️ Missing: {' → '.join(missing_names)}")
 
     # Role details
     role = ev["role"]
