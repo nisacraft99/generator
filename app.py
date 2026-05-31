@@ -2047,6 +2047,13 @@ with single_btn_col2:
         key="single_eval_button"
     )
 
+use_llm_judge_single = st.checkbox(
+    "🤖 Also evaluate with LLM-as-a-Judge (uses extra API calls — 1 per AC)",
+    value=False,
+    key="use_llm_judge_single",
+    help="Calls the LLM once per acceptance criterion to semantically judge whether the generated test cases cover it."
+)
+
 if single_export_clicked:
     try:
         bulk_items_for_single = load_bulk_userstories(BULK_USERSTORIES_PATH)
@@ -2114,6 +2121,7 @@ if single_eval_clicked:
                     selected_item["ac_blob"],
                     st.session_state.single_cases,
                     use_ui_context=use_ui_single,
+                    use_llm_judge=st.session_state.get("use_llm_judge_single", False),
                 )
                 single_pdf = build_pdf(
                     selected_item["story"],
@@ -2153,17 +2161,32 @@ if st.session_state.single_evaluation:
     role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
 
     sm1, sm2, sm3 = st.columns(3)
-    sm1.metric("AC Coverage", ac_metric)
+    sm1.metric("AC Coverage (Keyword)", ac_metric)
     sm2.metric("Navigation Correctness", nav_corr_metric)
     sm3.metric("Role Coverage", role_metric)
+
+    # LLM Judge metric
+    ac_llm = ev.get("ac_llm", {})
+    if ac_llm.get("overall_pct") is not None:
+        st.metric("AC Coverage (LLM Judge)", f"{ac_llm['overall_pct']}%")
 
     if ev["ac"].get("note"):
         st.warning(ev["ac"]["note"])
     else:
-        st.write(f"**AC Coverage:** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
-        with st.expander("Single AC details"):
+        st.write(f"**AC Coverage (Keyword):** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
+        with st.expander("Keyword AC details"):
             for d in ev["ac"].get("details", []):
                 st.write(f"{d['ac_id']}: score={d['score']} ({d['matched']}/{d['total_keywords']}) keywords={d['keywords']}")
+
+    if ac_llm.get("note") and ac_llm["note"] != "LLM judge not enabled.":
+        st.warning(ac_llm["note"])
+    elif ac_llm.get("details"):
+        st.write(f"**AC Coverage (LLM Judge):** {ac_llm['covered_count']}/{ac_llm['total_count']} ACs covered")
+        with st.expander("LLM Judge AC details"):
+            for d in ac_llm["details"]:
+                icon = "✅" if d["covered"] else "❌"
+                st.write(f"{icon} **{d['ac_id']}:** {d['ac_text']}")
+                st.caption(f"→ {d['reason']}")
 
     if ev["navigation"].get("note"):
         st.warning(ev["navigation"]["note"])
