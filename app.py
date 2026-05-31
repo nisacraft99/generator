@@ -541,6 +541,114 @@ def evaluate_ac_coverage(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[
     }
 
 
+# ======================= LLM-AS-A-JUDGE AC EVALUATION =======================
+
+LLM_JUDGE_SYSTEM_PROMPT = """
+You are a QA expert evaluating test coverage.
+You receive one acceptance criterion and a set of generated test cases.
+Decide whether the test cases adequately cover the acceptance criterion.
+
+Rules:
+- Semantic equivalence counts as covered (e.g. "screen is displayed" covers "redirect").
+- The criterion does not need to be word-for-word in the test cases.
+- If at least one test case addresses the criterion's intent, mark it as covered.
+- Return ONLY valid JSON, no markdown, no prose.
+
+Output schema:
+{"covered": true | false, "reason": "one sentence explanation"}
+"""
+
+def evaluate_ac_coverage_llm(
+    us_id_value: str,
+    cases: List[Dict[str, Any]],
+    ac_blob: str
+) -> Dict[str, Any]:
+    """
+    LLM-as-a-Judge AC coverage evaluation.
+    For each acceptance criterion (from ac_blob), calls the LLM to decide
+    whether the generated test cases cover it.
+    Returns the same shape as evaluate_ac_coverage for easy comparison.
+    """
+    if not client:
+        return {
+            "overall_pct": None,
+            "covered_count": None,
+            "total_count": None,
+            "details": [],
+            "note": "LLM judge not available (missing API client)."
+        }
+
+    ac_lines = [l.strip() for l in ac_blob.splitlines() if l.strip()]
+    if not ac_lines:
+        return {
+            "overall_pct": None,
+            "covered_count": None,
+            "total_count": None,
+            "details": [],
+            "note": "No acceptance criteria text provided for LLM judge."
+        }
+
+    # Build a compact readable representation of the test cases
+    tc_text_parts = []
+    for tc in cases:
+        parts = [f"[{tc.get('id','')}] {tc.get('title','')}"]
+        for s in tc.get("steps", []) or []:
+            if isinstance(s, dict):
+                parts.append(f"  Step: {s.get('step','')}")
+                parts.append(f"  Expected: {s.get('expected','')}")
+        tc_text_parts.append("\n".join(parts))
+    tc_text = "\n\n".join(tc_text_parts)
+
+    details = []
+    covered_count = 0
+
+    for idx, ac_line in enumerate(ac_lines, start=1):
+        ac_id = f"AC-{idx}"
+        payload = {
+            "acceptance_criterion": ac_line,
+            "generated_test_cases": tc_text
+        }
+        try:
+            resp = client.chat.completions.create(
+                model="gpt-5.4-mini",
+                temperature=0,
+                max_tokens=150,
+                messages=[
+                    {"role": "system", "content": LLM_JUDGE_SYSTEM_PROMPT},
+                    {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+                ]
+            )
+            raw = (resp.choices[0].message.content or "").strip()
+            raw = re.sub(r"^```(json)?\s*|\s*```$", "", raw, flags=re.S).strip()
+            result = json.loads(raw)
+            covered = bool(result.get("covered", False))
+            reason = str(result.get("reason", ""))
+        except Exception as e:
+            covered = False
+            reason = f"Judge call failed: {e}"
+
+        if covered:
+            covered_count += 1
+
+        details.append({
+            "ac_id": ac_id,
+            "ac_text": ac_line,
+            "covered": covered,
+            "reason": reason,
+            "score": 1.0 if covered else 0.0
+        })
+
+    total = len(ac_lines)
+    overall_pct = round((covered_count / total) * 100, 2) if total else None
+
+    return {
+        "overall_pct": overall_pct,
+        "covered_count": covered_count,
+        "total_count": total,
+        "details": details,
+        "note": None
+    }
+
 
 # ======================= NAVIGATION EXTRACTION HELPERS =======================
 
@@ -1308,15 +1416,25 @@ def evaluate_all(
     story: str,
     ac_blob: str,
     cases: List[Dict[str, Any]],
-    use_ui_context: bool = True
+    use_ui_context: bool = True,
+    use_llm_judge: bool = False,
 ) -> Dict[str, Any]:
     navigation = (
         evaluate_navigation_correctness(us_id_value, cases, story)
         if use_ui_context
         else _navigation_not_evaluated_without_ui()
     )
+    ac_llm = (
+        evaluate_ac_coverage_llm(us_id_value, cases, ac_blob)
+        if use_llm_judge
+        else {
+            "overall_pct": None, "covered_count": None, "total_count": None,
+            "details": [], "note": "LLM judge not enabled."
+        }
+    )
     return {
         "ac": evaluate_ac_coverage(us_id_value, cases),
+        "ac_llm": ac_llm,
         "navigation": navigation,
         "role": evaluate_role_coverage(story, ac_blob, cases)
     }
@@ -1425,7 +1543,7 @@ def _overall_score(ac_pct: Optional[float], role_pct: Optional[float], nav_pct: 
     return round(sum(values) / len(values), 2)
 
 
-def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> pd.DataFrame:
+def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use_llm_judge: bool = False) -> pd.DataFrame:
     """
     For every user story and every repetition, run both variants:
     - without UI context
@@ -1467,9 +1585,11 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                         ac_blob=item["ac_blob"],
                         cases=cases,
                         use_ui_context=use_ui,
+                        use_llm_judge=use_llm_judge,
                     )
 
                     ac_pct = _metric_or_none(evaluation, "ac", "overall_pct")
+                    ac_llm_pct = _metric_or_none(evaluation, "ac_llm", "overall_pct")
                     role_pct = _metric_or_none(evaluation, "role", "overall_pct")
                     nav_pct = _metric_or_none(evaluation, "navigation", "correctness_pct")
 
@@ -1482,6 +1602,7 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                         "acceptance_criteria_count": item.get("acceptance_criteria_count"),
                         "testcase_count": len(cases),
                         "ac_coverage_pct": ac_pct,
+                        "ac_llm_coverage_pct": ac_llm_pct,
                         "role_coverage_pct": role_pct,
                         "navigation_correctness_pct": nav_pct,
                         "overall_score_pct": _overall_score(ac_pct, role_pct, nav_pct),
@@ -1499,6 +1620,7 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                         "acceptance_criteria_count": item.get("acceptance_criteria_count"),
                         "testcase_count": 0,
                         "ac_coverage_pct": None,
+                        "ac_llm_coverage_pct": None,
                         "role_coverage_pct": None,
                         "navigation_correctness_pct": None,
                         "overall_score_pct": None,
@@ -1516,7 +1638,7 @@ def summarize_bulk_results(results_df: pd.DataFrame) -> pd.DataFrame:
     if results_df.empty:
         return pd.DataFrame()
 
-    summary = results_df.groupby("variant", dropna=False).agg(
+    agg_dict = dict(
         runs=("variant", "count"),
         user_stories=("us_id", "nunique"),
         avg_testcase_count=("testcase_count", "mean"),
@@ -1529,8 +1651,12 @@ def summarize_bulk_results(results_df: pd.DataFrame) -> pd.DataFrame:
         avg_overall_score_pct=("overall_score_pct", "mean"),
         std_overall_score_pct=("overall_score_pct", "std"),
         failed_runs=("error", lambda values: sum(bool(str(v).strip()) for v in values)),
-    ).reset_index()
+    )
+    if "ac_llm_coverage_pct" in results_df.columns:
+        agg_dict["avg_ac_llm_coverage_pct"] = ("ac_llm_coverage_pct", "mean")
+        agg_dict["std_ac_llm_coverage_pct"] = ("ac_llm_coverage_pct", "std")
 
+    summary = results_df.groupby("variant", dropna=False).agg(**agg_dict).reset_index()
     return summary.round(2)
 
 
@@ -1538,7 +1664,7 @@ def summarize_bulk_by_user_story(results_df: pd.DataFrame) -> pd.DataFrame:
     if results_df.empty:
         return pd.DataFrame()
 
-    by_us = results_df.groupby(["us_id", "title", "variant"], dropna=False).agg(
+    agg_dict = dict(
         runs=("variant", "count"),
         avg_testcase_count=("testcase_count", "mean"),
         avg_ac_coverage_pct=("ac_coverage_pct", "mean"),
@@ -1546,8 +1672,11 @@ def summarize_bulk_by_user_story(results_df: pd.DataFrame) -> pd.DataFrame:
         avg_navigation_correctness_pct=("navigation_correctness_pct", "mean"),
         avg_overall_score_pct=("overall_score_pct", "mean"),
         failed_runs=("error", lambda values: sum(bool(str(v).strip()) for v in values)),
-    ).reset_index()
+    )
+    if "ac_llm_coverage_pct" in results_df.columns:
+        agg_dict["avg_ac_llm_coverage_pct"] = ("ac_llm_coverage_pct", "mean")
 
+    by_us = results_df.groupby(["us_id", "title", "variant"], dropna=False).agg(**agg_dict).reset_index()
     return by_us.round(2)
 
 # ======================= PDF BUILDER =======================
@@ -1757,6 +1886,13 @@ with col3:
         disabled=not (bool(st.session_state.last_cases) and us_id.strip())
     )
 
+use_llm_judge_main = st.checkbox(
+    "🤖 Also evaluate with LLM-as-a-Judge (uses extra API calls — 1 per AC)",
+    value=st.session_state.get("use_llm_judge_main", False),
+    key="use_llm_judge_main",
+    help="Calls the LLM once per acceptance criterion to semantically judge whether the generated test cases cover it. More accurate than keyword matching, but costs additional API calls."
+)
+
 st.markdown('</div>', unsafe_allow_html=True)
 
 if clicked_without or clicked_with:
@@ -1783,7 +1919,8 @@ if clicked_eval and st.session_state.last_cases:
         user_story,
         ac_text,
         st.session_state.last_cases,
-        use_ui_context=(st.session_state.last_variant == "with_json")
+        use_ui_context=(st.session_state.last_variant == "with_json"),
+        use_llm_judge=st.session_state.get("use_llm_judge_main", False),
     )
     st.session_state.last_evaluation = evaluation
     st.session_state.last_pdf = build_pdf(
@@ -1813,17 +1950,33 @@ if st.session_state.last_evaluation:
     role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("AC Coverage", ac_metric)
+    m1.metric("AC Coverage (Keyword)", ac_metric)
     m2.metric("Navigation Correctness", nav_corr_metric)
     m3.metric("Role Coverage", role_metric)
+
+    # LLM Judge metric
+    ac_llm = ev.get("ac_llm", {})
+    if ac_llm.get("overall_pct") is not None:
+        llm_metric = f"{ac_llm['overall_pct']}%"
+        st.metric("AC Coverage (LLM Judge)", llm_metric)
 
     if ev["ac"]["note"]:
         st.warning(ev["ac"]["note"])
     else:
-        st.write(f"**AC Coverage:** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
-        with st.expander("AC details"):
+        st.write(f"**AC Coverage (Keyword):** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
+        with st.expander("Keyword AC details"):
             for d in ev["ac"]["details"]:
                 st.write(f"{d['ac_id']}: score={d['score']} ({d['matched']}/{d['total_keywords']}) keywords={d['keywords']}")
+
+    if ac_llm.get("note") and ac_llm["note"] != "LLM judge not enabled.":
+        st.warning(ac_llm["note"])
+    elif ac_llm.get("details"):
+        st.write(f"**AC Coverage (LLM Judge):** {ac_llm['covered_count']}/{ac_llm['total_count']} ACs covered")
+        with st.expander("LLM Judge AC details"):
+            for d in ac_llm["details"]:
+                icon = "✅" if d["covered"] else "❌"
+                st.write(f"{icon} **{d['ac_id']}:** {d['ac_text']}")
+                st.caption(f"→ {d['reason']}")
 
     if ev["navigation"]["note"]:
         st.warning(ev["navigation"]["note"])
@@ -2061,6 +2214,17 @@ bulk_repetitions = st.number_input(
     help="Example: 3 repetitions with 24 user stories means 24 × 2 variants × 3 = 144 LLM calls."
 )
 
+bulk_use_llm_judge = st.checkbox(
+    "🤖 Enable LLM-as-a-Judge for AC Coverage in bulk run",
+    value=False,
+    key="bulk_llm_judge",
+    help=(
+        "Adds one LLM call per acceptance criterion per run. "
+        "Example: 24 user stories × avg 8 ACs × 2 variants × 3 repetitions = ~1,152 extra judge calls. "
+        "Enable for a subset of runs or after confirming keyword results first."
+    )
+)
+
 bulk_uploaded_file = st.file_uploader(
     "Optional: upload bulk_userstories.json. If nothing is uploaded, the app tries to use the local bulk_userstories.json file.",
     type=["json"],
@@ -2100,7 +2264,7 @@ if run_bulk_button:
             bulk_userstories = load_bulk_userstories(BULK_USERSTORIES_PATH)
 
         with st.spinner("Running bulk evaluation. This may take several minutes..."):
-            results_df = run_bulk_evaluation(bulk_userstories, int(bulk_repetitions))
+            results_df = run_bulk_evaluation(bulk_userstories, int(bulk_repetitions), use_llm_judge=bulk_use_llm_judge)
             summary_df = summarize_bulk_results(results_df)
             by_us_df = summarize_bulk_by_user_story(results_df)
 
@@ -2138,7 +2302,9 @@ if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_d
     with left_col:
         st.markdown("#### With UI Context")
         if with_ui is not None:
-            st.metric("AC Coverage", _fmt_pct(with_ui["avg_ac_coverage_pct"]))
+            st.metric("AC Coverage (Keyword)", _fmt_pct(with_ui["avg_ac_coverage_pct"]))
+            if "avg_ac_llm_coverage_pct" in with_ui.index:
+                st.metric("AC Coverage (LLM Judge)", _fmt_pct(with_ui["avg_ac_llm_coverage_pct"]))
             st.metric("Role Coverage", _fmt_pct(with_ui["avg_role_coverage_pct"]))
             st.metric("Navigation Correctness", _fmt_pct(with_ui["avg_navigation_correctness_pct"]))
             st.metric("Overall Score", _fmt_pct(with_ui["avg_overall_score_pct"]))
@@ -2148,7 +2314,9 @@ if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_d
     with right_col:
         st.markdown("#### Without UI Context")
         if without_ui is not None:
-            st.metric("AC Coverage", _fmt_pct(without_ui["avg_ac_coverage_pct"]))
+            st.metric("AC Coverage (Keyword)", _fmt_pct(without_ui["avg_ac_coverage_pct"]))
+            if "avg_ac_llm_coverage_pct" in without_ui.index:
+                st.metric("AC Coverage (LLM Judge)", _fmt_pct(without_ui["avg_ac_llm_coverage_pct"]))
             st.metric("Role Coverage", _fmt_pct(without_ui["avg_role_coverage_pct"]))
             st.metric("Navigation Correctness", _fmt_pct(without_ui["avg_navigation_correctness_pct"]))
             st.metric("Overall Score", _fmt_pct(without_ui["avg_overall_score_pct"]))
