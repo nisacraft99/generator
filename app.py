@@ -941,38 +941,70 @@ def _contains_denial_language(tc: Dict[str, Any]) -> bool:
     return any(p in txt for p in denial_patterns)
 
 
-def is_negative_permission_or_access_test(tc: Dict[str, Any]) -> bool:
-    """Return True for role/access tests where reaching the UI target is NOT expected.
+def navigation_negative_mode(tc: Dict[str, Any]) -> str:
+    """Classify negative permission/access tests for navigation evaluation.
 
-    These cases should not be counted in Navigation Correctness, because they
-    test absence/denial of an action or module. Boundary/validation tests by a
-    permitted role are still evaluated as navigation tests.
+    Returns:
+      - "none": normal positive/boundary test case; evaluate normally.
+      - "base_only": role is allowed to reach the base UI area, but a later action
+        such as create/edit/delete is denied. Evaluate only required_per_testcase.
+      - "skip": role is not expected to reach the module/screen at all, e.g.
+        Agent cannot view the SM module. Do not include in Navigation Correctness.
+
+    This keeps cases such as "Manager cannot create an SM action" evaluable for
+    the allowed base navigation while still skipping true no-access cases.
     """
     txt = testcase_full_text(tc)
+    tc_type = normalize_text(str(tc.get("type", "")))
+    negative_type = "negative" in tc_type
 
-    has_role = any(role in txt for role in ["director", "manager", "agent"])
-    has_permission_context = any(p in txt for p in [
+    has_manager_or_agent = any(role in txt for role in ["manager", "agent"])
+    has_permission_language = any(p in txt for p in [
         "permission", "permissions", "access", "role", "insufficient permissions",
-        "not allowed", "denied", "blocked", "not available", "not visible",
-        "disabled", "not actionable", "cannot be opened", "cannot be accessed",
+        "not allowed", "denied", "blocked", "disabled", "not actionable",
+        "not available", "not visible", "cannot be opened", "cannot be accessed",
         "can not be opened", "can not be accessed"
     ])
 
-    has_restricted_action = any(p in txt for p in [
-        "cannot create", "can not create", "not create",
-        "cannot edit", "can not edit", "not edit",
-        "cannot delete", "can not delete", "not delete",
-        "cannot view", "can not view", "not view",
-        "cannot access", "can not access", "not access",
-        "cannot initiate", "can not initiate",
-        "no create", "no edit", "no delete"
+    # True no-access / no-view cases: the target module or screen itself should
+    # not be reachable. These should be skipped for Navigation Correctness.
+    no_view_patterns = [
+        "cannot view", "can not view", "not view", "cannot see", "can not see",
+        "not see", "cannot access", "can not access", "not access",
+        "cannot be accessed", "can not be accessed", "not accessible",
+        "cannot be opened", "can not be opened", "not visible"
+    ]
+    mentions_module_or_dashboard = any(p in txt for p in [
+        "module", "dashboard", "strategic meeting", "team meeting", "sm module", "tm module"
+    ])
+    if has_manager_or_agent and mentions_module_or_dashboard and any(p in txt for p in no_view_patterns):
+        return "skip"
+
+    # Action-denial cases: the user may navigate to the base screen, but a
+    # create/edit/delete/appeal action is not allowed. These should count for
+    # base navigation only, not for popup/action target coverage.
+    action_denial_patterns = [
+        "cannot create", "can not create", "not create", "cannot initiate",
+        "can not initiate", "cannot edit", "can not edit", "not edit",
+        "cannot delete", "can not delete", "not delete", "creation is denied",
+        "action is denied", "prevents opening", "no create", "no edit", "no delete"
+    ]
+    mentions_restricted_action = any(p in txt for p in action_denial_patterns)
+    mentions_control_denial = any(p in txt for p in [
+        "button is not available", "button is disabled", "control is not available",
+        "control is disabled", "not actionable", "access is denied", "action is blocked",
+        "blocked due to insufficient permissions", "denies the action"
     ])
 
-    # Strong signal from generated test metadata. In the generated PDFs,
-    # permission/access cases are usually Type=Negative and contain role wording.
-    negative_type = "negative" in normalize_text(str(tc.get("type", "")))
+    if (negative_type or has_permission_language) and has_manager_or_agent and (mentions_restricted_action or mentions_control_denial):
+        return "base_only"
 
-    return bool(has_role and (negative_type or has_permission_context) and has_restricted_action)
+    return "none"
+
+
+def is_negative_permission_or_access_test(tc: Dict[str, Any]) -> bool:
+    """Backward-compatible boolean helper used by older code paths."""
+    return navigation_negative_mode(tc) in {"base_only", "skip"}
 
 
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
@@ -1041,14 +1073,17 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
     for tc in cases:
         actual = extract_actual_nav_path(tc)
 
-        # Negative permission/access tests are skipped for Navigation Correctness.
-        if is_negative_permission_or_access_test(tc):
+        neg_mode = navigation_negative_mode(tc)
+
+        # True no-access / no-view permission tests are skipped because the UI
+        # target is intentionally not reachable, e.g. Agent cannot view SM.
+        if neg_mode == "skip":
             skipped_cases += 1
             details.append({
                 "tc_id": tc.get("id", ""),
                 "actual": actual,
                 "expected": [],
-                "selected_target": "skipped_negative_permission",
+                "selected_target": "skipped_no_access_permission",
                 "module_nodes": module_nodes,
                 "can_evaluate": False,
                 "is_correct": False,
@@ -1058,22 +1093,50 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
                 "forbidden_hit": False,
                 "denial_ok": True,
                 "match_score": 0.0,
-                "skip_reason": "negative permission/access test"
+                "skip_reason": "negative no-access/no-view permission test"
             })
             continue
-
-        add_to_union(actual)
 
         if uses_two_level_format:
             required_nodes = required_per_testcase
             selected_target = str(ref.get("title") or "Navigation target")
+            if neg_mode == "base_only":
+                selected_target = selected_target + " base navigation only"
             forbidden_nodes: List[str] = []
             target = {"label": selected_target, "required_nodes": required_nodes}
         else:
+            # Old target format: action-denial cases are still skipped to avoid
+            # requiring a forbidden popup/action node. The recommended two-level
+            # format can evaluate these as base_only.
+            if neg_mode == "base_only":
+                skipped_cases += 1
+                details.append({
+                    "tc_id": tc.get("id", ""),
+                    "actual": actual,
+                    "expected": [],
+                    "selected_target": "skipped_negative_permission_old_target_format",
+                    "module_nodes": module_nodes,
+                    "can_evaluate": False,
+                    "is_correct": False,
+                    "module_ok": False,
+                    "missing_nodes": [],
+                    "forbidden_nodes": [],
+                    "forbidden_hit": False,
+                    "denial_ok": True,
+                    "match_score": 0.0,
+                    "skip_reason": "negative action permission test with old target format"
+                })
+                continue
             target = _select_best_navigation_target(tc, ref)
             required_nodes = _target_required_nodes(target)
             forbidden_nodes = _target_forbidden_nodes(target)
             selected_target = _target_label(target, ref)
+
+        # Only positive test cases contribute to story-level target coverage.
+        # Negative base-only cases often mention denied popups/buttons, so adding
+        # their inferred nodes to the union would overstate coverage.
+        if neg_mode == "none":
+            add_to_union(actual)
 
         can_evaluate = bool(actual) and bool(required_nodes)
         module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
