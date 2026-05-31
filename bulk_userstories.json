@@ -390,5 +390,26 @@
       "when an appeal was sent, the creator of the evaluation gets a notification saying „EVALUATION: A user you evaluated has raised an appeal“",
       "an appeal can only be raised for evaluations that are not older than 1 week"
     ]
+  },
+  {
+    "id": "US-25",
+    "title": "Navigation Bar",
+    "story": "As a Director/Manager/Agent, I want to see a Navigation Bar on the left of the application so that I can open any module in the application",
+    "acceptance_criteria": [
+      "the navigation bar appears on the left",
+      "the navigation bar is divided into 4 different consoles",
+      "the console names are: Operations, Coordination, Scheduling, Performance",
+      "each console can be unfolded and shows the modules",
+      "operations has a module below it called „strategic meeting“",
+      "coordination has a module below it called „team meeting“",
+      "scheduling has a module below it called „calendar“",
+      "coordination has 2 modules below it called „evaluate employees“ and „my evaluations“",
+      "when clicking on a module, the user gets redirected to the dashboard of the clicked module",
+      "director can see all consoles and modules except „my evaluations“",
+      "manager can see all modules",
+      "agent can only see „team meeting“, „calendar“ and „my evaluations“ module"
+  
+    ]
   }
-]
+
+
