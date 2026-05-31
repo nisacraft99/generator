@@ -269,5 +269,18 @@
     {"ac_id": "AC-10", "keywords": ["save"], "phrases": ["the appeal was successfully sent"], "mode": "exact"},
     {"ac_id": "AC-11", "keywords": ["notification"], "phrases": ["evaluation: a user you evaluated has raised an appeal"], "mode": "exact"},
     {"ac_id": "AC-12", "keywords": ["appeal", "1 week"], "phrases": [], "mode": "semantic"}
-  ]
+  ],
+  "US-25": [
+  {"ac_id": "AC-1", "keywords": ["navigation bar", "left"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-2", "keywords": ["4 consoles", "operations", "coordination", "scheduling", "performance"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-3", "keywords": ["console", "unfolded", "modules"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-4", "keywords": ["operations", "strategic meeting"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-5", "keywords": ["coordination", "team meeting"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-6", "keywords": ["scheduling", "calendar"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-7", "keywords": ["performance", "evaluate employees", "my evaluations"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-8", "keywords": ["click module", "redirect", "dashboard"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-9", "keywords": ["director", "all consoles", "not my evaluations"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-10", "keywords": ["manager", "all modules"], "phrases": [], "mode": "semantic"},
+  {"ac_id": "AC-11", "keywords": ["agent", "team meeting", "calendar", "my evaluations"], "phrases": [], "mode": "semantic"}
+]
 }
