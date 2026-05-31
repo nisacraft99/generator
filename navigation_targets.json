@@ -1351,6 +1351,7 @@
           "add action button"
         ],
         "required_nodes": [
+          "CONSOLE-D",
           "OPT-MM",
           "SCR-MM-DETAIL",
           "EL-MM-ADD-ACTION"
