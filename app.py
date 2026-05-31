@@ -1457,6 +1457,16 @@ if "single_export_filename" not in st.session_state:
     st.session_state.single_export_filename = "single_test_design.pdf"
 if "single_export_info" not in st.session_state:
     st.session_state.single_export_info = ""
+if "single_cases" not in st.session_state:
+    st.session_state.single_cases = []
+if "single_open_questions" not in st.session_state:
+    st.session_state.single_open_questions = []
+if "single_evaluation" not in st.session_state:
+    st.session_state.single_evaluation = None
+if "single_selected_item" not in st.session_state:
+    st.session_state.single_selected_item = None
+if "single_variant_slug" not in st.session_state:
+    st.session_state.single_variant_slug = None
 
 # ======================= BUTTONS =======================
 st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
@@ -1585,10 +1595,11 @@ st.markdown("---")
 st.subheader("Single User Story Export 🧾")
 st.write(
     "Enter a user story number, for example `1` or `US-1`. The app loads the matching entry "
-    "from `bulk_userstories.json`, generates test cases, and creates one PDF export."
+    "from `bulk_userstories.json`. First generate the test cases/PDF, then run the single evaluation "
+    "with the separate evaluation button if needed."
 )
 
-single_col1, single_col2, single_col3 = st.columns([1, 1, 1])
+single_col1, single_col2 = st.columns([1, 1])
 with single_col1:
     single_us_lookup = st.text_input(
         "User Story number",
@@ -1602,18 +1613,20 @@ with single_col2:
         horizontal=False,
         key="single_variant_choice"
     )
-with single_col3:
-    single_include_eval = st.checkbox(
-        "include evaluation",
-        value=True,
-        key="single_include_eval"
-    )
 
-single_export_clicked = st.button(
-    "generate single export ✨",
-    disabled=not single_us_lookup.strip(),
-    key="single_export_button"
-)
+single_btn_col1, single_btn_col2 = st.columns([1, 1])
+with single_btn_col1:
+    single_export_clicked = st.button(
+        "generate single export ✨",
+        disabled=not single_us_lookup.strip(),
+        key="single_export_button"
+    )
+with single_btn_col2:
+    single_eval_clicked = st.button(
+        "evaluate single export 📊",
+        disabled=not bool(st.session_state.single_cases),
+        key="single_eval_button"
+    )
 
 if single_export_clicked:
     try:
@@ -1637,36 +1650,120 @@ if single_export_clicked:
                     use_ui_context=use_ui_single,
                 )
 
-                single_evaluation = None
-                if single_include_eval:
-                    single_evaluation = evaluate_all(
-                        selected_item["id"],
-                        selected_item["story"],
-                        selected_item["ac_blob"],
-                        single_cases,
-                        use_ui_context=use_ui_single,
-                    )
-
                 single_pdf = build_pdf(
                     selected_item["story"],
                     selected_item["ac_blob"],
                     single_cases,
                     single_open_q,
-                    evaluation=single_evaluation,
+                    evaluation=None,
                     us_id_value=selected_item["id"],
                 )
 
+            st.session_state.single_selected_item = selected_item
+            st.session_state.single_variant_slug = variant_slug
+            st.session_state.single_cases = single_cases
+            st.session_state.single_open_questions = single_open_q
+            st.session_state.single_evaluation = None
             st.session_state.single_export_pdf = single_pdf
             st.session_state.single_export_filename = f"test_design_{selected_item['id']}_{variant_slug}.pdf"
             st.session_state.single_export_info = (
                 f"Single export ready for {selected_item['id']} — {variant_slug} "
-                f"(test cases: {len(single_cases)})"
+                f"(test cases: {len(single_cases)}). Evaluation not run yet."
             )
             st.success(st.session_state.single_export_info)
 
     except Exception as e:
         st.session_state.single_export_pdf = None
+        st.session_state.single_cases = []
+        st.session_state.single_open_questions = []
+        st.session_state.single_evaluation = None
+        st.session_state.single_selected_item = None
+        st.session_state.single_variant_slug = None
         st.error(f"Single export failed: {e}")
+
+if single_eval_clicked:
+    try:
+        selected_item = st.session_state.single_selected_item
+        if not selected_item:
+            st.warning("Generate a single export first, then run the single evaluation.")
+        else:
+            use_ui_single = st.session_state.single_variant_slug == "with_json"
+            with st.spinner(f"Evaluating single export for {selected_item['id']}..."):
+                single_evaluation = evaluate_all(
+                    selected_item["id"],
+                    selected_item["story"],
+                    selected_item["ac_blob"],
+                    st.session_state.single_cases,
+                    use_ui_context=use_ui_single,
+                )
+                single_pdf = build_pdf(
+                    selected_item["story"],
+                    selected_item["ac_blob"],
+                    st.session_state.single_cases,
+                    st.session_state.single_open_questions,
+                    evaluation=single_evaluation,
+                    us_id_value=selected_item["id"],
+                )
+
+            st.session_state.single_evaluation = single_evaluation
+            st.session_state.single_export_pdf = single_pdf
+            st.session_state.single_export_info = (
+                f"Single evaluation ready for {selected_item['id']} — {st.session_state.single_variant_slug} "
+                f"(test cases: {len(st.session_state.single_cases)})"
+            )
+            st.success(st.session_state.single_export_info)
+    except Exception as e:
+        st.error(f"Single evaluation failed: {e}")
+
+if st.session_state.single_selected_item:
+    st.info(
+        f"Current single export: {st.session_state.single_selected_item['id']} — "
+        f"{st.session_state.single_variant_slug or 'not generated'}"
+    )
+
+if st.session_state.single_open_questions:
+    cleaned_single_open_questions = _clean_open_questions(st.session_state.single_open_questions)
+    st.warning("Single export notes / Open Questions:\n- " + "\n- ".join(cleaned_single_open_questions))
+
+if st.session_state.single_evaluation:
+    ev = st.session_state.single_evaluation
+    st.subheader("Single Export Evaluation")
+
+    ac_metric = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
+    nav_corr_metric = "N/A" if ev["navigation"]["correctness_pct"] is None else f"{ev['navigation']['correctness_pct']}%"
+    role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
+
+    sm1, sm2, sm3 = st.columns(3)
+    sm1.metric("AC Coverage", ac_metric)
+    sm2.metric("Navigation Correctness", nav_corr_metric)
+    sm3.metric("Role Coverage", role_metric)
+
+    if ev["ac"].get("note"):
+        st.warning(ev["ac"]["note"])
+    else:
+        st.write(f"**AC Coverage:** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
+        with st.expander("Single AC details"):
+            for d in ev["ac"].get("details", []):
+                st.write(f"{d['ac_id']}: score={d['score']} ({d['matched']}/{d['total_keywords']}) keywords={d['keywords']}")
+
+    if ev["navigation"].get("note"):
+        st.warning(ev["navigation"]["note"])
+    else:
+        st.write(f"**Navigation Correctness:** {ev['navigation']['correct_count']}/{ev['navigation']['evaluated_count']}")
+        with st.expander("Single navigation details"):
+            for d in ev["navigation"].get("details", []):
+                st.write(
+                    f"{d['tc_id']}: can_evaluate={d['can_evaluate']} "
+                    f"correct={d['is_correct']} target={d.get('selected_target', '')} "
+                    f"actual={d['actual']} expected={d['expected']} "
+                    f"missing={d.get('missing_nodes', [])}"
+                )
+
+    st.write(f"**Role Coverage:** {ev['role']['covered_count']}/{ev['role']['total_count']}")
+    st.write(f"Required roles: {ev['role']['required_roles']}")
+    st.write(f"Generated roles: {ev['role']['generated_roles']}")
+    if ev["role"].get("missing_roles"):
+        st.warning(f"Missing roles: {ev['role']['missing_roles']}")
 
 if st.session_state.single_export_pdf:
     if st.session_state.single_export_info:
