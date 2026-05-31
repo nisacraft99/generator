@@ -10,11 +10,13 @@
       "location field is a dropdown with options to select from",
       "participants field gets filtered according to which location you selected, showing a dropdown of participants belonging to that location you selected",
       "only a deadline in the future can be selected",
-      "after clicking the „create“ button within the Pop-Up, the user is redirected to a menu within the newly created SM, where he can add actions to it",
+      "after clicking the „create“ button within the Pop-Up, the user is redirected to a menu within the newly created SM",
+      "a newly created SM gets an ID",
+      "in the newly created SM, a user can add actions to it",
       "only a user with the role director can create an SM",
-      "a user with the role manager has viewing permissions, but can not create an SM",
+      "a user with the role manager has viewing permissions",
+      "a user with the role manager can not create an SM",
       "a user with the role agent can not view the SM module",
-      "a newly created SM gets an ID and appears in the dashboard of the SM module"
     ]
   },
   {
@@ -40,7 +42,7 @@
       "after clicking the „edit“ button, a user can change the participants of the SM",
       "a user can NOT change the location or the ID of an SM",
       "only a user with the role director can edit an SM",
-      "a user with the role manager has viewing permissions, but can not edit an SM"
+      "a user with the role manager can not edit an SM"
     ]
   },
   {
@@ -53,7 +55,7 @@
       "after clicking the „no“ button, the Pop-Up disappears and the user is redirected to the SM",
       "after clicking the „yes“ button, the pop-up disappears, the SM is deleted and the user is redirected to the SM dashboard",
       "only a user with the role director can delete an SM",
-      "a user with the role manager has viewing permissions, but can not delete an SM"
+      "a user with the role manager can not delete an SM"
     ]
   },
   {
