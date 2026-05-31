@@ -1056,6 +1056,28 @@ def evaluate_all(
     }
 
 
+
+
+# ======================= SINGLE EXPORT HELPERS =======================
+def normalize_us_lookup_value(value: str) -> str:
+    """Accepts values like '1', '01', 'US-1' and returns 'US-1'."""
+    raw = str(value or "").strip().upper()
+    if not raw:
+        return ""
+    m = re.search(r"(\d+)", raw)
+    if not m:
+        return raw
+    return f"US-{int(m.group(1))}"
+
+
+def find_userstory_by_id(userstories: List[Dict[str, Any]], lookup_value: str) -> Optional[Dict[str, Any]]:
+    wanted = normalize_us_lookup_value(lookup_value)
+    for item in userstories:
+        if normalize_us_lookup_value(item.get("id", "")) == wanted:
+            return item
+    return None
+
+
 # ======================= BULK EVALUATION HELPERS =======================
 def load_bulk_userstories(source: Any) -> List[Dict[str, Any]]:
     """
@@ -1429,6 +1451,13 @@ if "last_cases" not in st.session_state:
 if "last_evaluation" not in st.session_state:
     st.session_state.last_evaluation = None
 
+if "single_export_pdf" not in st.session_state:
+    st.session_state.single_export_pdf = None
+if "single_export_filename" not in st.session_state:
+    st.session_state.single_export_filename = "single_test_design.pdf"
+if "single_export_info" not in st.session_state:
+    st.session_state.single_export_info = ""
+
 # ======================= BUTTONS =======================
 st.markdown('<div class="export-wrap">', unsafe_allow_html=True)
 
@@ -1546,6 +1575,108 @@ if st.session_state.last_pdf:
         data=st.session_state.last_pdf,
         file_name=f"test_design_{us_id}_{st.session_state.last_variant or 'result'}.pdf",
         mime="application/pdf",
+    )
+
+
+
+
+# ======================= SINGLE EXPORT FROM BULK USER STORIES =======================
+st.markdown("---")
+st.subheader("Single User Story Export 🧾")
+st.write(
+    "Enter a user story number, for example `1` or `US-1`. The app loads the matching entry "
+    "from `bulk_userstories.json`, generates test cases, and creates one PDF export."
+)
+
+single_col1, single_col2, single_col3 = st.columns([1, 1, 1])
+with single_col1:
+    single_us_lookup = st.text_input(
+        "User Story number",
+        key="single_us_lookup",
+        placeholder="e.g. 1 or US-1"
+    )
+with single_col2:
+    single_variant_choice = st.radio(
+        "Variant",
+        ["with UI context", "without UI context"],
+        horizontal=False,
+        key="single_variant_choice"
+    )
+with single_col3:
+    single_include_eval = st.checkbox(
+        "include evaluation",
+        value=True,
+        key="single_include_eval"
+    )
+
+single_export_clicked = st.button(
+    "generate single export ✨",
+    disabled=not single_us_lookup.strip(),
+    key="single_export_button"
+)
+
+if single_export_clicked:
+    try:
+        bulk_items_for_single = load_bulk_userstories(BULK_USERSTORIES_PATH)
+        selected_item = find_userstory_by_id(bulk_items_for_single, single_us_lookup)
+
+        if selected_item is None:
+            available_ids = ", ".join(item["id"] for item in bulk_items_for_single[:10])
+            st.error(
+                f"No matching user story found for '{single_us_lookup}'. "
+                f"Example available IDs: {available_ids}"
+            )
+        else:
+            use_ui_single = single_variant_choice == "with UI context"
+            variant_slug = "with_json" if use_ui_single else "without_json"
+
+            with st.spinner(f"Generating single export for {selected_item['id']}..."):
+                single_cases, single_open_q = generate_cases(
+                    selected_item["story"],
+                    selected_item["ac_blob"],
+                    use_ui_context=use_ui_single,
+                )
+
+                single_evaluation = None
+                if single_include_eval:
+                    single_evaluation = evaluate_all(
+                        selected_item["id"],
+                        selected_item["story"],
+                        selected_item["ac_blob"],
+                        single_cases,
+                        use_ui_context=use_ui_single,
+                    )
+
+                single_pdf = build_pdf(
+                    selected_item["story"],
+                    selected_item["ac_blob"],
+                    single_cases,
+                    single_open_q,
+                    evaluation=single_evaluation,
+                    us_id_value=selected_item["id"],
+                )
+
+            st.session_state.single_export_pdf = single_pdf
+            st.session_state.single_export_filename = f"test_design_{selected_item['id']}_{variant_slug}.pdf"
+            st.session_state.single_export_info = (
+                f"Single export ready for {selected_item['id']} — {variant_slug} "
+                f"(test cases: {len(single_cases)})"
+            )
+            st.success(st.session_state.single_export_info)
+
+    except Exception as e:
+        st.session_state.single_export_pdf = None
+        st.error(f"Single export failed: {e}")
+
+if st.session_state.single_export_pdf:
+    if st.session_state.single_export_info:
+        st.info(st.session_state.single_export_info)
+    st.download_button(
+        "download single export PDF 🧾",
+        data=st.session_state.single_export_pdf,
+        file_name=st.session_state.single_export_filename,
+        mime="application/pdf",
+        key="single_export_download",
     )
 
 
