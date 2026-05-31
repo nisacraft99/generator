@@ -941,6 +941,40 @@ def _contains_denial_language(tc: Dict[str, Any]) -> bool:
     return any(p in txt for p in denial_patterns)
 
 
+def is_negative_permission_or_access_test(tc: Dict[str, Any]) -> bool:
+    """Return True for role/access tests where reaching the UI target is NOT expected.
+
+    These cases should not be counted in Navigation Correctness, because they
+    test absence/denial of an action or module. Boundary/validation tests by a
+    permitted role are still evaluated as navigation tests.
+    """
+    txt = testcase_full_text(tc)
+
+    has_role = any(role in txt for role in ["director", "manager", "agent"])
+    has_permission_context = any(p in txt for p in [
+        "permission", "permissions", "access", "role", "insufficient permissions",
+        "not allowed", "denied", "blocked", "not available", "not visible",
+        "disabled", "not actionable", "cannot be opened", "cannot be accessed",
+        "can not be opened", "can not be accessed"
+    ])
+
+    has_restricted_action = any(p in txt for p in [
+        "cannot create", "can not create", "not create",
+        "cannot edit", "can not edit", "not edit",
+        "cannot delete", "can not delete", "not delete",
+        "cannot view", "can not view", "not view",
+        "cannot access", "can not access", "not access",
+        "cannot initiate", "can not initiate",
+        "no create", "no edit", "no delete"
+    ])
+
+    # Strong signal from generated test metadata. In the generated PDFs,
+    # permission/access cases are usually Type=Negative and contain role wording.
+    negative_type = "negative" in normalize_text(str(tc.get("type", "")))
+
+    return bool(has_role and (negative_type or has_permission_context) and has_restricted_action)
+
+
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
     """
     Target-based Navigation Correctness.
@@ -978,10 +1012,35 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
 
     evaluated_cases = 0
     correct_cases = 0
+    skipped_cases = 0
     details = []
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
+
+        # Negative permission/access tests are skipped for Navigation Correctness.
+        # They are handled by AC Coverage, because the expected behaviour is that
+        # the UI target is unavailable or the action is denied.
+        if is_negative_permission_or_access_test(tc):
+            skipped_cases += 1
+            details.append({
+                "tc_id": tc.get("id", ""),
+                "actual": actual,
+                "expected": [],
+                "selected_target": "skipped_negative_permission",
+                "module_nodes": module_nodes,
+                "can_evaluate": False,
+                "is_correct": False,
+                "module_ok": False,
+                "missing_nodes": [],
+                "forbidden_nodes": [],
+                "forbidden_hit": False,
+                "denial_ok": True,
+                "match_score": 0.0,
+                "skip_reason": "negative permission/access test"
+            })
+            continue
+
         target = _select_best_navigation_target(tc, ref)
         required_nodes = _target_required_nodes(target)
         forbidden_nodes = _target_forbidden_nodes(target)
@@ -1026,7 +1085,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         "correctness_pct": correctness_pct,
         "correct_count": correct_cases,
         "evaluated_count": evaluated_cases,
-        "skipped_count": 0,
+        "skipped_count": skipped_cases,
         "details": details,
         "note": None if evaluated_cases else "No evaluable navigation test cases found."
     }
