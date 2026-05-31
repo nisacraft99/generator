@@ -1066,17 +1066,16 @@ def _contains_denial_language(tc: Dict[str, Any]) -> bool:
 
 
 def navigation_negative_mode(tc: Dict[str, Any]) -> str:
-    """Classify negative permission/access tests for navigation evaluation.
+    """Classify test cases for navigation evaluation.
 
     Returns:
-      - "none": normal positive/boundary test case; evaluate normally.
-      - "base_only": role is allowed to reach the base UI area, but a later action
-        such as create/edit/delete is denied. Evaluate only required_per_testcase.
-      - "skip": role is not expected to reach the module/screen at all, e.g.
-        Agent cannot view the SM module. Do not include in Navigation Correctness.
-
-    This keeps cases such as "Manager cannot create an SM action" evaluable for
-    the allowed base navigation while still skipping true no-access cases.
+      - "none": positive/boundary test; evaluate against required_per_testcase normally.
+      - "no_access": role cannot access the module at all (e.g. Agent cannot view SM).
+        These are NOT skipped — instead they are evaluated for denial correctness:
+        correct if the test case contains explicit denial/restriction language,
+        incorrect if it does not. This keeps all test cases in the metric.
+      - "base_only": role reaches the base area but a create/edit/delete action is
+        denied. Evaluated against required_per_testcase only (not required_across_story).
     """
     txt = testcase_full_text(tc)
     tc_type = normalize_text(str(tc.get("type", "")))
@@ -1090,8 +1089,6 @@ def navigation_negative_mode(tc: Dict[str, Any]) -> str:
         "can not be opened", "can not be accessed"
     ])
 
-    # True no-access / no-view cases: the target module or screen itself should
-    # not be reachable. These should be skipped for Navigation Correctness.
     no_view_patterns = [
         "cannot view", "can not view", "not view", "cannot see", "can not see",
         "not see", "cannot access", "can not access", "not access",
@@ -1102,11 +1099,8 @@ def navigation_negative_mode(tc: Dict[str, Any]) -> str:
         "module", "dashboard", "strategic meeting", "team meeting", "sm module", "tm module"
     ])
     if has_manager_or_agent and mentions_module_or_dashboard and any(p in txt for p in no_view_patterns):
-        return "skip"
+        return "no_access"
 
-    # Action-denial cases: the user may navigate to the base screen, but a
-    # create/edit/delete/appeal action is not allowed. These should count for
-    # base navigation only, not for popup/action target coverage.
     action_denial_patterns = [
         "cannot create", "can not create", "not create", "cannot initiate",
         "can not initiate", "cannot edit", "can not edit", "not edit",
@@ -1128,7 +1122,7 @@ def navigation_negative_mode(tc: Dict[str, Any]) -> str:
 
 def is_negative_permission_or_access_test(tc: Dict[str, Any]) -> bool:
     """Backward-compatible boolean helper used by older code paths."""
-    return navigation_negative_mode(tc) in {"base_only", "skip"}
+    return navigation_negative_mode(tc) in {"base_only", "no_access"}
 
 
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
@@ -1196,42 +1190,65 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
-
         neg_mode = navigation_negative_mode(tc)
 
-        # True no-access / no-view permission tests are skipped because the UI
-        # target is intentionally not reachable, e.g. Agent cannot view SM.
-        if neg_mode == "skip":
-            skipped_cases += 1
-            details.append({
-                "tc_id": tc.get("id", ""),
-                "actual": actual,
-                "expected": [],
-                "selected_target": "skipped_no_access_permission",
-                "module_nodes": module_nodes,
-                "can_evaluate": False,
-                "is_correct": False,
-                "module_ok": False,
-                "missing_nodes": [],
-                "forbidden_nodes": [],
-                "forbidden_hit": False,
-                "denial_ok": True,
-                "match_score": 0.0,
-                "skip_reason": "negative no-access/no-view permission test"
-            })
-            continue
-
         if uses_two_level_format:
+
+            if neg_mode == "no_access":
+                # No-access cases are NOT skipped. They count as correct only if
+                # the test explicitly documents the denial/restriction.
+                evaluated_cases += 1
+                has_denial = _contains_denial_language(tc)
+                if has_denial:
+                    correct_cases += 1
+                details.append({
+                    "tc_id": tc.get("id", ""),
+                    "actual": actual,
+                    "expected": [],
+                    "selected_target": "no_access_denial_check",
+                    "module_nodes": module_nodes,
+                    "can_evaluate": True,
+                    "is_correct": has_denial,
+                    "module_ok": True,
+                    "missing_nodes": [] if has_denial else ["denial language missing"],
+                    "forbidden_nodes": [],
+                    "forbidden_hit": False,
+                    "denial_ok": has_denial,
+                    "match_score": 1.0 if has_denial else 0.0,
+                    "skip_reason": "" if has_denial else "no_access test missing denial language"
+                })
+                continue
+
             required_nodes = required_per_testcase
             selected_target = str(ref.get("title") or "Navigation target")
             if neg_mode == "base_only":
                 selected_target = selected_target + " base navigation only"
             forbidden_nodes: List[str] = []
             target = {"label": selected_target, "required_nodes": required_nodes}
+
         else:
-            # Old target format: action-denial cases are still skipped to avoid
-            # requiring a forbidden popup/action node. The recommended two-level
-            # format can evaluate these as base_only.
+            if neg_mode == "no_access":
+                evaluated_cases += 1
+                has_denial = _contains_denial_language(tc)
+                if has_denial:
+                    correct_cases += 1
+                details.append({
+                    "tc_id": tc.get("id", ""),
+                    "actual": actual,
+                    "expected": [],
+                    "selected_target": "no_access_denial_check",
+                    "module_nodes": module_nodes,
+                    "can_evaluate": True,
+                    "is_correct": has_denial,
+                    "module_ok": True,
+                    "missing_nodes": [] if has_denial else ["denial language missing"],
+                    "forbidden_nodes": [],
+                    "forbidden_hit": False,
+                    "denial_ok": has_denial,
+                    "match_score": 1.0 if has_denial else 0.0,
+                    "skip_reason": "" if has_denial else "no_access test missing denial language"
+                })
+                continue
             if neg_mode == "base_only":
                 skipped_cases += 1
                 details.append({
@@ -1848,6 +1865,68 @@ def build_pdf(
     doc.build(flow)
     return buf.getvalue()
 
+# ======================= EVALUATION DISPLAY HELPER =======================
+def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Evaluation"):
+    """Renders evaluation metrics and details. Used by all three evaluation sections."""
+    st.subheader(header)
+
+    ac_metric  = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
+    nav_metric = "N/A" if ev["navigation"]["correctness_pct"] is None else f"{ev['navigation']['correctness_pct']}%"
+    role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("AC Coverage (Keyword)", ac_metric)
+    c2.metric("Navigation Correctness", nav_metric)
+    c3.metric("Role Coverage", role_metric)
+
+    ac_llm = ev.get("ac_llm", {})
+    if ac_llm.get("overall_pct") is not None:
+        st.metric("AC Coverage (LLM Judge)", f"{ac_llm['overall_pct']}%")
+
+    # AC Keyword details
+    if ev["ac"].get("note"):
+        st.warning(ev["ac"]["note"])
+    else:
+        st.write(f"**AC Coverage (Keyword):** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
+        with st.expander("Keyword AC details"):
+            for d in ev["ac"].get("details", []):
+                st.write(f"{d['ac_id']}: score={d['score']} ({d['matched']}/{d['total_keywords']}) keywords={d['keywords']}")
+
+    # AC LLM Judge details
+    if ac_llm.get("note") and ac_llm["note"] != "LLM judge not enabled.":
+        st.warning(ac_llm["note"])
+    elif ac_llm.get("details"):
+        st.write(f"**AC Coverage (LLM Judge):** {ac_llm['covered_count']}/{ac_llm['total_count']} ACs covered")
+        with st.expander("LLM Judge AC details"):
+            for d in ac_llm["details"]:
+                icon = "✅" if d["covered"] else "❌"
+                st.write(f"{icon} **{d['ac_id']}:** {d['ac_text']}")
+                st.caption(f"→ {d['reason']}")
+
+    # Navigation details
+    if ev["navigation"].get("note"):
+        st.warning(ev["navigation"]["note"])
+    else:
+        nav = ev["navigation"]
+        skipped = nav.get("skipped_count") or 0
+        skip_note = f" ({skipped} skipped)" if skipped else ""
+        st.write(f"**Navigation Correctness:** {nav['correct_count']}/{nav['evaluated_count']}{skip_note}")
+        with st.expander("Navigation details"):
+            for d in nav.get("details", []):
+                st.write(
+                    f"{d['tc_id']}: correct={d['is_correct']} "
+                    f"target={d.get('selected_target','')} "
+                    f"missing={d.get('missing_nodes',[])}"
+                )
+
+    # Role details
+    role = ev["role"]
+    st.write(f"**Role Coverage:** {role['covered_count']}/{role['total_count']}")
+    st.write(f"Required: {role['required_roles']}  |  Generated: {role['generated_roles']}")
+    if role.get("missing_roles"):
+        st.warning(f"Missing roles: {role['missing_roles']}")
+
+
 # ======================= SESSION STATE =======================
 if "last_pdf" not in st.session_state:
     st.session_state.last_pdf = None
@@ -1957,61 +2036,7 @@ if st.session_state.last_open_questions:
     st.warning("Notes / Open Questions:\n- " + "\n- ".join(cleaned_open_questions))
 
 if st.session_state.last_evaluation:
-    ev = st.session_state.last_evaluation
-
-    st.subheader("Automated Evaluation")
-
-    ac_metric = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
-    nav_corr_metric = "N/A" if ev["navigation"]["correctness_pct"] is None else f"{ev['navigation']['correctness_pct']}%"
-    role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
-
-    m1, m2, m3 = st.columns(3)
-    m1.metric("AC Coverage (Keyword)", ac_metric)
-    m2.metric("Navigation Correctness", nav_corr_metric)
-    m3.metric("Role Coverage", role_metric)
-
-    # LLM Judge metric
-    ac_llm = ev.get("ac_llm", {})
-    if ac_llm.get("overall_pct") is not None:
-        llm_metric = f"{ac_llm['overall_pct']}%"
-        st.metric("AC Coverage (LLM Judge)", llm_metric)
-
-    if ev["ac"]["note"]:
-        st.warning(ev["ac"]["note"])
-    else:
-        st.write(f"**AC Coverage (Keyword):** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
-        with st.expander("Keyword AC details"):
-            for d in ev["ac"]["details"]:
-                st.write(f"{d['ac_id']}: score={d['score']} ({d['matched']}/{d['total_keywords']}) keywords={d['keywords']}")
-
-    if ac_llm.get("note") and ac_llm["note"] != "LLM judge not enabled.":
-        st.warning(ac_llm["note"])
-    elif ac_llm.get("details"):
-        st.write(f"**AC Coverage (LLM Judge):** {ac_llm['covered_count']}/{ac_llm['total_count']} ACs covered")
-        with st.expander("LLM Judge AC details"):
-            for d in ac_llm["details"]:
-                icon = "✅" if d["covered"] else "❌"
-                st.write(f"{icon} **{d['ac_id']}:** {d['ac_text']}")
-                st.caption(f"→ {d['reason']}")
-
-    if ev["navigation"]["note"]:
-        st.warning(ev["navigation"]["note"])
-    else:
-        st.write(f"**Navigation Correctness:** {ev['navigation']['correct_count']}/{ev['navigation']['evaluated_count']}")
-        with st.expander("Navigation details"):
-            for d in ev["navigation"]["details"]:
-                st.write(
-                    f"{d['tc_id']}: can_evaluate={d['can_evaluate']} "
-                    f"correct={d['is_correct']} target={d.get('selected_target', '')} "
-                    f"actual={d['actual']} expected={d['expected']} "
-                    f"missing={d.get('missing_nodes', [])}"
-                )
-
-    st.write(f"**Role Coverage:** {ev['role']['covered_count']}/{ev['role']['total_count']}")
-    st.write(f"Required roles: {ev['role']['required_roles']}")
-    st.write(f"Generated roles: {ev['role']['generated_roles']}")
-    if ev["role"]["missing_roles"]:
-        st.warning(f"Missing roles: {ev['role']['missing_roles']}")
+    _render_evaluation_results(st.session_state.last_evaluation, "Automated Evaluation")
 
 if st.session_state.last_pdf:
     st.success(f"PDF ready ✅ (test cases: {st.session_state.last_cases_count})")
@@ -2169,59 +2194,7 @@ if st.session_state.single_open_questions:
     st.warning("Single export notes / Open Questions:\n- " + "\n- ".join(cleaned_single_open_questions))
 
 if st.session_state.single_evaluation:
-    ev = st.session_state.single_evaluation
-    st.subheader("Single Export Evaluation")
-
-    ac_metric = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
-    nav_corr_metric = "N/A" if ev["navigation"]["correctness_pct"] is None else f"{ev['navigation']['correctness_pct']}%"
-    role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
-
-    sm1, sm2, sm3 = st.columns(3)
-    sm1.metric("AC Coverage (Keyword)", ac_metric)
-    sm2.metric("Navigation Correctness", nav_corr_metric)
-    sm3.metric("Role Coverage", role_metric)
-
-    # LLM Judge metric
-    ac_llm = ev.get("ac_llm", {})
-    if ac_llm.get("overall_pct") is not None:
-        st.metric("AC Coverage (LLM Judge)", f"{ac_llm['overall_pct']}%")
-
-    if ev["ac"].get("note"):
-        st.warning(ev["ac"]["note"])
-    else:
-        st.write(f"**AC Coverage (Keyword):** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
-        with st.expander("Keyword AC details"):
-            for d in ev["ac"].get("details", []):
-                st.write(f"{d['ac_id']}: score={d['score']} ({d['matched']}/{d['total_keywords']}) keywords={d['keywords']}")
-
-    if ac_llm.get("note") and ac_llm["note"] != "LLM judge not enabled.":
-        st.warning(ac_llm["note"])
-    elif ac_llm.get("details"):
-        st.write(f"**AC Coverage (LLM Judge):** {ac_llm['covered_count']}/{ac_llm['total_count']} ACs covered")
-        with st.expander("LLM Judge AC details"):
-            for d in ac_llm["details"]:
-                icon = "✅" if d["covered"] else "❌"
-                st.write(f"{icon} **{d['ac_id']}:** {d['ac_text']}")
-                st.caption(f"→ {d['reason']}")
-
-    if ev["navigation"].get("note"):
-        st.warning(ev["navigation"]["note"])
-    else:
-        st.write(f"**Navigation Correctness:** {ev['navigation']['correct_count']}/{ev['navigation']['evaluated_count']}")
-        with st.expander("Single navigation details"):
-            for d in ev["navigation"].get("details", []):
-                st.write(
-                    f"{d['tc_id']}: can_evaluate={d['can_evaluate']} "
-                    f"correct={d['is_correct']} target={d.get('selected_target', '')} "
-                    f"actual={d['actual']} expected={d['expected']} "
-                    f"missing={d.get('missing_nodes', [])}"
-                )
-
-    st.write(f"**Role Coverage:** {ev['role']['covered_count']}/{ev['role']['total_count']}")
-    st.write(f"Required roles: {ev['role']['required_roles']}")
-    st.write(f"Generated roles: {ev['role']['generated_roles']}")
-    if ev["role"].get("missing_roles"):
-        st.warning(f"Missing roles: {ev['role']['missing_roles']}")
+    _render_evaluation_results(st.session_state.single_evaluation, "Single Export Evaluation")
 
 if st.session_state.single_export_pdf:
     if st.session_state.single_export_info:
