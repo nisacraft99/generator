@@ -977,16 +977,24 @@ def is_negative_permission_or_access_test(tc: Dict[str, Any]) -> bool:
 
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
     """
-    Target-based Navigation Correctness.
+    Navigation evaluation with support for the simplified two-level target format.
 
-    Old approach: compare every test case against one complete expected path.
-    Problem: complex User Stories contain dashboard, detail, popup and permission tests.
+    Recommended navigation_targets.json format:
+      "US-6": {
+        "title": "Create Action for SM",
+        "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
+        "required_across_story": ["MOD-SM-ACTION-CREATE", "COMP-SM-ACTION-LIST"]
+      }
 
-    New approach: for each test case, select the relevant expected navigation TARGET
-    from navigation_targets.json and check whether the output reaches that target.
-    A test case is correct if:
-    - it references the correct module/nav option, and
-    - it reaches all required target nodes for the selected target.
+    Interpretation:
+    - required_per_testcase: minimal UI area that every positive/evaluable test case should reach.
+    - required_across_story: UI target nodes that should appear at least once across all positive/evaluable
+      test cases of the User Story.
+    - negative permission/access tests are skipped for Navigation Correctness because they intentionally
+      test non-reachability or denied actions.
+
+    Backwards compatibility:
+    - also supports the older "targets" format used earlier in the project.
     """
     ref = find_navigation_targets(us_id_value)
     if not ref:
@@ -994,18 +1002,27 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "correctness_pct": None,
             "correct_count": None,
             "evaluated_count": None,
+            "skipped_count": 0,
             "details": [],
             "note": f"No navigation targets found for {us_id_value}"
         }
 
-    module_nodes = _norm_list(ref.get("module_nodes"))
-    targets = ref.get("targets", []) or []
+    module_nodes = _norm_list(ref.get("module_nodes")) if isinstance(ref, dict) else []
 
-    if not targets:
+    # New two-level target format.
+    required_per_testcase = _norm_list(ref.get("required_per_testcase")) if isinstance(ref, dict) else []
+    required_across_story = _norm_list(ref.get("required_across_story")) if isinstance(ref, dict) else []
+    uses_two_level_format = bool(required_per_testcase or required_across_story)
+
+    # Old formats remain supported.
+    targets = ref.get("targets", []) if isinstance(ref, dict) else []
+
+    if not uses_two_level_format and not targets:
         return {
             "correctness_pct": None,
             "correct_count": None,
             "evaluated_count": None,
+            "skipped_count": 0,
             "details": [],
             "note": f"No target definitions found for {us_id_value}"
         }
@@ -1014,13 +1031,17 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
     correct_cases = 0
     skipped_cases = 0
     details = []
+    actual_union: List[str] = []
+
+    def add_to_union(nodes: List[str]):
+        for n in nodes:
+            if n not in actual_union:
+                actual_union.append(n)
 
     for tc in cases:
         actual = extract_actual_nav_path(tc)
 
         # Negative permission/access tests are skipped for Navigation Correctness.
-        # They are handled by AC Coverage, because the expected behaviour is that
-        # the UI target is unavailable or the action is denied.
         if is_negative_permission_or_access_test(tc):
             skipped_cases += 1
             details.append({
@@ -1041,11 +1062,20 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             })
             continue
 
-        target = _select_best_navigation_target(tc, ref)
-        required_nodes = _target_required_nodes(target)
-        forbidden_nodes = _target_forbidden_nodes(target)
+        add_to_union(actual)
 
-        can_evaluate = bool(actual) and bool(target)
+        if uses_two_level_format:
+            required_nodes = required_per_testcase
+            selected_target = str(ref.get("title") or "Navigation target")
+            forbidden_nodes: List[str] = []
+            target = {"label": selected_target, "required_nodes": required_nodes}
+        else:
+            target = _select_best_navigation_target(tc, ref)
+            required_nodes = _target_required_nodes(target)
+            forbidden_nodes = _target_forbidden_nodes(target)
+            selected_target = _target_label(target, ref)
+
+        can_evaluate = bool(actual) and bool(required_nodes)
         module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
         required_ok = all(node in actual for node in required_nodes)
 
@@ -1066,7 +1096,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "tc_id": tc.get("id", ""),
             "actual": actual,
             "expected": required_nodes,
-            "selected_target": _target_label(target, ref),
+            "selected_target": selected_target,
             "module_nodes": module_nodes,
             "can_evaluate": can_evaluate,
             "is_correct": is_correct,
@@ -1076,20 +1106,57 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "forbidden_hit": forbidden_hit,
             "denial_ok": denial_ok,
             "match_score": round((len(required_nodes) - len(missing_nodes)) / len(required_nodes), 2) if required_nodes else 0.0,
-            "skip_reason": "" if can_evaluate else "No actual navigation nodes extracted"
+            "skip_reason": "" if can_evaluate else "No actual navigation nodes extracted or no per-testcase target defined"
         })
 
-    correctness_pct = round((correct_cases / evaluated_cases) * 100, 2) if evaluated_cases else None
+    # User-story-level target coverage for the two-level format.
+    story_target_total = 0
+    story_target_correct = 0
+    if uses_two_level_format and required_across_story:
+        story_target_total = len(required_across_story)
+        story_missing = [node for node in required_across_story if node not in actual_union]
+        story_target_correct = story_target_total - len(story_missing)
+
+        details.append({
+            "tc_id": "STORY_TARGET_COVERAGE",
+            "actual": actual_union,
+            "expected": required_across_story,
+            "selected_target": "required_across_story",
+            "module_nodes": module_nodes,
+            "can_evaluate": bool(actual_union),
+            "is_correct": len(story_missing) == 0,
+            "module_ok": True,
+            "missing_nodes": story_missing,
+            "forbidden_nodes": [],
+            "forbidden_hit": False,
+            "denial_ok": False,
+            "match_score": round(story_target_correct / story_target_total, 2) if story_target_total else 0.0,
+            "skip_reason": ""
+        })
+
+    total_evaluated = evaluated_cases + story_target_total
+    total_correct = correct_cases + story_target_correct
+    correctness_pct = round((total_correct / total_evaluated) * 100, 2) if total_evaluated else None
+
+    if total_evaluated:
+        note = None
+    elif skipped_cases:
+        note = "Only negative permission/access test cases were found; Navigation Correctness was skipped."
+    else:
+        note = "No evaluable navigation test cases found."
 
     return {
         "correctness_pct": correctness_pct,
-        "correct_count": correct_cases,
-        "evaluated_count": evaluated_cases,
+        "correct_count": total_correct,
+        "evaluated_count": total_evaluated,
+        "testcase_correct_count": correct_cases,
+        "testcase_evaluated_count": evaluated_cases,
+        "story_target_correct_count": story_target_correct,
+        "story_target_total_count": story_target_total,
         "skipped_count": skipped_cases,
         "details": details,
-        "note": None if evaluated_cases else "No evaluable navigation test cases found."
+        "note": note
     }
-
 
 def extract_required_roles(story: str, ac_blob: str) -> List[str]:
     """
