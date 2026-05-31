@@ -6,7 +6,7 @@
     "acceptance_criteria": [
       "when clicking „create SM“ button inside SM module, a Popup appears with fields „title“, „deadline“, „location“ and „participants“ which are mandatory",
       "title field can contain up to 50 characters",
-      "deadline field can only contain a date in the format DD/SM/YYYY",
+      "deadline field can only contain a date in the format DD/MM/YYYY",
       "location field is a dropdown with options to select from",
       "participants field gets filtered according to which location you selected, showing a dropdown of participants belonging to that location you selected",
       "only a deadline in the future can be selected",
@@ -145,7 +145,7 @@
     "acceptance_criteria": [
       "when clicking „create TM“ button inside TM module, a Popup appears with fields „title“, „deadline“, „location“, „subdivision“ and „participants“ which are mandatory",
       "title field can contain up to 50 characters",
-      "deadline field can only contain a date in the format DD/SM/YYYY",
+      "deadline field can only contain a date in the format DD/MM/YYYY",
       "location field is a dropdown with options to select from",
       "subdivision field gets filtered according to which location you selected, showing a dropdown of subdivisions belonging to that location you selected",
       "participants field gets filtered according to which location you selected, showing a dropdown of participants belonging to that location you selected",
