@@ -18,7 +18,7 @@
       "a user with the role manager can not create an SM",
       "a user with the role agent can not view the SM module"
     ]
-  }
+  },
   {
     "id": "US-2",
     "title": "View SM",
