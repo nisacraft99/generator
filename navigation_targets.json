@@ -16,7 +16,7 @@
           "location",
           "participants",
           "future",
-          "dd/sm/yyyy",
+          "dd/mm/yyyy",
           "50",
           "mandatory"
         ],
@@ -37,6 +37,7 @@
         ],
         "required_nodes": [
           "OPT-MM",
+          "SCR-MM-DASHBOARD",
           "SCR-MM-DETAIL"
         ]
       },
@@ -68,7 +69,10 @@
         "required_nodes": [
           "OPT-MM"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-MM-CREATE"
+        ]
       }
     ]
   },
@@ -163,7 +167,10 @@
           "OPT-MM",
           "SCR-MM-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-MM-EDIT"
+        ]
       }
     ]
   },
@@ -224,7 +231,10 @@
           "OPT-MM",
           "SCR-MM-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-MM-DELETE"
+        ]
       }
     ]
   },
@@ -265,7 +275,6 @@
         "required_nodes": [
           "OPT-MM",
           "SCR-MM-DASHBOARD",
-          "EL-MM-SEARCH",
           "EL-MM-SEARCH-BTN"
         ]
       },
@@ -359,7 +368,10 @@
           "OPT-MM",
           "SCR-MM-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-MM-ACTION-CREATE"
+        ]
       }
     ]
   },
@@ -433,7 +445,7 @@
         "required_nodes": [
           "OPT-MM",
           "SCR-MM-DETAIL",
-          "SCR-MM-ACTION-DETAIL"
+          "COMP-MM-ACTION-LIST"
         ]
       },
       {
@@ -466,7 +478,10 @@
           "OPT-MM",
           "SCR-MM-ACTION-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-MM-ACTION-EDIT"
+        ]
       }
     ]
   },
@@ -488,7 +503,7 @@
         "required_nodes": [
           "OPT-MM",
           "SCR-MM-DETAIL",
-          "SCR-MM-ACTION-DETAIL"
+          "COMP-MM-ACTION-LIST"
         ]
       },
       {
@@ -517,7 +532,10 @@
           "OPT-MM",
           "SCR-MM-ACTION-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-MM-ACTION-DELETE"
+        ]
       }
     ]
   },
@@ -539,7 +557,7 @@
           "subdivision",
           "participants",
           "future",
-          "dd/sm/yyyy",
+          "dd/mm/yyyy",
           "50",
           "mandatory"
         ],
@@ -560,6 +578,7 @@
         ],
         "required_nodes": [
           "OPT-AM",
+          "SCR-AM-DASHBOARD",
           "SCR-AM-DETAIL"
         ]
       },
@@ -589,7 +608,10 @@
         "required_nodes": [
           "OPT-AM"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-AM-CREATE"
+        ]
       }
     ]
   },
@@ -686,7 +708,10 @@
           "OPT-AM",
           "SCR-AM-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-AM-EDIT"
+        ]
       }
     ]
   },
@@ -747,7 +772,10 @@
           "OPT-AM",
           "SCR-AM-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-AM-DELETE"
+        ]
       }
     ]
   },
@@ -792,7 +820,6 @@
         "required_nodes": [
           "OPT-AM",
           "SCR-AM-DASHBOARD",
-          "EL-AM-SEARCH",
           "EL-AM-SEARCH-BTN"
         ]
       },
@@ -873,7 +900,10 @@
           "OPT-AM",
           "SCR-AM-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-AM-ACTION-CREATE"
+        ]
       }
     ]
   },
@@ -949,7 +979,7 @@
         "required_nodes": [
           "OPT-AM",
           "SCR-AM-DETAIL",
-          "SCR-AM-ACTION-DETAIL"
+          "COMP-AM-ACTION-LIST"
         ]
       },
       {
@@ -983,7 +1013,10 @@
           "OPT-AM",
           "SCR-AM-ACTION-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-AM-ACTION-EDIT"
+        ]
       }
     ]
   },
@@ -1005,7 +1038,7 @@
         "required_nodes": [
           "OPT-AM",
           "SCR-AM-DETAIL",
-          "SCR-AM-ACTION-DETAIL"
+          "COMP-AM-ACTION-LIST"
         ]
       },
       {
@@ -1035,7 +1068,10 @@
           "OPT-AM",
           "SCR-AM-ACTION-DETAIL"
         ],
-        "access_denial_ok": true
+        "access_denial_ok": true,
+        "forbidden_nodes": [
+          "MOD-AM-ACTION-DELETE"
+        ]
       }
     ]
   },
@@ -1099,7 +1135,6 @@
         "required_nodes": [
           "OPT-CALENDAR",
           "SCR-CALENDAR",
-          "EL-CALENDAR-SEARCH",
           "EL-CALENDAR-SEARCH-BTN"
         ]
       },
@@ -1286,6 +1321,7 @@
         ],
         "required_nodes": [
           "OPT-EVALUATE",
+          "SCR-EVALUATE-DETAIL",
           "SCR-EVALUATE-DASHBOARD"
         ]
       },
