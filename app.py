@@ -1589,8 +1589,10 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
     - with UI context
 
     Then evaluate each output and return one result row per generated output.
+    Also stores cases + evaluations in st.session_state.bulk_runs_store for PDF export.
     """
     rows = []
+    runs_store: Dict[str, Any] = {}   # key: "US-1|with_ui_context|rep1"
     total_runs = len(userstories) * repetitions * 2
     done = 0
 
@@ -1611,6 +1613,8 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                 )
                 progress.progress(done / total_runs)
 
+                run_key = f"{item['id']}|{variant_name}|rep{rep}"
+
                 try:
                     cases, open_q = generate_cases(
                         story=item["story"],
@@ -1627,10 +1631,19 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                         use_llm_judge=use_llm_judge,
                     )
 
-                    ac_pct = _metric_or_none(evaluation, "ac", "overall_pct")
+                    ac_pct  = _metric_or_none(evaluation, "ac", "overall_pct")
                     ac_llm_pct = _metric_or_none(evaluation, "ac_llm", "overall_pct")
                     role_pct = _metric_or_none(evaluation, "role", "overall_pct")
-                    nav_pct = _metric_or_none(evaluation, "navigation", "correctness_pct")
+                    nav_pct  = _metric_or_none(evaluation, "navigation", "correctness_pct")
+
+                    runs_store[run_key] = {
+                        "item": item,
+                        "variant": variant_name,
+                        "rep": rep,
+                        "cases": cases,
+                        "open_q": open_q,
+                        "evaluation": evaluation,
+                    }
 
                     rows.append({
                         "repetition": rep,
@@ -1650,6 +1663,7 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                     })
 
                 except Exception as e:
+                    runs_store[run_key] = {"error": str(e)}
                     rows.append({
                         "repetition": rep,
                         "us_id": item.get("id", ""),
@@ -1670,6 +1684,7 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
     progress.progress(1.0)
     status.write("Bulk evaluation finished ✅")
 
+    st.session_state.bulk_runs_store = runs_store
     return pd.DataFrame(rows)
 
 
@@ -2397,3 +2412,68 @@ if "bulk_results_df" in st.session_state and not st.session_state.bulk_results_d
             file_name="bulk_evaluation_raw_results.csv",
             mime="text/csv",
         )
+
+# ======================= BULK PDF EXPORT =======================
+if "bulk_runs_store" in st.session_state and st.session_state.bulk_runs_store:
+    st.markdown("---")
+    st.subheader("📄 Export PDF from Bulk Run")
+    st.write("Select a specific User Story, variant and repetition to download its PDF.")
+
+    store = st.session_state.bulk_runs_store
+    valid_keys = [k for k, v in store.items() if "cases" in v]
+
+    if not valid_keys:
+        st.warning("No successful runs available for PDF export.")
+    else:
+        # Parse keys into selectable options
+        # key format: "US-1|with_ui_context|rep1"
+        df_runs = st.session_state.bulk_results_df
+        us_ids   = sorted(df_runs["us_id"].unique().tolist())
+        variants = ["with_ui_context", "without_ui_context"]
+        reps     = sorted(df_runs["repetition"].unique().tolist())
+
+        pc1, pc2, pc3 = st.columns(3)
+        with pc1:
+            sel_us  = st.selectbox("User Story", us_ids, key="bulk_pdf_us")
+        with pc2:
+            sel_var = st.selectbox("Variant", variants, key="bulk_pdf_var")
+        with pc3:
+            sel_rep = st.selectbox("Repetition", reps, key="bulk_pdf_rep")
+
+        run_key = f"{sel_us}|{sel_var}|rep{sel_rep}"
+        run_data = store.get(run_key)
+
+        if run_data and "cases" in run_data:
+            item       = run_data["item"]
+            cases      = run_data["cases"]
+            open_q     = run_data["open_q"]
+            evaluation = run_data["evaluation"]
+
+            # Show quick metrics
+            ac_pct  = _metric_or_none(evaluation, "ac", "overall_pct")
+            nav_pct = _metric_or_none(evaluation, "navigation", "correctness_pct")
+            role_pct = _metric_or_none(evaluation, "role", "overall_pct")
+
+            mc1, mc2, mc3, mc4 = st.columns(4)
+            mc1.metric("Test Cases", len(cases))
+            mc2.metric("AC Coverage", f"{ac_pct}%" if ac_pct is not None else "N/A")
+            mc3.metric("Navigation", f"{nav_pct}%" if nav_pct is not None else "N/A")
+            mc4.metric("Role Coverage", f"{role_pct}%" if role_pct is not None else "N/A")
+
+            pdf_bytes = build_pdf(
+                story_text=item["story"],
+                ac_blob=item["ac_blob"],
+                cases=cases,
+                open_questions=open_q,
+                evaluation=evaluation,
+                us_id_value=item["id"],
+            )
+            st.download_button(
+                f"⬇️ Download PDF — {sel_us} / {sel_var} / rep {sel_rep}",
+                data=pdf_bytes,
+                file_name=f"test_design_{sel_us}_{sel_var}_rep{sel_rep}.pdf",
+                mime="application/pdf",
+                key="bulk_pdf_download",
+            )
+        else:
+            st.warning(f"No data available for {run_key}. This run may have failed.")
