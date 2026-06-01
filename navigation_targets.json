@@ -1,127 +1,344 @@
 {
   "US-1": {
     "title": "Create SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DASHBOARD"],
-    "required_across_story": ["EL-SM-CREATE", "MOD-SM-CREATE", "SCR-SM-DETAIL", "COMP-SM-LIST"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DASHBOARD"
+    ],
+    "required_across_story": [
+      "EL-SM-CREATE",
+      "MOD-SM-CREATE",
+      "SCR-SM-DETAIL",
+      "COMP-SM-LIST"
+    ]
   },
   "US-2": {
     "title": "View SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM"],
-    "required_across_story": ["SCR-SM-DASHBOARD", "COMP-SM-LIST", "EL-SM-ID", "SCR-SM-DETAIL"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM"
+    ],
+    "required_across_story": [
+      "SCR-SM-DASHBOARD",
+      "COMP-SM-LIST",
+      "EL-SM-ID",
+      "SCR-SM-DETAIL"
+    ]
   },
   "US-3": {
     "title": "Edit SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
-    "required_across_story": ["EL-SM-EDIT", "MOD-SM-EDIT"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DETAIL"
+    ],
+    "required_across_story": [
+      "EL-SM-EDIT",
+      "MOD-SM-EDIT"
+    ]
   },
   "US-4": {
     "title": "Delete SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
-    "required_across_story": ["EL-SM-DELETE", "MOD-SM-DELETE", "SCR-SM-DASHBOARD"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DETAIL"
+    ],
+    "required_across_story": [
+      "EL-SM-DELETE",
+      "MOD-SM-DELETE",
+      "SCR-SM-DASHBOARD"
+    ]
   },
   "US-5": {
     "title": "SM Dashboard",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DASHBOARD"],
-    "required_across_story": ["COMP-SM-LIST", "EL-SM-SEARCH-BAR", "EL-SM-SEARCH-BTN", "EL-SM-RESET"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DASHBOARD"
+    ],
+    "required_across_story": [
+      "COMP-SM-LIST",
+      "EL-SM-SEARCH-BAR",
+      "EL-SM-SEARCH-BTN",
+      "EL-SM-RESET"
+    ]
   },
   "US-6": {
     "title": "Create Action for SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
-    "required_across_story": ["EL-SM-ADD-ACTION", "MOD-SM-ACTION-CREATE", "COMP-SM-ACTION-LIST"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DETAIL"
+    ],
+    "required_across_story": [
+      "EL-SM-ADD-ACTION",
+      "MOD-SM-ACTION-CREATE",
+      "COMP-SM-ACTION-LIST"
+    ]
   },
   "US-7": {
     "title": "View Action for SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
-    "required_across_story": ["COMP-SM-ACTION-LIST", "EL-SM-ACTION-ID", "SCR-SM-ACTION-DETAIL"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DETAIL"
+    ],
+    "required_across_story": [
+      "COMP-SM-ACTION-LIST",
+      "EL-SM-ACTION-ID",
+      "SCR-SM-ACTION-DETAIL"
+    ]
   },
   "US-8": {
     "title": "Edit Action for SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
-    "required_across_story": ["COMP-SM-ACTION-LIST", "SCR-SM-ACTION-DETAIL", "EL-SM-ACTION-EDIT", "MOD-SM-ACTION-EDIT"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DETAIL"
+    ],
+    "required_across_story": [
+      "COMP-SM-ACTION-LIST",
+      "SCR-SM-ACTION-DETAIL",
+      "EL-SM-ACTION-EDIT",
+      "MOD-SM-ACTION-EDIT"
+    ]
   },
   "US-9": {
     "title": "Delete Action for SM",
-    "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
-    "required_across_story": ["COMP-SM-ACTION-LIST", "SCR-SM-ACTION-DETAIL", "EL-SM-ACTION-DELETE", "MOD-SM-ACTION-DELETE"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "OPT-SM",
+      "SCR-SM-DETAIL"
+    ],
+    "required_across_story": [
+      "COMP-SM-ACTION-LIST",
+      "SCR-SM-ACTION-DETAIL",
+      "EL-SM-ACTION-DELETE",
+      "MOD-SM-ACTION-DELETE"
+    ]
   },
   "US-10": {
     "title": "Create TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DASHBOARD"],
-    "required_across_story": ["EL-TM-CREATE", "MOD-TM-CREATE", "SCR-TM-DETAIL", "COMP-TM-LIST"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DASHBOARD"
+    ],
+    "required_across_story": [
+      "EL-TM-CREATE",
+      "MOD-TM-CREATE",
+      "SCR-TM-DETAIL",
+      "COMP-TM-LIST"
+    ]
   },
   "US-11": {
     "title": "View TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM"],
-    "required_across_story": ["SCR-TM-DASHBOARD", "COMP-TM-LIST", "EL-TM-ID", "SCR-TM-DETAIL"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM"
+    ],
+    "required_across_story": [
+      "SCR-TM-DASHBOARD",
+      "COMP-TM-LIST",
+      "EL-TM-ID",
+      "SCR-TM-DETAIL"
+    ]
   },
   "US-12": {
     "title": "Edit TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DETAIL"],
-    "required_across_story": ["EL-TM-EDIT", "MOD-TM-EDIT"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DETAIL"
+    ],
+    "required_across_story": [
+      "EL-TM-EDIT",
+      "MOD-TM-EDIT"
+    ]
   },
   "US-13": {
     "title": "Delete TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DETAIL"],
-    "required_across_story": ["EL-TM-DELETE", "MOD-TM-DELETE", "SCR-TM-DASHBOARD"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DETAIL"
+    ],
+    "required_across_story": [
+      "EL-TM-DELETE",
+      "MOD-TM-DELETE",
+      "SCR-TM-DASHBOARD"
+    ]
   },
   "US-14": {
     "title": "TM Dashboard",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DASHBOARD"],
-    "required_across_story": ["COMP-TM-LIST", "EL-TM-SEARCH-BTN", "EL-TM-RESET"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DASHBOARD"
+    ],
+    "required_across_story": [
+      "COMP-TM-LIST",
+      "EL-TM-SEARCH-BAR",
+      "EL-TM-SEARCH-BTN",
+      "EL-TM-RESET"
+    ]
   },
   "US-15": {
     "title": "Create Action for TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DETAIL"],
-    "required_across_story": ["EL-TM-ADD-ACTION", "MOD-TM-ACTION-CREATE", "COMP-TM-ACTION-LIST"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DETAIL"
+    ],
+    "required_across_story": [
+      "EL-TM-ADD-ACTION",
+      "MOD-TM-ACTION-CREATE",
+      "COMP-TM-ACTION-LIST"
+    ]
   },
   "US-16": {
     "title": "View Action for TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DETAIL"],
-    "required_across_story": ["COMP-TM-ACTION-LIST", "EL-TM-ACTION-ID", "SCR-TM-ACTION-DETAIL"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DETAIL"
+    ],
+    "required_across_story": [
+      "COMP-TM-ACTION-LIST",
+      "EL-TM-ACTION-ID",
+      "SCR-TM-ACTION-DETAIL"
+    ]
   },
   "US-17": {
     "title": "Edit Action for TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DETAIL"],
-    "required_across_story": ["COMP-TM-ACTION-LIST", "SCR-TM-ACTION-DETAIL", "EL-TM-ACTION-EDIT", "MOD-TM-ACTION-EDIT"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DETAIL"
+    ],
+    "required_across_story": [
+      "COMP-TM-ACTION-LIST",
+      "SCR-TM-ACTION-DETAIL",
+      "EL-TM-ACTION-EDIT",
+      "MOD-TM-ACTION-EDIT"
+    ]
   },
   "US-18": {
     "title": "Delete Action for TM",
-    "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DETAIL"],
-    "required_across_story": ["COMP-TM-ACTION-LIST", "SCR-TM-ACTION-DETAIL", "EL-TM-ACTION-DELETE", "MOD-TM-ACTION-DELETE"]
+    "required_per_testcase": [
+      "CONSOLE-C",
+      "OPT-TM",
+      "SCR-TM-DETAIL"
+    ],
+    "required_across_story": [
+      "COMP-TM-ACTION-LIST",
+      "SCR-TM-ACTION-DETAIL",
+      "EL-TM-ACTION-DELETE",
+      "MOD-TM-ACTION-DELETE"
+    ]
   },
   "US-19": {
     "title": "View Calendar View",
-    "required_per_testcase": ["CONSOLE-S", "OPT-CALENDAR", "SCR-CALENDAR"],
-    "required_across_story": ["EL-CALENDAR-MEETING"]
+    "required_per_testcase": [
+      "CONSOLE-S",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "required_across_story": [
+      "EL-CALENDAR-MEETING",
+      "EL-CALENDAR-ARROW-LEFT",
+      "EL-CALENDAR-ARROW-RIGHT"
+    ]
   },
   "US-20": {
     "title": "Search for other Calendar Views",
-    "required_per_testcase": ["CONSOLE-S", "OPT-CALENDAR", "SCR-CALENDAR"],
-    "required_across_story": ["EL-CALENDAR-SEARCH-BTN"]
+    "required_per_testcase": [
+      "CONSOLE-S",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "required_across_story": [
+      "EL-CALENDAR-SEARCH-BTN"
+    ]
   },
   "US-21": {
     "title": "Drag and Drop Meetings within Calendar View",
-    "required_per_testcase": ["CONSOLE-S", "OPT-CALENDAR", "SCR-CALENDAR"],
-    "required_across_story": ["EL-CALENDAR-MEETING"]
+    "required_per_testcase": [
+      "CONSOLE-S",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "required_across_story": [
+      "EL-CALENDAR-MEETING"
+    ]
   },
   "US-22": {
     "title": "Cancel, Accept or Decline Meetings",
-    "required_per_testcase": ["CONSOLE-S", "OPT-CALENDAR", "SCR-CALENDAR"],
-    "required_across_story": ["EL-CALENDAR-MEETING"]
+    "required_per_testcase": [
+      "CONSOLE-S",
+      "OPT-CALENDAR",
+      "SCR-CALENDAR"
+    ],
+    "required_across_story": [
+      "EL-CALENDAR-MEETING",
+      "EL-CALENDAR-ACCEPT",
+      "EL-CALENDAR-DECLINE",
+      "EL-CALENDAR-CANCEL"
+    ]
   },
   "US-23": {
     "title": "Evaluate Employees",
-    "required_per_testcase": ["CONSOLE-P", "OPT-EVALUATE"],
-    "required_across_story": ["SCR-EVALUATE-DASHBOARD", "EL-EVAL-SEARCH-BTN", "EL-EVAL-EMPLOYEE", "SCR-EVALUATE-DETAIL"]
+    "required_per_testcase": [
+      "CONSOLE-P",
+      "OPT-EVALUATE"
+    ],
+    "required_across_story": [
+      "SCR-EVALUATE-DASHBOARD",
+      "EL-EVAL-LOCATION-FILTER",
+      "EL-EVAL-SEARCH-BTN",
+      "EL-EVAL-EMPLOYEE",
+      "SCR-EVALUATE-DETAIL",
+      "EL-EVAL-SAVE",
+      "EL-EVAL-CANCEL"
+    ]
   },
   "US-24": {
     "title": "View My Evaluations",
-    "required_per_testcase": ["CONSOLE-P", "OPT-MY-EVAL"],
-    "required_across_story": ["SCR-MY-EVAL-DASHBOARD", "EL-MY-EVAL-ID", "SCR-MY-EVAL-DETAIL", "EL-MY-EVAL-APPEAL", "MOD-EVAL-APPEAL"]
+    "required_per_testcase": [
+      "CONSOLE-P",
+      "OPT-MY-EVAL"
+    ],
+    "required_across_story": [
+      "SCR-MY-EVAL-DASHBOARD",
+      "EL-MY-EVAL-ID",
+      "SCR-MY-EVAL-DETAIL",
+      "EL-MY-EVAL-BACK",
+      "EL-MY-EVAL-APPEAL",
+      "MOD-EVAL-APPEAL"
+    ]
   },
   "US-25": {
     "title": "Navigation Bar",
-    "required_per_testcase": ["CONSOLE-O", "CONSOLE-C", "CONSOLE-S", "CONSOLE-P"],
-    "required_across_story": ["OPT-SM", "OPT-TM", "OPT-CALENDAR", "OPT-EVALUATE", "OPT-MY-EVAL", "SCR-SM-DASHBOARD", "SCR-TM-DASHBOARD", "SCR-CALENDAR", "SCR-EVALUATE-DASHBOARD", "SCR-MY-EVAL-DASHBOARD"]
+    "required_per_testcase": [
+      "CONSOLE-O",
+      "CONSOLE-C",
+      "CONSOLE-S",
+      "CONSOLE-P"
+    ],
+    "required_across_story": [
+      "COMP-NAVBAR",
+      "OPT-SM",
+      "OPT-TM",
+      "OPT-CALENDAR",
+      "OPT-EVALUATE",
+      "OPT-MY-EVAL",
+      "SCR-SM-DASHBOARD",
+      "SCR-TM-DASHBOARD",
+      "SCR-CALENDAR",
+      "SCR-EVALUATE-DASHBOARD",
+      "SCR-MY-EVAL-DASHBOARD"
+    ]
   }
 }
