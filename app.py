@@ -126,13 +126,12 @@ if not st.session_state.auth_ok:
     st.stop()
 
 # ======================= MAIN UI =======================
-with st.sidebar:
-    professional_mode = st.toggle(
-        "Professional mode",
-        value=st.session_state.get("professional_mode", False),
-        key="professional_mode",
-        help="Switch between the playful prototype design and a dark professional presentation style.",
-    )
+professional_mode = st.toggle(
+    "Professional mode",
+    value=st.session_state.get("professional_mode", False),
+    key="professional_mode",
+    help="Switch between the playful prototype design and a dark professional presentation style.",
+)
 
 if professional_mode:
     st.markdown("""
@@ -172,13 +171,19 @@ label, p, span, div {
   padding-bottom: 4rem;
 }
 
-[data-testid="stSidebar"] {
-  background: #020617 !important;
-  border-right: 1px solid var(--border-main);
+/* Professional mode toggle, now shown directly inside the app */
+[data-testid="stToggle"] {
+  max-width: 980px;
+  padding: 12px 16px;
+  margin: 0 0 12px 0;
+  border: 1px solid var(--border-main);
+  border-radius: 12px;
+  background: var(--panel-bg);
 }
 
-[data-testid="stSidebar"] * {
+[data-testid="stToggle"] label, [data-testid="stToggle"] p {
   color: var(--text-main) !important;
+  font-weight: 650 !important;
 }
 
 .mock-title {
@@ -308,6 +313,21 @@ else:
     st.markdown("""
 <style>
 .stApp { background: #ccf4f4 !important; }
+
+/* Professional mode toggle, shown directly inside the app */
+[data-testid="stToggle"] {
+  width: 800px;
+  margin: 10px auto 12px auto;
+  padding: 10px 16px;
+  border: 3px solid #000;
+  border-radius: 14px;
+  background: #ffffffcc;
+}
+
+[data-testid="stToggle"] label, [data-testid="stToggle"] p {
+  color: #000 !important;
+  font-weight: 800 !important;
+}
 
 .mock-title {
   margin: 25px auto 30px auto; width: 800px;
