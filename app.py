@@ -126,7 +126,186 @@ if not st.session_state.auth_ok:
     st.stop()
 
 # ======================= MAIN UI =======================
-st.markdown("""
+with st.sidebar:
+    professional_mode = st.toggle(
+        "Professional mode",
+        value=st.session_state.get("professional_mode", False),
+        key="professional_mode",
+        help="Switch between the playful prototype design and a dark professional presentation style.",
+    )
+
+if professional_mode:
+    st.markdown("""
+<style>
+:root {
+  --app-bg: #0f172a;
+  --panel-bg: #111827;
+  --panel-bg-soft: #1f2937;
+  --text-main: #e5e7eb;
+  --text-muted: #94a3b8;
+  --border-main: #334155;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.14);
+  --input-bg: #020617;
+  --button-bg: #2563eb;
+  --button-hover: #1d4ed8;
+  --danger-muted: #7f1d1d;
+  --font-main: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html, body, .stApp, .stAppViewContainer, .main, .block-container,
+.stMarkdown, .stAlert, .stDataFrame, .stForm,
+.stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput,
+.stButton > button, .stDownloadButton > button,
+label, p, span, div {
+  font-family: var(--font-main) !important;
+}
+
+.stApp {
+  background: radial-gradient(circle at top left, #1e293b 0, var(--app-bg) 38%, #020617 100%) !important;
+  color: var(--text-main) !important;
+}
+
+.block-container {
+  max-width: 1180px;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+[data-testid="stSidebar"] {
+  background: #020617 !important;
+  border-right: 1px solid var(--border-main);
+}
+
+[data-testid="stSidebar"] * {
+  color: var(--text-main) !important;
+}
+
+.mock-title {
+  margin: 18px 0 30px 0;
+  width: 100%;
+  max-width: 980px;
+  background: linear-gradient(135deg, #111827, #1e293b);
+  border: 1px solid var(--border-main);
+  border-left: 5px solid var(--accent);
+  border-radius: 14px;
+  text-align: left;
+  font-weight: 750;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  padding: 22px 28px;
+  color: var(--text-main);
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.38);
+}
+
+.mock-title::after {
+  content: "Professional QA Workspace";
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.mock-label {
+  font-weight: 650;
+  font-size: 15px;
+  color: var(--text-main);
+  margin: 20px 0 8px 0;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.field-single, .field-multi {
+  width: 100%;
+  max-width: 980px;
+  margin-left: 0;
+}
+
+.stTextArea textarea,
+.stTextInput input {
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border-main) !important;
+  border-radius: 12px !important;
+  color: var(--text-main) !important;
+  font-size: 16px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.35) !important;
+  line-height: 1.5 !important;
+}
+
+.stTextArea textarea:focus,
+.stTextInput input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+.stTextArea textarea::placeholder,
+.stTextInput input::placeholder {
+  color: #64748b !important;
+}
+
+.singleline textarea {
+  min-height: 64px !important;
+  max-height: 64px !important;
+  resize: none !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+}
+
+.export-wrap { margin: 30px 0; }
+.export-wrap .stButton > button,
+.stButton > button {
+  background: var(--button-bg) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(147, 197, 253, 0.25) !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  padding: 0.75rem 1.1rem !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22) !important;
+}
+
+.export-wrap .stButton > button:hover,
+.stButton > button:hover {
+  background: var(--button-hover) !important;
+  border-color: var(--accent) !important;
+}
+
+.export-wrap .stButton > button:disabled,
+.stButton > button:disabled {
+  background: #334155 !important;
+  color: #94a3b8 !important;
+  border-color: #475569 !important;
+  box-shadow: none !important;
+}
+
+.stDownloadButton > button {
+  background: #0f172a !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-main) !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  padding: 0.7rem 1rem !important;
+}
+
+.stCaption, [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {
+  color: var(--text-muted) !important;
+}
+
+hr { border-color: var(--border-main) !important; }
+
+[data-testid="stDataFrame"], .stDataFrame {
+  border: 1px solid var(--border-main) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+</style>
+""", unsafe_allow_html=True)
+else:
+    st.markdown("""
 <style>
 .stApp { background: #ccf4f4 !important; }
 
