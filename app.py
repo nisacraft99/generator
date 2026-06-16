@@ -1089,15 +1089,18 @@ def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
     return found
 
 
-def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
+def extract_actual_nav_path(tc: Dict[str, Any], allow_text_inference: bool = False) -> List[str]:
     """
     Extracts a normalized actual navigation path from generated test cases.
 
-    Fix for overlong actual paths:
-    - If a step contains a valid explicit ui_node_id, use that ID only.
-    - Infer nodes from text only when the step has no valid explicit ui_node_id.
-    - This prevents broad text matches like "delete" from adding unrelated SM action,
-      TM and TM action delete nodes.
+    For Navigation Correctness, the default is intentionally strict:
+    - valid explicit ui_node_id values are used as the primary evidence;
+    - text-based inference is disabled by default, because it can make outputs
+      without UI context look more structured than they actually are.
+
+    This means Navigation Correctness measures whether the generator produced
+    a machine-checkable navigation path through known UI nodes, not merely
+    whether a target screen/button/popup was mentioned in natural language.
     """
     path: List[str] = []
     valid_ids = _node_ids()
@@ -1127,8 +1130,10 @@ def extract_actual_nav_path(tc: Dict[str, Any]) -> List[str]:
         if explicit and explicit != "LOGIN" and str(explicit) in valid_ids:
             # Explicit model-provided node ID is authoritative for this step.
             candidates.append(str(explicit))
-        else:
-            # Conservative fallback only when no valid explicit node exists.
+        elif allow_text_inference:
+            # Optional fallback for exploratory debugging only.
+            # It is not used for the main Navigation Correctness metric because
+            # natural-language matching cannot reliably prove a meaningful path.
             candidates.extend(infer_nodes_from_step_text(step_text, expected_text))
 
         for node in candidates:
@@ -1388,7 +1393,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
                 actual_union.append(n)
 
     for tc in cases:
-        actual = extract_actual_nav_path(tc)
+        actual = extract_actual_nav_path(tc, allow_text_inference=False)
         neg_mode = navigation_negative_mode(tc)
 
         # If the test case actually visits navigation nodes, evaluate it normally
@@ -1486,7 +1491,9 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
 
         can_evaluate = bool(actual) and bool(required_nodes)
         module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
-        required_ok = all(node in actual for node in required_nodes)
+        required_present_ok = all(node in actual for node in required_nodes)
+        required_order_ok = _is_ordered_subsequence(required_nodes, actual)
+        required_ok = required_present_ok and required_order_ok
 
         forbidden_hit = any(node in actual for node in forbidden_nodes)
         denial_ok = _target_access_denial_ok(target) and _contains_denial_language(tc)
@@ -1514,6 +1521,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "forbidden_nodes": forbidden_nodes,
             "forbidden_hit": forbidden_hit,
             "denial_ok": denial_ok,
+            "order_ok": required_order_ok,
             "match_score": round((len(required_nodes) - len(missing_nodes)) / len(required_nodes), 2) if required_nodes else 0.0,
             "skip_reason": "" if can_evaluate else "No actual navigation nodes extracted or no per-testcase target defined"
         })
@@ -1638,15 +1646,150 @@ def evaluate_role_coverage(story: str, ac_blob: str, cases: List[Dict[str, Any]]
         "missing_roles": missing
     }
 
-def _navigation_not_evaluated_without_ui() -> Dict[str, Any]:
+
+
+def _is_ordered_subsequence(expected: List[str], actual: List[str]) -> bool:
+    """True if all expected node IDs appear in actual in the same order."""
+    if not expected:
+        return True
+    pos = 0
+    for node in actual:
+        if pos < len(expected) and node == expected[pos]:
+            pos += 1
+    return pos == len(expected)
+
+
+def _navigation_path_not_evaluated_without_ui() -> Dict[str, Any]:
     return {
         "correctness_pct": None,
         "correct_count": None,
         "evaluated_count": None,
         "skipped_count": None,
         "details": [],
-        "note": "Navigation Correctness is only evaluated for outputs generated with UI context."
+        "note": (
+            "Navigation Path Correctness is only evaluated for outputs generated with UI context, "
+            "because only those outputs are expected to contain explicit ui_node_id paths. "
+            "Outputs without UI context are still evaluated for Target Node Coverage."
+        )
     }
+
+
+def _target_nodes_from_ref(ref: Dict[str, Any]) -> List[str]:
+    """Returns the target nodes that should be hit somewhere in the generated output."""
+    if not isinstance(ref, dict):
+        return []
+
+    # Preferred current format: story-level target nodes.
+    required_across_story = _norm_list(ref.get("required_across_story"))
+    if required_across_story:
+        return required_across_story
+
+    # Backward compatibility for older target formats.
+    targets = ref.get("targets", [])
+    nodes: List[str] = []
+
+    def add_many(values: List[str]):
+        for node in values:
+            if node not in nodes:
+                nodes.append(node)
+
+    if isinstance(targets, list):
+        if all(isinstance(x, str) for x in targets):
+            add_many([str(x) for x in targets])
+        elif all(isinstance(x, list) for x in targets):
+            for group in targets:
+                add_many([str(x) for x in group])
+        elif all(isinstance(x, dict) for x in targets):
+            for target in targets:
+                add_many(_target_required_nodes(target))
+
+    return nodes
+
+
+def _extract_node_union_from_cases(cases: List[Dict[str, Any]], allow_text_inference: bool) -> List[str]:
+    """Collects all UI nodes that appear in generated test cases."""
+    union: List[str] = []
+    for tc in cases:
+        # Avoid counting denied-access tests as if they really reached the target.
+        if navigation_negative_mode(tc) != "none":
+            continue
+        actual = extract_actual_nav_path(tc, allow_text_inference=allow_text_inference)
+        for node in actual:
+            if node not in union:
+                union.append(node)
+    return union
+
+
+def evaluate_target_node_coverage(
+    us_id_value: str,
+    cases: List[Dict[str, Any]],
+    allow_text_inference: bool = True,
+) -> Dict[str, Any]:
+    """
+    Evaluates whether the expected target nodes are hit somewhere in the output.
+
+    This metric is calculated for BOTH variants:
+    - with UI context: explicit ui_node_id values are used, with text inference as fallback;
+    - without UI context: text inference is used to approximate whether the generated natural-language
+      test cases mention/reach the expected target nodes.
+
+    Important: this only checks whether the target nodes are hit. It does NOT prove that the full
+    navigation path to the target is correct. That is handled separately by Navigation Path Correctness.
+    """
+    ref = find_navigation_targets(us_id_value)
+    if not ref:
+        return {
+            "coverage_pct": None,
+            "covered_count": None,
+            "total_count": None,
+            "actual_nodes": [],
+            "expected_nodes": [],
+            "missing_nodes": [],
+            "details": [],
+            "note": f"No target nodes found for {us_id_value}"
+        }
+
+    expected_nodes = _target_nodes_from_ref(ref)
+    if not expected_nodes:
+        return {
+            "coverage_pct": None,
+            "covered_count": None,
+            "total_count": None,
+            "actual_nodes": [],
+            "expected_nodes": [],
+            "missing_nodes": [],
+            "details": [],
+            "note": f"No target node definitions found for {us_id_value}"
+        }
+
+    actual_nodes = _extract_node_union_from_cases(cases, allow_text_inference=allow_text_inference)
+    covered_nodes = [node for node in expected_nodes if node in actual_nodes]
+    missing_nodes = [node for node in expected_nodes if node not in actual_nodes]
+    pct = round((len(covered_nodes) / len(expected_nodes)) * 100, 2) if expected_nodes else None
+
+    name_map = _node_name_map()
+    details = [
+        {
+            "node_id": node,
+            "node_name": name_map.get(node, node),
+            "covered": node in covered_nodes,
+        }
+        for node in expected_nodes
+    ]
+
+    return {
+        "coverage_pct": pct,
+        "covered_count": len(covered_nodes),
+        "total_count": len(expected_nodes),
+        "actual_nodes": actual_nodes,
+        "expected_nodes": expected_nodes,
+        "missing_nodes": missing_nodes,
+        "details": details,
+        "note": None,
+    }
+def _navigation_not_evaluated_without_ui() -> Dict[str, Any]:
+    # Backward-compatible alias; the UI now labels this metric as Navigation Path Correctness.
+    return _navigation_path_not_evaluated_without_ui()
 
 
 def evaluate_all(
@@ -1657,11 +1800,22 @@ def evaluate_all(
     use_ui_context: bool = True,
     use_llm_judge: bool = False,
 ) -> Dict[str, Any]:
-    navigation = (
+    # Target Node Coverage is calculated for both variants. It answers:
+    # "Were the expected target nodes hit anywhere in the generated output?"
+    target_node = evaluate_target_node_coverage(
+        us_id_value=us_id_value,
+        cases=cases,
+        allow_text_inference=True,
+    )
+
+    # Navigation Path Correctness is calculated only for the with-UI-context variant.
+    # It answers: "Was the structured UI-node path to the target correct?"
+    navigation_path = (
         evaluate_navigation_correctness(us_id_value, cases, story)
         if use_ui_context
-        else _navigation_not_evaluated_without_ui()
+        else _navigation_path_not_evaluated_without_ui()
     )
+
     ac_llm = (
         evaluate_ac_coverage_llm(us_id_value, cases, ac_blob)
         if use_llm_judge
@@ -1673,9 +1827,13 @@ def evaluate_all(
     return {
         "ac": evaluate_ac_coverage(us_id_value, cases),
         "ac_llm": ac_llm,
-        "navigation": navigation,
+        "target_node": target_node,
+        "navigation_path": navigation_path,
+        # Backward-compatible alias for older UI/PDF sections.
+        "navigation": navigation_path,
         "role": evaluate_role_coverage(story, ac_blob, cases)
     }
+
 
 
 
@@ -1769,13 +1927,16 @@ def _metric_or_none(evaluation: Dict[str, Any], section: str, key: str) -> Optio
         return None
 
 
-def _overall_score(ac_pct: Optional[float], role_pct: Optional[float], nav_pct: Optional[float]) -> Optional[float]:
+def _overall_score(ac_pct: Optional[float], role_pct: Optional[float], target_pct: Optional[float], nav_path_pct: Optional[float]) -> Optional[float]:
     """
     Simple combined score for a run.
     It averages all available metric percentages.
-    Navigation is often N/A without UI context; in that case it is not included.
+
+    Both variants include AC Coverage, Role Coverage and Target Node Coverage.
+    Only the with-UI-context variant additionally includes Navigation Path Correctness,
+    because only that variant is expected to provide explicit ui_node_id paths.
     """
-    values = [v for v in [ac_pct, role_pct, nav_pct] if v is not None]
+    values = [v for v in [ac_pct, role_pct, target_pct, nav_path_pct] if v is not None]
     if not values:
         return None
     return round(sum(values) / len(values), 2)
@@ -1833,7 +1994,8 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                     ac_pct  = _metric_or_none(evaluation, "ac", "overall_pct")
                     ac_llm_pct = _metric_or_none(evaluation, "ac_llm", "overall_pct")
                     role_pct = _metric_or_none(evaluation, "role", "overall_pct")
-                    nav_pct  = _metric_or_none(evaluation, "navigation", "correctness_pct")
+                    target_pct = _metric_or_none(evaluation, "target_node", "coverage_pct")
+                    nav_pct  = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
 
                     runs_store[run_key] = {
                         "item": item,
@@ -1855,8 +2017,10 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                         "ac_coverage_pct": ac_pct,
                         "ac_llm_coverage_pct": ac_llm_pct,
                         "role_coverage_pct": role_pct,
+                        "target_node_coverage_pct": target_pct,
+                        "navigation_path_correctness_pct": nav_pct,
                         "navigation_correctness_pct": nav_pct,
-                        "overall_score_pct": _overall_score(ac_pct, role_pct, nav_pct),
+                        "overall_score_pct": _overall_score(ac_pct, role_pct, target_pct, nav_pct),
                         "open_questions_count": len(open_q or []),
                         "error": "",
                     })
@@ -1874,6 +2038,8 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                         "ac_coverage_pct": None,
                         "ac_llm_coverage_pct": None,
                         "role_coverage_pct": None,
+                        "target_node_coverage_pct": None,
+                        "navigation_path_correctness_pct": None,
                         "navigation_correctness_pct": None,
                         "overall_score_pct": None,
                         "open_questions_count": 0,
@@ -1899,6 +2065,10 @@ def summarize_bulk_results(results_df: pd.DataFrame) -> pd.DataFrame:
         std_ac_coverage_pct=("ac_coverage_pct", "std"),
         avg_role_coverage_pct=("role_coverage_pct", "mean"),
         std_role_coverage_pct=("role_coverage_pct", "std"),
+        avg_target_node_coverage_pct=("target_node_coverage_pct", "mean"),
+        std_target_node_coverage_pct=("target_node_coverage_pct", "std"),
+        avg_navigation_path_correctness_pct=("navigation_path_correctness_pct", "mean"),
+        std_navigation_path_correctness_pct=("navigation_path_correctness_pct", "std"),
         avg_navigation_correctness_pct=("navigation_correctness_pct", "mean"),
         std_navigation_correctness_pct=("navigation_correctness_pct", "std"),
         avg_overall_score_pct=("overall_score_pct", "mean"),
@@ -1922,6 +2092,8 @@ def summarize_bulk_by_user_story(results_df: pd.DataFrame) -> pd.DataFrame:
         avg_testcase_count=("testcase_count", "mean"),
         avg_ac_coverage_pct=("ac_coverage_pct", "mean"),
         avg_role_coverage_pct=("role_coverage_pct", "mean"),
+        avg_target_node_coverage_pct=("target_node_coverage_pct", "mean"),
+        avg_navigation_path_correctness_pct=("navigation_path_correctness_pct", "mean"),
         avg_navigation_correctness_pct=("navigation_correctness_pct", "mean"),
         avg_overall_score_pct=("overall_score_pct", "mean"),
         failed_runs=("error", lambda values: sum(bool(str(v).strip()) for v in values)),
@@ -1982,13 +2154,15 @@ def build_pdf(
     if evaluation:
         flow.append(Paragraph("<b>Automated Evaluation</b>", head))
         ac_value = "N/A" if evaluation["ac"]["overall_pct"] is None else f"{evaluation['ac']['covered_count']}/{evaluation['ac']['total_count']} ({evaluation['ac']['overall_pct']}%)"
-        nav_corr_value = "N/A" if evaluation["navigation"]["correctness_pct"] is None else f"{evaluation['navigation']['correct_count']}/{evaluation['navigation']['evaluated_count']} ({evaluation['navigation']['correctness_pct']}%)"
+        target_value = "N/A" if evaluation.get("target_node", {}).get("coverage_pct") is None else f"{evaluation['target_node']['covered_count']}/{evaluation['target_node']['total_count']} ({evaluation['target_node']['coverage_pct']}%)"
+        nav_corr_value = "N/A" if evaluation["navigation_path"]["correctness_pct"] is None else f"{evaluation['navigation_path']['correct_count']}/{evaluation['navigation_path']['evaluated_count']} ({evaluation['navigation_path']['correctness_pct']}%)"
         role_value = "N/A" if evaluation["role"]["overall_pct"] is None else f"{evaluation['role']['covered_count']}/{evaluation['role']['total_count']} ({evaluation['role']['overall_pct']}%)"
 
         rows = [
             ["Metric", "Value"],
             ["AC Coverage", ac_value],
-            ["Navigation Correctness", nav_corr_value],
+            ["Target Node Coverage", target_value],
+            ["Navigation Path Correctness", nav_corr_value],
             ["Role Coverage", role_value],
             ["Test Cases", str(len(cases))]
         ]
@@ -2098,13 +2272,21 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
     st.subheader(header)
 
     ac_metric  = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
-    nav_metric = "N/A" if ev["navigation"]["correctness_pct"] is None else f"{ev['navigation']['correctness_pct']}%"
+    target_metric = "N/A" if ev.get("target_node", {}).get("coverage_pct") is None else f"{ev['target_node']['coverage_pct']}%"
+    nav_metric = "N/A" if ev["navigation_path"]["correctness_pct"] is None else f"{ev['navigation_path']['correctness_pct']}%"
     role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("AC Coverage (Keyword)", ac_metric)
-    c2.metric("Navigation Correctness", nav_metric)
-    c3.metric("Role Coverage", role_metric)
+    c2.metric("Target Node Coverage", target_metric)
+    c3.metric("Navigation Path Correctness", nav_metric)
+    c4.metric("Role Coverage", role_metric)
+
+    if ev.get("navigation_path", {}).get("correctness_pct") is None:
+        st.caption(
+            "Target Node Coverage is evaluated for both variants. Navigation Path Correctness is shown as N/A "
+            "for outputs generated without UI context, because those outputs do not provide reliable explicit ui_node_id paths."
+        )
 
     ac_llm = ev.get("ac_llm", {})
     if ac_llm.get("overall_pct") is not None:
@@ -2130,15 +2312,31 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
                 st.write(f"{icon} **{d['ac_id']}:** {d['ac_text']}")
                 st.caption(f"→ {d['reason']}")
 
-    # Navigation details
-    if ev["navigation"].get("note"):
-        st.warning(ev["navigation"]["note"])
+    # Target node details
+    target_node = ev.get("target_node", {})
+    if target_node.get("note"):
+        st.warning(target_node["note"])
     else:
-        nav = ev["navigation"]
+        st.write(f"**Target Node Coverage:** {target_node['covered_count']}/{target_node['total_count']}")
+        with st.expander("Target node details"):
+            name_map = _node_name_map()
+            st.caption("This checks whether expected target nodes are hit somewhere in the generated output. It does not check whether the full path to those targets is correct.")
+            for d in target_node.get("details", []):
+                icon = "✅" if d.get("covered") else "❌"
+                st.write(f"{icon} **{d.get('node_id')}** — {d.get('node_name')}")
+            if target_node.get("missing_nodes"):
+                missing_names = [name_map.get(n, n) for n in target_node["missing_nodes"]]
+                st.caption(f"Missing target nodes: {' → '.join(missing_names)}")
+
+    # Navigation details
+    if ev["navigation_path"].get("note"):
+        st.warning(ev["navigation_path"]["note"])
+    else:
+        nav = ev["navigation_path"]
         skipped = nav.get("skipped_count") or 0
         skip_note = f" ({skipped} skipped)" if skipped else ""
-        st.write(f"**Navigation Correctness:** {nav['correct_count']}/{nav['evaluated_count']}{skip_note}")
-        with st.expander("Navigation details"):
+        st.write(f"**Navigation Path Correctness:** {nav['correct_count']}/{nav['evaluated_count']}{skip_note}")
+        with st.expander("Navigation path details"):
             for d in nav.get("details", []):
                 icon = "✅" if d.get("is_correct") else "❌"
                 tc_id = d["tc_id"]
@@ -2562,7 +2760,8 @@ if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_d
             if "avg_ac_llm_coverage_pct" in with_ui.index:
                 st.metric("AC Coverage (LLM Judge)", _fmt_pct(with_ui["avg_ac_llm_coverage_pct"]))
             st.metric("Role Coverage", _fmt_pct(with_ui["avg_role_coverage_pct"]))
-            st.metric("Navigation Correctness", _fmt_pct(with_ui["avg_navigation_correctness_pct"]))
+            st.metric("Target Node Coverage", _fmt_pct(with_ui["avg_target_node_coverage_pct"]))
+            st.metric("Navigation Path Correctness", _fmt_pct(with_ui["avg_navigation_path_correctness_pct"]))
             st.metric("Overall Score", _fmt_pct(with_ui["avg_overall_score_pct"]))
         else:
             st.warning("No results for with_ui_context.")
@@ -2574,10 +2773,18 @@ if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_d
             if "avg_ac_llm_coverage_pct" in without_ui.index:
                 st.metric("AC Coverage (LLM Judge)", _fmt_pct(without_ui["avg_ac_llm_coverage_pct"]))
             st.metric("Role Coverage", _fmt_pct(without_ui["avg_role_coverage_pct"]))
-            st.metric("Navigation Correctness", _fmt_pct(without_ui["avg_navigation_correctness_pct"]))
+            st.metric("Target Node Coverage", _fmt_pct(without_ui["avg_target_node_coverage_pct"]))
+            st.metric("Navigation Path Correctness", _fmt_pct(without_ui["avg_navigation_path_correctness_pct"]))
+            st.caption("Navigation Path Correctness is N/A here: without UI context, no explicit ui_node_id path is generated. Target Node Coverage is still evaluated for both variants.")
             st.metric("Overall Score", _fmt_pct(without_ui["avg_overall_score_pct"]))
         else:
             st.warning("No results for without_ui_context.")
+
+    st.info(
+        "Overall Score is calculated as the average of the available metrics. "
+        "Both variants include AC Coverage, Target Node Coverage and Role Coverage. "
+        "The with-UI-context variant additionally includes Navigation Path Correctness, because it provides explicit ui_node_id paths."
+    )
 
     st.markdown("### Summary table")
     st.dataframe(st.session_state.bulk_summary_df, use_container_width=True)
@@ -2650,14 +2857,16 @@ if "bulk_runs_store" in st.session_state and st.session_state.bulk_runs_store:
 
             # Show quick metrics
             ac_pct  = _metric_or_none(evaluation, "ac", "overall_pct")
-            nav_pct = _metric_or_none(evaluation, "navigation", "correctness_pct")
+            target_pct = _metric_or_none(evaluation, "target_node", "coverage_pct")
+            nav_pct = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
             role_pct = _metric_or_none(evaluation, "role", "overall_pct")
 
-            mc1, mc2, mc3, mc4 = st.columns(4)
+            mc1, mc2, mc3, mc4, mc5 = st.columns(5)
             mc1.metric("Test Cases", len(cases))
             mc2.metric("AC Coverage", f"{ac_pct}%" if ac_pct is not None else "N/A")
-            mc3.metric("Navigation", f"{nav_pct}%" if nav_pct is not None else "N/A")
-            mc4.metric("Role Coverage", f"{role_pct}%" if role_pct is not None else "N/A")
+            mc3.metric("Target Nodes", f"{target_pct}%" if target_pct is not None else "N/A")
+            mc4.metric("Nav Path", f"{nav_pct}%" if nav_pct is not None else "N/A")
+            mc5.metric("Role Coverage", f"{role_pct}%" if role_pct is not None else "N/A")
 
             pdf_bytes = build_pdf(
                 story_text=item["story"],
