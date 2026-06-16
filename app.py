@@ -408,11 +408,29 @@ AC_KEYWORDS_PATH = "ac_keywords.json"
 BULK_USERSTORIES_PATH = "bulk_userstories.json"
 
 def load_json_file(path: str, default: Any):
+    """Load a JSON file from the app folder.
+
+    The canonical names are ui_context.json, navigation_targets.json, ac_keywords.json and
+    bulk_userstories.json. For local experiments and ChatGPT-uploaded files, this also accepts
+    suffixed copies such as navigation_targets(4).json and picks the newest matching file.
+    """
+    candidate_paths = [path]
+    base, ext = os.path.splitext(path)
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        same_dir = os.listdir(".")
+        suffixed = [name for name in same_dir if name.startswith(base + "(") and name.endswith(ext)]
+        suffixed.sort(key=lambda name: os.path.getmtime(name), reverse=True)
+        candidate_paths.extend(suffixed)
     except Exception:
-        return default
+        pass
+
+    for candidate in candidate_paths:
+        try:
+            with open(candidate, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            continue
+    return default
 
 UI_CONTEXT = load_json_file(UI_CONTEXT_PATH, {})
 NAV_TARGETS = load_json_file(NAV_TARGETS_PATH, {})
@@ -1669,30 +1687,43 @@ def _navigation_path_not_evaluated_without_ui() -> Dict[str, Any]:
         "note": (
             "Navigation Path Correctness is only evaluated for outputs generated with UI context, "
             "because only those outputs are expected to contain explicit ui_node_id paths. "
-            "Outputs without UI context are still evaluated for Target Node Coverage."
+            "Outputs without UI context are still evaluated for Target Node Coverage against all required targets."
         )
     }
 
 
 def _target_nodes_from_ref(ref: Dict[str, Any]) -> List[str]:
-    """Returns the target nodes that should be hit somewhere in the generated output."""
+    """Returns ALL required target nodes that should be hit somewhere in the generated output.
+
+    Current navigation_targets.json format uses two lists:
+    - required_per_testcase: base navigation nodes that should appear in each evaluable test case
+      (for example console -> module -> dashboard/detail screen)
+    - required_across_story: feature-specific target nodes that should appear at least once across
+      the generated test cases of the user story
+
+    Target Node Coverage intentionally evaluates the union of BOTH lists, because the metric answers:
+    "Were all required target nodes hit?" It does not only check required_across_story.
+    """
     if not isinstance(ref, dict):
         return []
 
-    # Preferred current format: story-level target nodes.
-    required_across_story = _norm_list(ref.get("required_across_story"))
-    if required_across_story:
-        return required_across_story
-
-    # Backward compatibility for older target formats.
-    targets = ref.get("targets", [])
     nodes: List[str] = []
 
     def add_many(values: List[str]):
         for node in values:
-            if node not in nodes:
+            node = str(node).strip()
+            if node and node not in nodes:
                 nodes.append(node)
 
+    # Preferred current two-level format: include ALL required targets.
+    add_many(_norm_list(ref.get("required_per_testcase")))
+    add_many(_norm_list(ref.get("required_across_story")))
+
+    if nodes:
+        return nodes
+
+    # Backward compatibility for older target formats.
+    targets = ref.get("targets", [])
     if isinstance(targets, list):
         if all(isinstance(x, str) for x in targets):
             add_many([str(x) for x in targets])
@@ -1726,7 +1757,11 @@ def evaluate_target_node_coverage(
     allow_text_inference: bool = True,
 ) -> Dict[str, Any]:
     """
-    Evaluates whether the expected target nodes are hit somewhere in the output.
+    Evaluates whether ALL expected required target nodes are hit somewhere in the output.
+
+    In the current navigation_targets.json format this includes both:
+    - required_per_testcase
+    - required_across_story
 
     This metric is calculated for BOTH variants:
     - with UI context: explicit ui_node_id values are used, with text inference as fallback;
@@ -1759,7 +1794,7 @@ def evaluate_target_node_coverage(
             "expected_nodes": [],
             "missing_nodes": [],
             "details": [],
-            "note": f"No target node definitions found for {us_id_value}"
+            "note": f"No required target node definitions found for {us_id_value}"
         }
 
     actual_nodes = _extract_node_union_from_cases(cases, allow_text_inference=allow_text_inference)
@@ -1801,7 +1836,7 @@ def evaluate_all(
     use_llm_judge: bool = False,
 ) -> Dict[str, Any]:
     # Target Node Coverage is calculated for both variants. It answers:
-    # "Were the expected target nodes hit anywhere in the generated output?"
+    # "Were ALL required targets (required_per_testcase + required_across_story) hit anywhere in the generated output?"
     target_node = evaluate_target_node_coverage(
         us_id_value=us_id_value,
         cases=cases,
@@ -2284,7 +2319,7 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
 
     if ev.get("navigation_path", {}).get("correctness_pct") is None:
         st.caption(
-            "Target Node Coverage is evaluated for both variants. Navigation Path Correctness is shown as N/A "
+            "Target Node Coverage is evaluated for both variants and includes required_per_testcase plus required_across_story. Navigation Path Correctness is shown as N/A "
             "for outputs generated without UI context, because those outputs do not provide reliable explicit ui_node_id paths."
         )
 
