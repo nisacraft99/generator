@@ -516,7 +516,7 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 
     try:
         resp = client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model="gpt-5.6-terra",
             temperature=1,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -698,7 +698,7 @@ def evaluate_ac_coverage(
         }
         try:
             resp = client.chat.completions.create(
-                model="gpt-5.4-mini",
+                model="gpt-5.6-luna",
                 temperature=0,
                 max_completion_tokens=150,
                 messages=[
