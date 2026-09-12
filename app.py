@@ -1445,17 +1445,21 @@ def extract_required_roles(story: str, ac_blob: str) -> List[str]:
     return sorted(found)
 
 def step_implies_role(step_text: str, expected_text: str, role: str) -> bool:
+    """Return True when a generated step explicitly refers to a user role.
+
+    Accepts natural English articles, e.g. "Log in as a Manager" and
+    "Log in as an Agent". The previous implementation only handled
+    "as a <role>", so grammatically correct "as an Agent" was missed.
+    """
     combined = normalize_text(f"{step_text} {expected_text}")
+    role_re = re.escape(role.lower())
     patterns = [
-        f"login as {role}",
-        f"logged in as {role}",
-        f"login with {role}",
-        f"log in as {role}",
-        f"log in with {role}",
-        f"as a {role}",
-        f"as {role}",
+        rf"\blogin\s+(?:as|with)\s+(?:(?:a|an)\s+)?{role_re}\b",
+        rf"\blog\s+in\s+(?:as|with)\s+(?:(?:a|an)\s+)?{role_re}\b",
+        rf"\blogged\s+in\s+as\s+(?:(?:a|an)\s+)?{role_re}\b",
+        rf"\bas\s+(?:(?:a|an)\s+)?{role_re}\b",
     ]
-    return any(p in combined for p in patterns)
+    return any(re.search(pattern, combined) for pattern in patterns)
 
 def extract_generated_roles(cases: List[Dict[str, Any]]) -> List[str]:
     found = set()
@@ -1984,15 +1988,30 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                 progress.progress(done / total_runs)
 
                 if run_state.get("complete") and run_state.get("row") and run_state.get("evaluation"):
+                    # Recompute the deterministic Role Coverage from the saved test cases.
+                    # This is free (no API call) and also repairs checkpoints created with
+                    # older role-matching logic, e.g. where "as an Agent" was missed.
+                    saved_cases = run_state.get("cases", []) or []
+                    refreshed_role = evaluate_role_coverage(item["story"], item["ac_blob"], saved_cases)
+                    run_state["evaluation"]["role"] = refreshed_role
+                    run_state["row"]["role_coverage_pct"] = refreshed_role.get("overall_pct")
+                    run_state["row"]["overall_score_pct"] = _overall_score(
+                        run_state["row"].get("ac_coverage_pct"),
+                        refreshed_role.get("overall_pct"),
+                        run_state["row"].get("target_node_coverage_pct"),
+                        run_state["row"].get("navigation_path_correctness_pct"),
+                    )
+                    _save_bulk_checkpoint(checkpoint_path, checkpoint)
+
                     status.write(
-                        f"Resume {done}/{total_runs}: {item['id']} — {variant_name} — repetition {rep}/{repetitions} — already complete, skipped"
+                        f"Resume {done}/{total_runs}: {item['id']} — {variant_name} — repetition {rep}/{repetitions} — already complete, reused; local metrics refreshed"
                     )
                     rows.append(run_state["row"])
                     runs_store[run_key] = {
                         "item": item,
                         "variant": variant_name,
                         "rep": rep,
-                        "cases": run_state.get("cases", []),
+                        "cases": saved_cases,
                         "open_q": run_state.get("open_q", []),
                         "evaluation": run_state.get("evaluation"),
                     }
