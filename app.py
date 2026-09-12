@@ -586,19 +586,26 @@ def testcase_full_text(tc: Dict[str, Any]) -> str:
 
 # ======================= LLM-AS-A-JUDGE AC EVALUATION =======================
 
-LLM_JUDGE_SYSTEM_PROMPT = """
-You are a QA expert evaluating test coverage.
-You receive one acceptance criterion and a set of generated test cases.
-Decide whether the test cases adequately cover the acceptance criterion.
+AC_JUDGE_VERSION = "strict_v2"
 
-Rules:
-- Semantic equivalence counts as covered (e.g. "screen is displayed" covers "redirect").
-- The criterion does not need to be word-for-word in the test cases.
-- If at least one test case addresses the criterion's intent, mark it as covered.
+LLM_JUDGE_SYSTEM_PROMPT = """
+You are a strict QA expert evaluating acceptance-criterion coverage.
+You receive exactly one acceptance criterion and a set of generated manual test cases.
+Decide whether the acceptance criterion is actually TESTED by the generated test cases.
+
+Coverage rules:
+- Mark covered=true only if at least one test case explicitly exercises the essential condition/action of the acceptance criterion AND verifies the relevant expected behavior, restriction, or outcome.
+- A title, keyword, paraphrase, setup statement, or mere mention of the requirement is NOT enough by itself.
+- Do not infer missing test actions or expected results from context.
+- Semantic equivalence is allowed; wording does not need to match exactly.
+- For permission criteria, the specified role must be used and the allowed/denied behavior must be verified.
+- For validation, limit, date, field, or boundary criteria, the relevant rule/constraint must actually be exercised and an expected outcome asserted.
+- If the generated tests only partially address the criterion, mark covered=false.
+- Judge only coverage of this acceptance criterion; do not reward general test quality.
 - Return ONLY valid JSON, no markdown, no prose.
 
 Output schema:
-{"covered": true | false, "reason": "one sentence explanation"}
+{"covered": true | false, "reason": "one concise sentence explaining the concrete evidence or what is missing"}
 """
 
 def evaluate_ac_coverage(
@@ -650,7 +657,9 @@ def evaluate_ac_coverage(
     judge_cache: Dict[str, Any] = {}
     if bulk_checkpoint_state is not None and bulk_run_key:
         run_state = bulk_checkpoint_state.setdefault("runs", {}).setdefault(bulk_run_key, {})
-        judge_cache = run_state.setdefault("ac_judge", {}).setdefault("details", {})
+        ac_judge_state = run_state.setdefault("ac_judge", {})
+        ac_judge_state["judge_version"] = AC_JUDGE_VERSION
+        judge_cache = ac_judge_state.setdefault("details", {})
 
     details: List[Dict[str, Any]] = []
     covered_count = 0
@@ -660,8 +669,15 @@ def evaluate_ac_coverage(
         ac_id = f"AC-{idx}"
         cached = judge_cache.get(ac_id) if judge_cache else None
 
-        # Reuse only a completed judge result. Failed/incomplete results are retried.
-        if isinstance(cached, dict) and cached.get("status") == "complete":
+        # Reuse only results produced by the CURRENT strict judge definition.
+        # Older cached judgements are intentionally re-judged, but the generated
+        # test cases themselves are reused, so no generation call is repeated.
+        if (
+            isinstance(cached, dict)
+            and cached.get("status") == "complete"
+            and cached.get("judge_version") == AC_JUDGE_VERSION
+            and cached.get("ac_text") == ac_line
+        ):
             covered = bool(cached.get("covered", False))
             reason = str(cached.get("reason", ""))
             detail = {
@@ -701,6 +717,7 @@ def evaluate_ac_coverage(
             if judge_cache is not None:
                 judge_cache[ac_id] = {
                     "status": "complete",
+                    "judge_version": AC_JUDGE_VERSION,
                     "ac_text": ac_line,
                     "covered": covered,
                     "reason": reason,
@@ -734,6 +751,7 @@ def evaluate_ac_coverage(
             if judge_cache is not None:
                 judge_cache[ac_id] = {
                     "status": "failed",
+                    "judge_version": AC_JUDGE_VERSION,
                     "ac_text": ac_line,
                     "covered": None,
                     "reason": reason,
@@ -987,17 +1005,18 @@ def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
 
 
 def extract_actual_nav_path(tc: Dict[str, Any], allow_text_inference: bool = False) -> List[str]:
-    """
-    Extracts a normalized actual navigation path from generated test cases.
+    """Return the navigation nodes that are ACTUALLY present in the generated steps.
 
-    For Navigation Correctness, the default is intentionally strict:
-    - valid explicit ui_node_id values are used as the primary evidence;
-    - text-based inference is disabled by default, because it can make outputs
-      without UI context look more structured than they actually are.
+    Main-evaluation behavior is deliberately strict:
+    - only explicit, valid ``ui_node_id`` values emitted by the model are counted;
+    - their original step order is preserved;
+    - missing parent nodes are NOT inserted automatically;
+    - relationship targets are NOT inserted automatically;
+    - text inference is disabled for the main experiment.
 
-    This means Navigation Correctness measures whether the generator produced
-    a machine-checkable navigation path through known UI nodes, not merely
-    whether a target screen/button/popup was mentioned in natural language.
+    This prevents the evaluator from completing a path on behalf of the model.
+    ``allow_text_inference=True`` remains available only for manual/debug use and
+    still does not add ancestor chains or relationship targets.
     """
     path: List[str] = []
     valid_ids = _node_ids()
@@ -1006,9 +1025,8 @@ def extract_actual_nav_path(tc: Dict[str, Any], allow_text_inference: bool = Fal
     all_steps.extend(tc.get("navigation_steps", []) or [])
     all_steps.extend(tc.get("steps_only", []) or [])
 
-    # Add tc["steps"] only if the source fields above are empty. In normalized
-    # with-UI outputs, "steps" already contains navigation_steps + steps_only;
-    # adding it again can duplicate evidence and amplify fallback inference.
+    # In normalized outputs, tc["steps"] already contains navigation_steps +
+    # steps_only. Use it only as a fallback so the same evidence is not counted twice.
     if not all_steps:
         all_steps.extend(tc.get("steps", []) or [])
 
@@ -1022,20 +1040,13 @@ def extract_actual_nav_path(tc: Dict[str, Any], allow_text_inference: bool = Fal
             expected_text = ""
             explicit = None
 
-        candidates: List[str] = []
-
-        if explicit and explicit != "LOGIN" and str(explicit) in valid_ids:
-            # Explicit model-provided node ID is authoritative for this step.
-            candidates.append(str(explicit))
+        if explicit and str(explicit) != "LOGIN" and str(explicit) in valid_ids:
+            # Preserve exactly what the model emitted, in exactly this order.
+            path.append(str(explicit))
         elif allow_text_inference:
-            # Optional fallback for exploratory debugging only.
-            # It is not used for the main Navigation Correctness metric because
-            # natural-language matching cannot reliably prove a meaningful path.
-            candidates.extend(infer_nodes_from_step_text(step_text, expected_text))
-
-        for node in candidates:
-            for expanded in _expand_via_node(node):
-                _append_chain(path, expanded)
+            for node in infer_nodes_from_step_text(step_text, expected_text):
+                if node in valid_ids and node != "LOGIN":
+                    path.append(node)
 
     return path
 
@@ -1241,8 +1252,9 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
     - required_per_testcase: minimal UI area that every positive/evaluable test case should reach.
     - required_across_story: UI target nodes that should appear at least once across all positive/evaluable
       test cases of the User Story.
-    - negative permission/access tests are skipped for Navigation Correctness because they intentionally
-      test non-reachability or denied actions.
+    - no-access permission tests are handled separately through explicit denial language;
+    - for other test cases with a reference path, missing explicit ui_node_id evidence counts as incorrect
+      instead of being silently removed from the denominator.
 
     Backwards compatibility:
     - also supports the older "targets" format used earlier in the project.
@@ -1386,7 +1398,10 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         if neg_mode == "none":
             add_to_union(actual)
 
-        can_evaluate = bool(actual) and bool(required_nodes)
+        # If a reference path exists, the testcase is evaluable even when the model
+        # emitted no ui_node_id values. Missing explicit navigation evidence is then
+        # a failed path, not a skipped testcase.
+        can_evaluate = bool(required_nodes)
         module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
         required_present_ok = all(node in actual for node in required_nodes)
         required_order_ok = _is_ordered_subsequence(required_nodes, actual)
@@ -1665,8 +1680,8 @@ def evaluate_target_node_coverage(
     - required_across_story
 
     This metric is calculated only for the WITH-UI-CONTEXT variant.
-    It uses explicit ui_node_id values generated by the model. Text inference should remain disabled
-    for the main experiment, because natural-language matching would require fragile alias rules.
+    It uses only explicit ui_node_id values generated by the model. Missing parent nodes or relationship
+    targets are not filled in by the evaluator. Text inference stays disabled for the main experiment.
 
     Important: this only checks whether the target nodes are hit. It does NOT prove that the full
     navigation path to the target is correct. That is handled separately by Navigation Path Correctness.
@@ -2076,32 +2091,73 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                     _save_bulk_checkpoint(checkpoint_path, checkpoint)
 
                 if run_state.get("complete") and run_state.get("row") and run_state.get("evaluation"):
-                    # Recompute the deterministic Role Coverage from the saved test cases.
-                    # This is free (no API call) and also repairs checkpoints created with
-                    # older role-matching logic, e.g. where "as an Agent" was missed.
+                    # Reuse the already-paid generation, but recompute all metrics from
+                    # the saved test cases. Local metrics (Role, Target Node, Navigation)
+                    # cost nothing. AC judge calls are reused when they were already made
+                    # with AC_JUDGE_VERSION; older judge results are re-judged without
+                    # regenerating the test cases.
                     saved_cases = run_state.get("cases", []) or []
-                    refreshed_role = evaluate_role_coverage(item["story"], item["ac_blob"], saved_cases)
-                    run_state["evaluation"]["role"] = refreshed_role
-                    run_state["row"]["role_coverage_pct"] = refreshed_role.get("overall_pct")
-                    run_state["row"]["overall_score_pct"] = _overall_score(
-                        run_state["row"].get("ac_coverage_pct"),
-                        refreshed_role.get("overall_pct"),
-                        run_state["row"].get("target_node_coverage_pct"),
-                        run_state["row"].get("navigation_path_correctness_pct"),
+                    saved_open_q = run_state.get("open_q", []) or []
+                    status.write(
+                        f"Resume {done}/{total_runs}: {item['id']} — {variant_name} — repetition {rep}/{repetitions} — reusing saved generation; refreshing metrics"
                     )
+
+                    refreshed_evaluation = evaluate_all(
+                        us_id_value=item["id"],
+                        story=item["story"],
+                        ac_blob=item["ac_blob"],
+                        cases=saved_cases,
+                        use_ui_context=use_ui,
+                        bulk_checkpoint_state=checkpoint,
+                        bulk_checkpoint_path=checkpoint_path,
+                        bulk_run_key=run_key,
+                    )
+
+                    ac_pct = _metric_or_none(refreshed_evaluation, "ac", "overall_pct")
+                    role_pct = _metric_or_none(refreshed_evaluation, "role", "overall_pct")
+                    target_pct = _metric_or_none(refreshed_evaluation, "target_node", "coverage_pct")
+                    nav_pct = _metric_or_none(refreshed_evaluation, "navigation_path", "correctness_pct")
+                    ac_incomplete = ac_pct is None
+                    error_text = ""
+                    if ac_incomplete:
+                        error_text = (
+                            "AC Coverage judge incomplete. Saved successful strict-judge calls will be reused; "
+                            "resume to retry only failed/missing AC judge calls."
+                        )
+
+                    refreshed_row = dict(run_state.get("row") or {})
+                    refreshed_row.update({
+                        "repetition": rep,
+                        "us_id": item["id"],
+                        "title": item.get("title", ""),
+                        "variant": variant_name,
+                        "use_ui_context": use_ui,
+                        "acceptance_criteria_count": item.get("acceptance_criteria_count"),
+                        "testcase_count": len(saved_cases),
+                        "ac_coverage_pct": ac_pct,
+                        "role_coverage_pct": role_pct,
+                        "target_node_coverage_pct": target_pct,
+                        "navigation_path_correctness_pct": nav_pct,
+                        "navigation_correctness_pct": nav_pct,
+                        "overall_score_pct": _overall_score(ac_pct, role_pct, target_pct, nav_pct),
+                        "open_questions_count": len(saved_open_q),
+                        "error": error_text,
+                    })
+
+                    run_state["evaluation"] = refreshed_evaluation
+                    run_state["row"] = refreshed_row
+                    run_state["complete"] = not ac_incomplete
+                    run_state["last_error"] = error_text
                     _save_bulk_checkpoint(checkpoint_path, checkpoint)
 
-                    status.write(
-                        f"Resume {done}/{total_runs}: {item['id']} — {variant_name} — repetition {rep}/{repetitions} — already complete, reused; local metrics refreshed"
-                    )
-                    rows.append(run_state["row"])
+                    rows.append(refreshed_row)
                     runs_store[run_key] = {
                         "item": item,
                         "variant": variant_name,
                         "rep": rep,
                         "cases": saved_cases,
-                        "open_q": run_state.get("open_q", []),
-                        "evaluation": run_state.get("evaluation"),
+                        "open_q": saved_open_q,
+                        "evaluation": refreshed_evaluation,
                     }
                     continue
 
