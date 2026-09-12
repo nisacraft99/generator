@@ -34,107 +34,13 @@ except Exception:
 
 # ======================= PAGE CONFIG =======================
 st.set_page_config(
-    page_title="💖 User Story → Testcase Generator",
-    page_icon="✨",
+    page_title="User Story → Testcase Generator",
+    page_icon="🧪",
     layout="wide"
 )
 
-# ======================= GLOBAL FONT =======================
+# ======================= PROFESSIONAL UI =======================
 st.markdown("""
-<style>
-:root { --comic: "Comic Sans MS","Comic Sans",cursive; }
-
-html, body, .stApp, .stAppViewContainer, .main, .block-container,
-.stMarkdown, .stAlert, .stDataFrame, .stForm,
-.stTextInput, .stTextArea, .stSelectbox, .stMultiSelect, .stNumberInput,
-.stButton > button, .stDownloadButton > button,
-label, p {
-  font-family: var(--comic) !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ======================= PASSWORD GATE =======================
-APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
-
-if "auth_ok" not in st.session_state:
-    st.session_state.auth_ok = False
-
-def try_login():
-    if st.session_state.get("pw_input", "") == APP_PASSWORD and APP_PASSWORD:
-        st.session_state.auth_ok = True
-        st.session_state.pop("pw_error", None)
-    else:
-        st.session_state.pw_error = "Wrong password 🫠"
-
-if not st.session_state.auth_ok:
-    st.markdown("""
-    <style>
-      .stApp { background:#dff7f7; }
-
-      .login-card{
-        max-width: 640px; margin: 10vh auto; padding: 28px 30px;
-        border-radius: 22px; border: 2px solid #a3d9ff;
-        background:#ffffffcc; backdrop-filter: blur(6px);
-        box-shadow: 0 12px 28px rgba(91,153,255,.25);
-        text-align:center;
-      }
-
-      .login-title{
-        display:block;
-        margin: 0 auto 18px auto;
-        padding: 12px 24px;
-        border-radius:18px; border:2px solid #b98db0;
-        background:#f8c9ea; color:#333;
-        font-size: 42px; font-weight: 800;
-      }
-
-      .login-note{ color:#355c7d; font-size:16px; margin:6px 0 20px; }
-
-      .login-card .stTextInput > div > div > input{
-        border-radius: 16px; border:2px solid #bfe1ff;
-        background:#f9ffff;
-        font-size: 28px;
-        height: 70px;
-        width: 100% !important;
-        padding: 10px 20px;
-      }
-
-      .login-card .stButton { text-align:center; margin-top:16px; }
-      .login-card .stButton>button{
-        border:none; border-radius:999px; padding:1rem 2rem; font-weight:700;
-        font-size: 24px;
-        background: linear-gradient(135deg,#bfe1ff,#9fd2ff);
-        box-shadow:0 8px 18px rgba(159,210,255,.45); color:#123;
-        min-width: 200px;
-      }
-      .login-card .stButton>button:hover{ filter:brightness(1.05); }
-    </style>
-
-    <div class="login-card">
-      <div class="login-title">User Story to Testcase Generator</div>
-      <p class="login-note">🔒 private app! please enter the password to continue.</p>
-    """, unsafe_allow_html=True)
-
-    st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed")
-    st.button("let me in! ✨", on_click=try_login)
-
-    if st.session_state.get("pw_error"):
-        st.error(st.session_state["pw_error"])
-
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()
-
-# ======================= MAIN UI =======================
-professional_mode = st.toggle(
-    "Professional mode",
-    value=st.session_state.get("professional_mode", False),
-    key="professional_mode",
-    help="Switch between the playful prototype design and a dark professional presentation style.",
-)
-
-if professional_mode:
-    st.markdown("""
 <style>
 :root {
   --app-bg: #0f172a;
@@ -148,7 +54,6 @@ if professional_mode:
   --input-bg: #020617;
   --button-bg: #2563eb;
   --button-hover: #1d4ed8;
-  --danger-muted: #7f1d1d;
   --font-main: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -169,21 +74,6 @@ label, p, span, div {
   max-width: 1180px;
   padding-top: 2rem;
   padding-bottom: 4rem;
-}
-
-/* Professional mode toggle, now shown directly inside the app */
-[data-testid="stToggle"] {
-  max-width: 980px;
-  padding: 12px 16px;
-  margin: 0 0 12px 0;
-  border: 1px solid var(--border-main);
-  border-radius: 12px;
-  background: var(--panel-bg);
-}
-
-[data-testid="stToggle"] label, [data-testid="stToggle"] p {
-  color: var(--text-main) !important;
-  font-weight: 650 !important;
 }
 
 .mock-title {
@@ -307,74 +197,64 @@ hr { border-color: var(--border-main) !important; }
   border-radius: 12px !important;
   overflow: hidden;
 }
-</style>
-""", unsafe_allow_html=True)
-else:
-    st.markdown("""
-<style>
-.stApp { background: #ccf4f4 !important; }
 
-/* Professional mode toggle, shown directly inside the app */
-[data-testid="stToggle"] {
-  width: 800px;
-  margin: 10px auto 12px auto;
-  padding: 10px 16px;
-  border: 3px solid #000;
+.login-card {
+  max-width: 640px;
+  margin: 10vh auto 1rem auto;
+  padding: 30px;
+  border: 1px solid var(--border-main);
   border-radius: 14px;
-  background: #ffffffcc;
+  background: var(--panel-bg);
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.45);
 }
 
-[data-testid="stToggle"] label, [data-testid="stToggle"] p {
-  color: #000 !important;
-  font-weight: 800 !important;
+.login-title {
+  color: var(--text-main);
+  font-size: 30px;
+  font-weight: 750;
+  margin-bottom: 8px;
 }
 
-.mock-title {
-  margin: 25px auto 30px auto; width: 800px;
-  background: #f7d8ef; border: 3px solid #000; border-radius: 14px;
-  text-align: center; font-weight: 800; font-size: 40px; padding: 10px 16px;
-}
-
-.mock-label { font-weight: 500; font-size: 25px; color: #000; margin: 12px 0 6px 40px; }
-.field-single, .field-multi { width: 900px; margin-left: 40px; }
-
-.stTextArea textarea,
-.stTextInput input {
-  background: #fff4c7 !important;
-  border: 3px solid #000 !important;
-  border-radius: 16px !important;
-  color: #000 !important;
-  font-size: 18px !important;
-  padding: 12px 16px !important;
-  box-shadow: none !important;
-  line-height: 1.45 !important;
-}
-
-.singleline textarea {
-  min-height: 64px !important;
-  max-height: 64px !important;
-  resize: none !important;
-  overflow: hidden !important;
-  white-space: nowrap !important;
-}
-
-.export-wrap { margin: 28px 40px; }
-.export-wrap .stButton > button {
-  background: #e6f1a6; color:#000; border:3px solid #000;
-  border-radius: 10px; font-weight:800; font-size: 20px; padding: 12px 24px;
-}
-.export-wrap .stButton > button:disabled { background:#e6e6e6; color:#777; border-color:#999; }
-
-.stDownloadButton > button {
-  background: #ffffff; color:#000; border:3px solid #000;
-  border-radius: 10px; font-weight:800; font-size: 18px; padding: 10px 20px;
+.login-note {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin-bottom: 18px;
 }
 </style>
 """, unsafe_allow_html=True)
 
+# ======================= PASSWORD GATE =======================
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.getenv("APP_PASSWORD", ""))
+
+if "auth_ok" not in st.session_state:
+    st.session_state.auth_ok = False
+
+def try_login():
+    if st.session_state.get("pw_input", "") == APP_PASSWORD and APP_PASSWORD:
+        st.session_state.auth_ok = True
+        st.session_state.pop("pw_error", None)
+    else:
+        st.session_state.pw_error = "Wrong password."
+
+if not st.session_state.auth_ok:
+    st.markdown("""
+    <div class="login-card">
+      <div class="login-title">User Story to Testcase Generator</div>
+      <p class="login-note">Private application. Enter the password to continue.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.text_input("Password", type="password", key="pw_input")
+    st.button("Sign in", on_click=try_login)
+
+    if st.session_state.get("pw_error"):
+        st.error(st.session_state["pw_error"])
+    st.stop()
+
+# ======================= MAIN UI =======================
 st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="mock-label">user story id (optional; needed for evaluation, e.g. US-4)</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-label">User Story ID (optional; required for evaluation, e.g. US-4)</div>', unsafe_allow_html=True)
 us_id = st.text_input(
     "",
     key="us_id_input",
@@ -383,7 +263,7 @@ us_id = st.text_input(
     value=""
 )
 
-st.markdown('<div class="mock-label">enter your user story here</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-label">User Story</div>', unsafe_allow_html=True)
 st.markdown('<div class="field-single singleline">', unsafe_allow_html=True)
 user_story = st.text_area(
     "", key="us_one", label_visibility="hidden",
@@ -392,7 +272,7 @@ user_story = st.text_area(
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="mock-label">enter the acceptance criteria (1 criteria per line)</div>', unsafe_allow_html=True)
+st.markdown('<div class="mock-label">Acceptance Criteria (one criterion per line)</div>', unsafe_allow_html=True)
 st.markdown('<div class="field-multi">', unsafe_allow_html=True)
 ac_text = st.text_area(
     "", key="ac_lines", label_visibility="hidden",
@@ -404,14 +284,13 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ======================= FILE LOADERS =======================
 UI_CONTEXT_PATH = "ui_context.json"
 NAV_TARGETS_PATH = "navigation_targets.json"
-AC_KEYWORDS_PATH = "ac_keywords.json"
 BULK_USERSTORIES_PATH = "bulk_userstories.json"
 
 def load_json_file(path: str, default: Any):
     """Load a JSON file from the app folder.
 
-    The canonical names are ui_context.json, navigation_targets.json, ac_keywords.json and
-    bulk_userstories.json. For local experiments and ChatGPT-uploaded files, this also accepts
+    The canonical names are ui_context.json, navigation_targets.json and bulk_userstories.json.
+    For local experiments and ChatGPT-uploaded files, this also accepts
     suffixed copies such as navigation_targets(4).json and picks the newest matching file.
     """
     candidate_paths = [path]
@@ -434,11 +313,9 @@ def load_json_file(path: str, default: Any):
 
 UI_CONTEXT = load_json_file(UI_CONTEXT_PATH, {})
 NAV_TARGETS = load_json_file(NAV_TARGETS_PATH, {})
-AC_KEYWORDS = load_json_file(AC_KEYWORDS_PATH, {})
 
 st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', [])) if isinstance(UI_CONTEXT, dict) else 0}")
 st.caption(f"Navigation targets loaded: {len(NAV_TARGETS) if isinstance(NAV_TARGETS, dict) else 0}")
-st.caption(f"AC keyword sets loaded: {len(AC_KEYWORDS) if isinstance(AC_KEYWORDS, dict) else 0}")
 
 # ======================= OPENAI SETUP =======================
 load_dotenv()
@@ -629,68 +506,6 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 # ======================= EVALUATION HELPERS =======================
 ROLE_WORDS = ["director", "manager", "agent"]
 
-CONCEPT_ALIASES = {
-    # "new window" removed — not a reliable synonym for popup/modal
-    "popup": ["popup", "pop-up", "dialog", "modal", "confirmation pop-up"],
-    # "navigate" / "navigated" / "land on" removed — too broad; every step "navigates"
-    "redirect": ["redirect", "redirected", "navigated to"],
-    "dashboard": ["dashboard"],
-    "detail": ["detail", "details"],
-    "yes": ["yes", "yes button"],
-    "no": ["no", "no button"],
-    "delete": ["delete", "deleted", "deletion"],
-    "create": ["create", "created", "creation"],
-    "edit": ["edit", "edited", "editing"],
-    # "shown", "displayed", "present" removed — match virtually every expected-result sentence
-    "view": ["view", "visible", "see"],
-    # "access denied", "not clickable", "not available" removed — too generic
-    "not delete": [
-        "not delete", "cannot delete", "can not delete", "unable to delete",
-        "no permission to delete", "delete button is not visible",
-        "delete button not visible",
-    ],
-    # "access denied", "not available", "not visible", "button is not present" removed — too generic
-    "not create": [
-        "not create", "cannot create", "can not create", "unable to create",
-        "no permission to create",
-    ],
-    # "not visible", "not available" removed — match too broadly
-    "no access": [
-        "no access", "cannot access", "can not access", "access denied", "not accessible",
-    ],
-    "not view": [
-        "not view", "cannot view", "can not view", "unable to view",
-        "no permission to view",
-    ],
-    "not edit": [
-        "not edit", "cannot edit", "can not edit", "unable to edit",
-        "no permission to edit",
-    ],
-    "future": ["future", "in the future"],
-    # "date format", "format" removed — "format" alone matches anything
-    "dd/mm/yyyy": ["dd/mm/yyyy"],
-    "button": ["button"],
-    "dropdown": ["dropdown", "drop-down", "select"],
-    # "according to" removed — too broad
-    "filtered": ["filtered", "filter"],
-    # "not editable" removed — keep only direct synonyms
-    "deactivated": ["deactivated", "disabled", "inactive"],
-    "notification": ["notification", "notified"],
-    "save": ["save", "saved"],
-    "cancel": ["cancel", "cancelled"],
-    "appeal": ["appeal"],
-    "search": ["search", "search bar", "search button"],
-    "reset": ["reset"],
-    # "order" removed — appears in nearly every sentence ("in order to", "order of")
-    "sorted": ["sorted", "sorted by", "sort by"],
-    # "id" removed — substring of "redirect", "dashboard", "valid" etc.
-    "ids": ["ids"],
-    "50": ["50", "maximum of 50", "up to 50"],
-    "200": ["200", "maximum of 200", "up to 200"],
-    "300": ["300", "maximum of 300", "up to 300"],
-    "500": ["500", "maximum of 500", "up to 500"],
-}
-
 def normalize_text(s: str) -> str:
     s = (s or "").lower()
     s = s.replace("„", '"').replace("“", '"').replace("’", "'")
@@ -698,80 +513,18 @@ def normalize_text(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
-def collect_all_generated_text(cases: List[Dict[str, Any]]) -> str:
-    parts = []
-    for tc in cases:
-        parts.append(tc.get("title", ""))
-        for s in tc.get("steps", []) or []:
-            parts.append(s.get("step", ""))
-            parts.append(s.get("expected", ""))
-    return normalize_text(" ".join(parts))
-
-
 
 def testcase_full_text(tc: Dict[str, Any]) -> str:
-    """Collects title, type, navigation steps, normal steps and expected results."""
+    """Collect title, type, navigation steps, normal steps and expected results."""
     parts = [str(tc.get("title", "")), str(tc.get("type", ""))]
     for key in ["navigation_steps", "steps_only", "steps"]:
-        for s in tc.get(key, []) or []:
-            if isinstance(s, dict):
-                parts.append(str(s.get("step", "")))
-                parts.append(str(s.get("expected", "")))
+        for step in tc.get(key, []) or []:
+            if isinstance(step, dict):
+                parts.append(str(step.get("step", "")))
+                parts.append(str(step.get("expected", "")))
             else:
-                parts.append(str(s))
+                parts.append(str(step))
     return normalize_text(" ".join(parts))
-
-def keyword_matches(keyword: str, haystack: str) -> bool:
-    keyword = normalize_text(keyword)
-    if not keyword:
-        return False
-
-    if "|" in keyword:
-        return any(keyword_matches(k.strip(), haystack) for k in keyword.split("|"))
-
-    aliases = CONCEPT_ALIASES.get(keyword, [keyword])
-    return any(normalize_text(alias) in haystack for alias in aliases)
-
-def evaluate_ac_coverage(us_id_value: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
-    entries = AC_KEYWORDS.get(us_id_value, [])
-    if not entries:
-        return {
-            "overall_pct": None,
-            "covered_count": None,
-            "total_count": None,
-            "details": [],
-            "note": f"No AC keyword set found for {us_id_value}"
-        }
-
-    haystack = collect_all_generated_text(cases)
-    details = []
-    total_score = 0.0
-
-    for entry in entries:
-        ac_id = entry.get("ac_id", "")
-        keywords = entry.get("keywords", []) or []
-        matched = sum(1 for kw in keywords if keyword_matches(kw, haystack))
-        score = (matched / len(keywords)) if keywords else 0.0
-
-        details.append({
-            "ac_id": ac_id,
-            "keywords": keywords,
-            "matched": matched,
-            "total_keywords": len(keywords),
-            "score": round(score, 2)
-        })
-        total_score += score
-
-    overall_pct = round((total_score / len(entries)) * 100, 2) if entries else None
-    covered_count = sum(1 for d in details if d["score"] >= 0.8)
-
-    return {
-        "overall_pct": overall_pct,
-        "covered_count": covered_count,
-        "total_count": len(entries),
-        "details": details,
-        "note": None
-    }
 
 
 # ======================= LLM-AS-A-JUDGE AC EVALUATION =======================
@@ -791,16 +544,15 @@ Output schema:
 {"covered": true | false, "reason": "one sentence explanation"}
 """
 
-def evaluate_ac_coverage_llm(
+def evaluate_ac_coverage(
     us_id_value: str,
     cases: List[Dict[str, Any]],
     ac_blob: str
 ) -> Dict[str, Any]:
     """
-    LLM-as-a-Judge AC coverage evaluation.
-    For each acceptance criterion (from ac_blob), calls the LLM to decide
-    whether the generated test cases cover it.
-    Returns the same shape as evaluate_ac_coverage for easy comparison.
+    AC Coverage evaluation using LLM-as-a-Judge.
+    For each acceptance criterion, the judge decides whether at least one generated
+    test case covers its intent and returns a short reason.
     """
     if not client:
         return {
@@ -1850,12 +1602,11 @@ def evaluate_all(
     ac_blob: str,
     cases: List[Dict[str, Any]],
     use_ui_context: bool = True,
-    use_llm_judge: bool = False,
 ) -> Dict[str, Any]:
+    # AC Coverage is evaluated semantically with LLM-as-a-Judge for both variants.
+    ac_coverage = evaluate_ac_coverage(us_id_value, cases, ac_blob)
+
     # Target Node Coverage is calculated only for the with-UI-context variant.
-    # It answers: "Were ALL required targets (required_per_testcase + required_across_story) hit?"
-    # For without-UI-context outputs it is intentionally N/A: natural-language steps cannot be
-    # mapped to exact technical UI nodes without brittle alias rules.
     target_node = (
         evaluate_target_node_coverage(
             us_id_value=us_id_value,
@@ -1867,29 +1618,19 @@ def evaluate_all(
     )
 
     # Navigation Path Correctness is also calculated only for the with-UI-context variant.
-    # It answers: "Was the structured ui_node_id path through ui_context.json correct up to the target?"
     navigation_path = (
         evaluate_navigation_correctness(us_id_value, cases, story)
         if use_ui_context
         else _navigation_path_not_evaluated_without_ui()
     )
 
-    ac_llm = (
-        evaluate_ac_coverage_llm(us_id_value, cases, ac_blob)
-        if use_llm_judge
-        else {
-            "overall_pct": None, "covered_count": None, "total_count": None,
-            "details": [], "note": "LLM judge not enabled."
-        }
-    )
     return {
-        "ac": evaluate_ac_coverage(us_id_value, cases),
-        "ac_llm": ac_llm,
+        "ac": ac_coverage,
         "target_node": target_node,
         "navigation_path": navigation_path,
-        # Backward-compatible alias for older UI/PDF sections.
+        # Backward-compatible alias for older PDF sections.
         "navigation": navigation_path,
-        "role": evaluate_role_coverage(story, ac_blob, cases)
+        "role": evaluate_role_coverage(story, ac_blob, cases),
     }
 
 
@@ -2003,7 +1744,7 @@ def _overall_score(ac_pct: Optional[float], role_pct: Optional[float], target_pc
     return round(sum(values) / len(values), 2)
 
 
-def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use_llm_judge: bool = False) -> pd.DataFrame:
+def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> pd.DataFrame:
     """
     For every user story and every repetition, run both variants:
     - without UI context
@@ -2049,11 +1790,9 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                         ac_blob=item["ac_blob"],
                         cases=cases,
                         use_ui_context=use_ui,
-                        use_llm_judge=use_llm_judge,
                     )
 
                     ac_pct  = _metric_or_none(evaluation, "ac", "overall_pct")
-                    ac_llm_pct = _metric_or_none(evaluation, "ac_llm", "overall_pct")
                     role_pct = _metric_or_none(evaluation, "role", "overall_pct")
                     target_pct = _metric_or_none(evaluation, "target_node", "coverage_pct")
                     nav_pct  = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
@@ -2076,7 +1815,6 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                         "acceptance_criteria_count": item.get("acceptance_criteria_count"),
                         "testcase_count": len(cases),
                         "ac_coverage_pct": ac_pct,
-                        "ac_llm_coverage_pct": ac_llm_pct,
                         "role_coverage_pct": role_pct,
                         "target_node_coverage_pct": target_pct,
                         "navigation_path_correctness_pct": nav_pct,
@@ -2097,7 +1835,6 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                         "acceptance_criteria_count": item.get("acceptance_criteria_count"),
                         "testcase_count": 0,
                         "ac_coverage_pct": None,
-                        "ac_llm_coverage_pct": None,
                         "role_coverage_pct": None,
                         "target_node_coverage_pct": None,
                         "navigation_path_correctness_pct": None,
@@ -2108,7 +1845,7 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int, use
                     })
 
     progress.progress(1.0)
-    status.write("Bulk evaluation finished ✅")
+    status.write("Bulk evaluation finished.")
 
     st.session_state.bulk_runs_store = runs_store
     return pd.DataFrame(rows)
@@ -2136,9 +1873,6 @@ def summarize_bulk_results(results_df: pd.DataFrame) -> pd.DataFrame:
         std_overall_score_pct=("overall_score_pct", "std"),
         failed_runs=("error", lambda values: sum(bool(str(v).strip()) for v in values)),
     )
-    if "ac_llm_coverage_pct" in results_df.columns:
-        agg_dict["avg_ac_llm_coverage_pct"] = ("ac_llm_coverage_pct", "mean")
-        agg_dict["std_ac_llm_coverage_pct"] = ("ac_llm_coverage_pct", "std")
 
     summary = results_df.groupby("variant", dropna=False).agg(**agg_dict).reset_index()
     return summary.round(2)
@@ -2159,8 +1893,6 @@ def summarize_bulk_by_user_story(results_df: pd.DataFrame) -> pd.DataFrame:
         avg_overall_score_pct=("overall_score_pct", "mean"),
         failed_runs=("error", lambda values: sum(bool(str(v).strip()) for v in values)),
     )
-    if "ac_llm_coverage_pct" in results_df.columns:
-        agg_dict["avg_ac_llm_coverage_pct"] = ("ac_llm_coverage_pct", "mean")
 
     by_us = results_df.groupby(["us_id", "title", "variant"], dropna=False).agg(**agg_dict).reset_index()
     return by_us.round(2)
@@ -2322,112 +2054,133 @@ def build_pdf(
 
 # ======================= EVALUATION DISPLAY HELPER =======================
 def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Evaluation"):
-    """Renders evaluation metrics and details. Used by all three evaluation sections."""
+    """Render metric values and the evidence/reasoning behind every metric."""
 
     def _path_str(node_ids: List[str]) -> str:
-        """Converts a list of node IDs to a readable path string with arrows."""
         name_map = _node_name_map()
         names = [name_map.get(nid, nid) for nid in node_ids]
         return " → ".join(names) if names else "—"
 
+    def _status(ok: bool) -> str:
+        return "Covered" if ok else "Not covered"
+
     st.subheader(header)
 
-    ac_metric  = "N/A" if ev["ac"]["overall_pct"] is None else f"{ev['ac']['overall_pct']}%"
-    target_metric = "N/A" if ev.get("target_node", {}).get("coverage_pct") is None else f"{ev['target_node']['coverage_pct']}%"
-    nav_metric = "N/A" if ev["navigation_path"]["correctness_pct"] is None else f"{ev['navigation_path']['correctness_pct']}%"
-    role_metric = "N/A" if ev["role"]["overall_pct"] is None else f"{ev['role']['overall_pct']}%"
+    ac = ev.get("ac", {})
+    target_node = ev.get("target_node", {})
+    nav = ev.get("navigation_path", {})
+    role = ev.get("role", {})
+
+    ac_metric = "N/A" if ac.get("overall_pct") is None else f"{ac['overall_pct']}%"
+    target_metric = "N/A" if target_node.get("coverage_pct") is None else f"{target_node['coverage_pct']}%"
+    nav_metric = "N/A" if nav.get("correctness_pct") is None else f"{nav['correctness_pct']}%"
+    role_metric = "N/A" if role.get("overall_pct") is None else f"{role['overall_pct']}%"
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("AC Coverage (Keyword)", ac_metric)
-    c2.metric("Target Node Coverage", target_metric)
-    c3.metric("Navigation Path Correctness", nav_metric)
-    c4.metric("Role Coverage", role_metric)
+    c1.metric("AC Coverage", ac_metric)
+    c2.metric("Role Coverage", role_metric)
+    c3.metric("Target Node Coverage", target_metric)
+    c4.metric("Navigation Path Correctness", nav_metric)
 
-    if ev.get("navigation_path", {}).get("correctness_pct") is None:
-        st.caption(
-            "Target Node Coverage and Navigation Path Correctness are shown as N/A for outputs generated without UI context, "
-            "because those outputs do not provide reliable explicit ui_node_id values. Natural-language navigation is not mapped to technical nodes with alias rules."
-        )
-
-    ac_llm = ev.get("ac_llm", {})
-    if ac_llm.get("overall_pct") is not None:
-        st.metric("AC Coverage (LLM Judge)", f"{ac_llm['overall_pct']}%")
-
-    # AC Keyword details
-    if ev["ac"].get("note"):
-        st.warning(ev["ac"]["note"])
+    # AC Coverage details and judge reasons.
+    st.write("**AC Coverage**")
+    if ac.get("note"):
+        st.warning(ac["note"])
     else:
-        st.write(f"**AC Coverage (Keyword):** {ev['ac']['covered_count']}/{ev['ac']['total_count']} ACs mit Score ≥ 0.8")
-        with st.expander("Keyword AC details"):
-            for d in ev["ac"].get("details", []):
-                st.write(f"{d['ac_id']}: score={d['score']} ({d['matched']}/{d['total_keywords']}) keywords={d['keywords']}")
+        st.write(f"{ac.get('covered_count', 0)}/{ac.get('total_count', 0)} acceptance criteria covered")
+        with st.expander("AC Coverage details and reasons"):
+            for d in ac.get("details", []):
+                covered = bool(d.get("covered"))
+                st.write(f"**{d.get('ac_id', '')} — {_status(covered)}**")
+                st.write(d.get("ac_text", ""))
+                st.caption(f"Reason: {d.get('reason') or 'No reason returned.'}")
 
-    # AC LLM Judge details
-    if ac_llm.get("note") and ac_llm["note"] != "LLM judge not enabled.":
-        st.warning(ac_llm["note"])
-    elif ac_llm.get("details"):
-        st.write(f"**AC Coverage (LLM Judge):** {ac_llm['covered_count']}/{ac_llm['total_count']} ACs covered")
-        with st.expander("LLM Judge AC details"):
-            for d in ac_llm["details"]:
-                icon = "✅" if d["covered"] else "❌"
-                st.write(f"{icon} **{d['ac_id']}:** {d['ac_text']}")
-                st.caption(f"→ {d['reason']}")
+    # Role Coverage details.
+    st.write("**Role Coverage**")
+    required_roles = role.get("required_roles", []) or []
+    generated_roles = role.get("generated_roles", []) or []
+    missing_roles = role.get("missing_roles", []) or []
+    if role.get("overall_pct") is None and not required_roles:
+        st.caption("No required user roles were found in this user story or its acceptance criteria.")
+    else:
+        st.write(f"{role.get('covered_count', 0)}/{role.get('total_count', 0)} required roles covered")
+        with st.expander("Role Coverage details and reasons"):
+            for role_name in required_roles:
+                covered = role_name in generated_roles
+                if covered:
+                    reason = f"An explicit role/login reference for '{role_name}' was found in the generated test cases."
+                else:
+                    reason = f"No explicit role/login reference for '{role_name}' was found in the generated test cases."
+                st.write(f"**{role_name.title()} — {_status(covered)}**")
+                st.caption(f"Reason: {reason}")
+            if missing_roles:
+                st.caption(f"Missing roles: {', '.join(missing_roles)}")
 
-    # Target node details
-    target_node = ev.get("target_node", {})
+    # Target Node Coverage details.
+    st.write("**Target Node Coverage**")
     if target_node.get("note"):
-        st.warning(target_node["note"])
+        st.info(target_node["note"])
     else:
-        st.write(f"**Target Node Coverage:** {target_node['covered_count']}/{target_node['total_count']}")
-        with st.expander("Target node details"):
-            name_map = _node_name_map()
-            st.caption("This checks whether expected target nodes are hit somewhere in the generated output. It does not check whether the full path to those targets is correct.")
+        st.write(f"{target_node.get('covered_count', 0)}/{target_node.get('total_count', 0)} expected target nodes reached")
+        with st.expander("Target Node Coverage details and reasons"):
             for d in target_node.get("details", []):
-                icon = "✅" if d.get("covered") else "❌"
-                st.write(f"{icon} **{d.get('node_id')}** — {d.get('node_name')}")
-            if target_node.get("missing_nodes"):
-                missing_names = [name_map.get(n, n) for n in target_node["missing_nodes"]]
-                st.caption(f"Missing target nodes: {' → '.join(missing_names)}")
+                covered = bool(d.get("covered"))
+                node_id = d.get("node_id", "")
+                node_name = d.get("node_name", node_id)
+                if covered:
+                    reason = "The expected ui_node_id occurs in the generated test steps."
+                else:
+                    reason = "The expected ui_node_id does not occur in the generated test steps."
+                st.write(f"**{node_id} — {node_name} — {_status(covered)}**")
+                st.caption(f"Reason: {reason}")
 
-    # Navigation details
-    if ev["navigation_path"].get("note"):
-        st.warning(ev["navigation_path"]["note"])
+    # Navigation Path Correctness details.
+    st.write("**Navigation Path Correctness**")
+    if nav.get("note"):
+        st.info(nav["note"])
     else:
-        nav = ev["navigation_path"]
         skipped = nav.get("skipped_count") or 0
-        skip_note = f" ({skipped} skipped)" if skipped else ""
-        st.write(f"**Navigation Path Correctness:** {nav['correct_count']}/{nav['evaluated_count']}{skip_note}")
-        with st.expander("Navigation path details"):
+        skip_note = f"; {skipped} skipped" if skipped else ""
+        st.write(f"{nav.get('correct_count', 0)}/{nav.get('evaluated_count', 0)} evaluable test cases/path requirements correct{skip_note}")
+        with st.expander("Navigation Path Correctness details and reasons"):
             for d in nav.get("details", []):
-                icon = "✅" if d.get("is_correct") else "❌"
-                tc_id = d["tc_id"]
+                is_correct = bool(d.get("is_correct"))
+                tc_id = d.get("tc_id", "")
                 target = d.get("selected_target", "")
 
                 if target == "no_access_denial_check":
-                    denial = "denial language present" if d.get("denial_ok") else "⚠️ denial language missing"
-                    st.write(f"{icon} **{tc_id}** — no-access test ({denial})")
+                    denial_ok = bool(d.get("denial_ok"))
+                    reason = (
+                        "The negative access test contains explicit denial language."
+                        if denial_ok else
+                        "The negative access test does not contain the required denial language."
+                    )
+                    st.write(f"**{tc_id or 'Access-denial test'} — {'Correct' if is_correct else 'Incorrect'}**")
+                    st.caption(f"Reason: {reason}")
                 elif target == "required_across_story":
-                    st.write(f"{icon} **Story-level coverage**")
+                    missing = d.get("missing_nodes", []) or []
+                    reason = (
+                        "All story-level required nodes occur in the generated output."
+                        if not missing else
+                        f"Story-level required nodes are missing: {_path_str(missing)}."
+                    )
+                    st.write(f"**Story-level navigation requirement — {'Correct' if is_correct else 'Incorrect'}**")
                     st.caption(f"Expected: {_path_str(d.get('expected', []))}")
-                    if d.get("missing_nodes"):
-                        name_map = _node_name_map()
-                        missing_names = [name_map.get(n, n) for n in d["missing_nodes"]]
-                        st.caption(f"Missing: {' → '.join(missing_names)}")
+                    st.caption(f"Reason: {reason}")
                 else:
-                    st.write(f"{icon} **{tc_id}** — {target}")
-                    st.caption(f"Expected: {_path_str(d.get('expected', []))}")
-                    st.caption(f"Actual:   {_path_str(d.get('actual', []))}")
-                    if d.get("missing_nodes"):
-                        name_map = _node_name_map()
-                        missing_names = [name_map.get(n, n) for n in d["missing_nodes"]]
-                        st.caption(f"⚠️ Missing: {' → '.join(missing_names)}")
-
-    # Role details
-    role = ev["role"]
-    st.write(f"**Role Coverage:** {role['covered_count']}/{role['total_count']}")
-    st.write(f"Required: {role['required_roles']}  |  Generated: {role['generated_roles']}")
-    if role.get("missing_roles"):
-        st.warning(f"Missing roles: {role['missing_roles']}")
+                    expected = d.get("expected", []) or []
+                    actual = d.get("actual", []) or []
+                    missing = d.get("missing_nodes", []) or []
+                    if is_correct:
+                        reason = "All expected nodes occur in the required order; additional intermediate nodes are allowed."
+                    elif missing:
+                        reason = f"Required nodes are missing: {_path_str(missing)}."
+                    else:
+                        reason = "The expected nodes are present but do not occur in the required order."
+                    st.write(f"**{tc_id or 'Test case'} — {target or 'navigation path'} — {'Correct' if is_correct else 'Incorrect'}**")
+                    st.caption(f"Expected: {_path_str(expected)}")
+                    st.caption(f"Actual: {_path_str(actual)}")
+                    st.caption(f"Reason: {reason}")
 
 
 # ======================= SESSION STATE =======================
@@ -2468,28 +2221,22 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     clicked_without = st.button(
-        "export without UI ✨",
+        "Export without UI context",
         disabled=not (user_story.strip() and ac_text.strip())
     )
 
 with col2:
     clicked_with = st.button(
-        "export with UI 🧠✨",
+        "Export with UI context",
         disabled=not (user_story.strip() and ac_text.strip())
     )
 
 with col3:
     clicked_eval = st.button(
-        "evaluate current output 📊",
+        "Evaluate current output",
         disabled=not (bool(st.session_state.last_cases) and us_id.strip())
     )
 
-use_llm_judge_main = st.checkbox(
-    "🤖 Also evaluate with LLM-as-a-Judge (uses extra API calls — 1 per AC)",
-    value=st.session_state.get("use_llm_judge_main", False),
-    key="use_llm_judge_main",
-    help="Calls the LLM once per acceptance criterion to semantically judge whether the generated test cases cover it. More accurate than keyword matching, but costs additional API calls."
-)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2518,7 +2265,6 @@ if clicked_eval and st.session_state.last_cases:
         ac_text,
         st.session_state.last_cases,
         use_ui_context=(st.session_state.last_variant == "with_json"),
-        use_llm_judge=st.session_state.get("use_llm_judge_main", False),
     )
     st.session_state.last_evaluation = evaluation
     st.session_state.last_pdf = build_pdf(
@@ -2542,9 +2288,9 @@ if st.session_state.last_evaluation:
     _render_evaluation_results(st.session_state.last_evaluation, "Automated Evaluation")
 
 if st.session_state.last_pdf:
-    st.success(f"PDF ready ✅ (test cases: {st.session_state.last_cases_count})")
+    st.success(f"PDF ready (test cases: {st.session_state.last_cases_count})")
     st.download_button(
-        "download PDF 🧾",
+        "Download PDF",
         data=st.session_state.last_pdf,
         file_name=f"test_design_{us_id}_{st.session_state.last_variant or 'result'}.pdf",
         mime="application/pdf",
@@ -2555,7 +2301,7 @@ if st.session_state.last_pdf:
 
 # ======================= SINGLE EXPORT FROM BULK USER STORIES =======================
 st.markdown("---")
-st.subheader("Single User Story Export 🧾")
+st.subheader("Single User Story Export")
 st.write(
     "Enter a user story number, for example `1` or `US-1`. The app loads the matching entry "
     "from `bulk_userstories.json`. First generate the test cases/PDF, then run the single evaluation "
@@ -2580,23 +2326,17 @@ with single_col2:
 single_btn_col1, single_btn_col2 = st.columns([1, 1])
 with single_btn_col1:
     single_export_clicked = st.button(
-        "generate single export ✨",
+        "Generate single export",
         disabled=not single_us_lookup.strip(),
         key="single_export_button"
     )
 with single_btn_col2:
     single_eval_clicked = st.button(
-        "evaluate single export 📊",
+        "Evaluate single export",
         disabled=not bool(st.session_state.single_cases),
         key="single_eval_button"
     )
 
-use_llm_judge_single = st.checkbox(
-    "🤖 Also evaluate with LLM-as-a-Judge (uses extra API calls — 1 per AC)",
-    value=False,
-    key="use_llm_judge_single",
-    help="Calls the LLM once per acceptance criterion to semantically judge whether the generated test cases cover it."
-)
 
 if single_export_clicked:
     try:
@@ -2665,7 +2405,6 @@ if single_eval_clicked:
                     selected_item["ac_blob"],
                     st.session_state.single_cases,
                     use_ui_context=use_ui_single,
-                    use_llm_judge=st.session_state.get("use_llm_judge_single", False),
                 )
                 single_pdf = build_pdf(
                     selected_item["story"],
@@ -2703,7 +2442,7 @@ if st.session_state.single_export_pdf:
     if st.session_state.single_export_info:
         st.info(st.session_state.single_export_info)
     st.download_button(
-        "download single export PDF 🧾",
+        "Download single export PDF",
         data=st.session_state.single_export_pdf,
         file_name=st.session_state.single_export_filename,
         mime="application/pdf",
@@ -2713,7 +2452,7 @@ if st.session_state.single_export_pdf:
 
 # ======================= BULK EVALUATION UI =======================
 st.markdown("---")
-st.subheader("Bulk Evaluation 📊")
+st.subheader("Bulk Evaluation")
 st.write(
     "This runs all user stories in a bulk JSON file. For every user story, the tool generates "
     "test cases once without UI context and once with UI context. You can repeat the whole run "
@@ -2729,16 +2468,6 @@ bulk_repetitions = st.number_input(
     help="Example: 3 repetitions with 24 user stories means 24 × 2 variants × 3 = 144 LLM calls."
 )
 
-bulk_use_llm_judge = st.checkbox(
-    "🤖 Enable LLM-as-a-Judge for AC Coverage in bulk run",
-    value=False,
-    key="bulk_llm_judge",
-    help=(
-        "Adds one LLM call per acceptance criterion per run. "
-        "Example: 24 user stories × avg 8 ACs × 2 variants × 3 repetitions = ~1,152 extra judge calls. "
-        "Enable for a subset of runs or after confirming keyword results first."
-    )
-)
 
 bulk_uploaded_file = st.file_uploader(
     "Optional: upload bulk_userstories.json. If nothing is uploaded, the app tries to use the local bulk_userstories.json file.",
@@ -2761,11 +2490,16 @@ except Exception as e:
     preview_userstories = []
     st.error(f"Could not preview bulk user stories: {e}")
 
-estimated_calls = len(preview_userstories) * int(bulk_repetitions) * 2
-st.caption(f"Estimated LLM calls: {estimated_calls}")
+generation_calls = len(preview_userstories) * int(bulk_repetitions) * 2
+judge_calls = sum(item.get("acceptance_criteria_count", 0) for item in preview_userstories) * int(bulk_repetitions) * 2
+estimated_calls = generation_calls + judge_calls
+st.caption(
+    f"Estimated LLM calls: {estimated_calls} total "
+    f"({generation_calls} generation + {judge_calls} AC Coverage judge calls)."
+)
 
 run_bulk_button = st.button(
-    "run bulk evaluation 🚀",
+    "Run bulk evaluation",
     disabled=not (client and preview_userstories),
 )
 
@@ -2779,7 +2513,7 @@ if run_bulk_button:
             bulk_userstories = load_bulk_userstories(BULK_USERSTORIES_PATH)
 
         with st.spinner("Running bulk evaluation. This may take several minutes..."):
-            results_df = run_bulk_evaluation(bulk_userstories, int(bulk_repetitions), use_llm_judge=bulk_use_llm_judge)
+            results_df = run_bulk_evaluation(bulk_userstories, int(bulk_repetitions))
             summary_df = summarize_bulk_results(results_df)
             by_us_df = summarize_bulk_by_user_story(results_df)
 
@@ -2817,9 +2551,7 @@ if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_d
     with left_col:
         st.markdown("#### With UI Context")
         if with_ui is not None:
-            st.metric("AC Coverage (Keyword)", _fmt_pct(with_ui["avg_ac_coverage_pct"]))
-            if "avg_ac_llm_coverage_pct" in with_ui.index:
-                st.metric("AC Coverage (LLM Judge)", _fmt_pct(with_ui["avg_ac_llm_coverage_pct"]))
+            st.metric("AC Coverage", _fmt_pct(with_ui["avg_ac_coverage_pct"]))
             st.metric("Role Coverage", _fmt_pct(with_ui["avg_role_coverage_pct"]))
             st.metric("Target Node Coverage", _fmt_pct(with_ui["avg_target_node_coverage_pct"]))
             st.metric("Navigation Path Correctness", _fmt_pct(with_ui["avg_navigation_path_correctness_pct"]))
@@ -2830,9 +2562,7 @@ if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_d
     with right_col:
         st.markdown("#### Without UI Context")
         if without_ui is not None:
-            st.metric("AC Coverage (Keyword)", _fmt_pct(without_ui["avg_ac_coverage_pct"]))
-            if "avg_ac_llm_coverage_pct" in without_ui.index:
-                st.metric("AC Coverage (LLM Judge)", _fmt_pct(without_ui["avg_ac_llm_coverage_pct"]))
+            st.metric("AC Coverage", _fmt_pct(without_ui["avg_ac_coverage_pct"]))
             st.metric("Role Coverage", _fmt_pct(without_ui["avg_role_coverage_pct"]))
             st.metric("Target Node Coverage", _fmt_pct(without_ui["avg_target_node_coverage_pct"]))
             st.metric("Navigation Path Correctness", _fmt_pct(without_ui["avg_navigation_path_correctness_pct"]))
@@ -2880,11 +2610,11 @@ if "bulk_results_df" in st.session_state and not st.session_state.bulk_results_d
             mime="text/csv",
         )
 
-# ======================= BULK PDF EXPORT =======================
+# ======================= BULK RUN DETAILS + PDF EXPORT =======================
 if "bulk_runs_store" in st.session_state and st.session_state.bulk_runs_store:
     st.markdown("---")
-    st.subheader("📄 Export PDF from Bulk Run")
-    st.write("Select a specific User Story, variant and repetition to download its PDF.")
+    st.subheader("Bulk Run Details")
+    st.write("Select a User Story, variant and repetition to inspect every metric and its reasons, or export the corresponding PDF.")
 
     store = st.session_state.bulk_runs_store
     valid_keys = [k for k, v in store.items() if "cases" in v]
@@ -2916,18 +2646,11 @@ if "bulk_runs_store" in st.session_state and st.session_state.bulk_runs_store:
             open_q     = run_data["open_q"]
             evaluation = run_data["evaluation"]
 
-            # Show quick metrics
-            ac_pct  = _metric_or_none(evaluation, "ac", "overall_pct")
-            target_pct = _metric_or_none(evaluation, "target_node", "coverage_pct")
-            nav_pct = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
-            role_pct = _metric_or_none(evaluation, "role", "overall_pct")
-
-            mc1, mc2, mc3, mc4, mc5 = st.columns(5)
-            mc1.metric("Test Cases", len(cases))
-            mc2.metric("AC Coverage", f"{ac_pct}%" if ac_pct is not None else "N/A")
-            mc3.metric("Target Nodes", f"{target_pct}%" if target_pct is not None else "N/A")
-            mc4.metric("Nav Path", f"{nav_pct}%" if nav_pct is not None else "N/A")
-            mc5.metric("Role Coverage", f"{role_pct}%" if role_pct is not None else "N/A")
+            st.caption(f"Generated test cases: {len(cases)}")
+            _render_evaluation_results(
+                evaluation,
+                f"Evaluation details — {sel_us} / {sel_var} / repetition {sel_rep}",
+            )
 
             pdf_bytes = build_pdf(
                 story_text=item["story"],
@@ -2938,7 +2661,7 @@ if "bulk_runs_store" in st.session_state and st.session_state.bulk_runs_store:
                 us_id_value=item["id"],
             )
             st.download_button(
-                f"⬇️ Download PDF — {sel_us} / {sel_var} / rep {sel_rep}",
+                f"Download PDF — {sel_us} / {sel_var} / rep {sel_rep}",
                 data=pdf_bytes,
                 file_name=f"test_design_{sel_us}_{sel_var}_rep{sel_rep}.pdf",
                 mime="application/pdf",
