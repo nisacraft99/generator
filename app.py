@@ -814,6 +814,98 @@ def _relationship_target_by_via() -> Dict[str, str]:
     return mapping
 
 
+def _relationship_records() -> List[Dict[str, Any]]:
+    """Return valid UI transition records from ``ui_context.json``."""
+    rels = UI_CONTEXT.get("relationships", []) if isinstance(UI_CONTEXT, dict) else []
+    return [r for r in (rels or []) if isinstance(r, dict) and r.get("to")]
+
+
+def _relationship_targets_for_step(
+    explicit_node_id: str,
+    step_text: str,
+    expected_text: str,
+) -> List[str]:
+    """Infer only *directly reached* relationship targets for one generated step.
+
+    This is intentionally narrower than the old path expansion:
+    - no parent/ancestor chain is inserted;
+    - a relationship target is added only when the model explicitly references the
+      relationship's ``via`` node (or, for ``via: null``, its ``from`` node) AND
+      the step actually performs an activating action such as click/select/open;
+    - a passive verification such as "Verify Add Action Button is visible" does
+      not count as opening the popup behind that button.
+
+    This lets a step like "Open an existing SM using the SM ID Link" count the
+    resulting ``SM Detail`` screen as reached, because that transition is explicitly
+    defined in ``ui_context.json``. It does not complete missing parent paths for the
+    model.
+    """
+    explicit = str(explicit_node_id or "").strip()
+    if not explicit or explicit == "LOGIN":
+        return []
+
+    action = normalize_text(step_text or "")
+    expected = normalize_text(expected_text or "")
+
+    # Verbs that indicate that the referenced UI control/state is actually used to
+    # trigger a transition. Merely checking/inspecting a control is deliberately not
+    # enough.
+    activation_patterns = [
+        r"\bclick(?:s|ed|ing)?\b",
+        r"\bselect(?:s|ed|ing)?\b",
+        r"\bopen(?:s|ed|ing)?\b",
+        r"\bpress(?:es|ed|ing)?\b",
+        r"\btap(?:s|ped|ping)?\b",
+        r"\bchoose|chooses|chose|chosen|choosing\b",
+        r"\bnavigate(?:s|d|ing)?\b",
+        r"\bgo to\b",
+        r"\baccess(?:es|ed|ing)?\b",
+        r"\bfollow(?:s|ed|ing)?\b",
+        r"\bsubmit(?:s|ted|ting)?\b",
+        r"\bsave(?:s|d|ing)?\b",
+        r"\bcancel(?:s|led|ing)?\b",
+        r"\baccept(?:s|ed|ing)?\b",
+        r"\bdecline(?:s|d|ing)?\b",
+        r"\bback\b",
+        r"\bsearch(?:es|ed|ing)?\b",
+    ]
+    activates = any(re.search(p, action) for p in activation_patterns)
+
+    name_map = _node_name_map()
+    valid_ids = _node_ids()
+    reached: List[str] = []
+
+    for rel in _relationship_records():
+        via = str(rel.get("via") or "").strip()
+        source = str(rel.get("from") or "").strip()
+        target = str(rel.get("to") or "").strip()
+        if target not in valid_ids:
+            continue
+
+        # Normal case: the generated step explicitly references the clickable/
+        # selectable ``via`` node. Some modeled transitions intentionally have no
+        # via node; for those, the current/source node may be referenced instead.
+        references_transition = (via and explicit == via) or (not via and source and explicit == source)
+        if not references_transition:
+            continue
+
+        target_name = normalize_text(name_map.get(target, ""))
+        target_named_in_expected = bool(target_name and target_name in expected)
+        expected_transition_words = bool(re.search(
+            r"\b(open|opens|opened|display|displayed|shown|show|appears|appear|redirect|redirected|navigate|navigated|load|loaded|return|returned)\b",
+            expected,
+        ))
+
+        # Prefer the action itself as evidence. The expected-result fallback is useful
+        # for model phrasing where the action is terse but the resulting screen/modal
+        # is explicitly named.
+        if activates or (target_named_in_expected and expected_transition_words):
+            if target != explicit and target not in reached:
+                reached.append(target)
+
+    return reached
+
+
 def _ancestor_chain(node_id: str) -> List[str]:
     """Returns ancestors from root to node, based on parent links in ui_context."""
     parents = _parent_map()
@@ -1005,21 +1097,31 @@ def infer_nodes_from_step_text(step_text: str, expected_text: str) -> List[str]:
 
 
 def extract_actual_nav_path(tc: Dict[str, Any], allow_text_inference: bool = False) -> List[str]:
-    """Return the navigation nodes that are ACTUALLY present in the generated steps.
+    """Return the navigation path supported by the generated steps.
 
-    Main-evaluation behavior is deliberately strict:
-    - only explicit, valid ``ui_node_id`` values emitted by the model are counted;
-    - their original step order is preserved;
-    - missing parent nodes are NOT inserted automatically;
-    - relationship targets are NOT inserted automatically;
-    - text inference is disabled for the main experiment.
+    Main-evaluation behavior uses a balanced rule:
+    - explicit, valid ``ui_node_id`` values emitted by the model are counted;
+    - the original step order is preserved;
+    - parent/ancestor nodes are NEVER inserted automatically;
+    - a direct relationship target may be counted when an explicit step actually
+      activates the modeled transition (for example clicking an SM ID Link reaches
+      SM Detail);
+    - passive checks do not trigger relationship expansion;
+    - text inference remains disabled for the main experiment.
 
-    This prevents the evaluator from completing a path on behalf of the model.
-    ``allow_text_inference=True`` remains available only for manual/debug use and
-    still does not add ancestor chains or relationship targets.
+    Consecutive duplicates are collapsed because several actions inside the same
+    screen/modal may legitimately carry the same ``ui_node_id``. Re-visiting a node
+    later in the path is still preserved.
     """
     path: List[str] = []
     valid_ids = _node_ids()
+
+    def append_node(node_id: Optional[str]):
+        node = str(node_id or "").strip()
+        if not node or node == "LOGIN" or node not in valid_ids:
+            return
+        if not path or path[-1] != node:
+            path.append(node)
 
     all_steps: List[Any] = []
     all_steps.extend(tc.get("navigation_steps", []) or [])
@@ -1040,13 +1142,21 @@ def extract_actual_nav_path(tc: Dict[str, Any], allow_text_inference: bool = Fal
             expected_text = ""
             explicit = None
 
-        if explicit and str(explicit) != "LOGIN" and str(explicit) in valid_ids:
-            # Preserve exactly what the model emitted, in exactly this order.
-            path.append(str(explicit))
+        explicit_str = str(explicit or "").strip()
+        if explicit_str and explicit_str != "LOGIN" and explicit_str in valid_ids:
+            append_node(explicit_str)
+
+            # Count only the immediate UI state reached by an explicitly activated
+            # relationship. This is not ancestor completion: the target must be a
+            # direct transition from the explicit node/source in ui_context.json.
+            for target in _relationship_targets_for_step(
+                explicit_str, step_text, expected_text
+            ):
+                append_node(target)
+
         elif allow_text_inference:
             for node in infer_nodes_from_step_text(step_text, expected_text):
-                if node in valid_ids and node != "LOGIN":
-                    path.append(node)
+                append_node(node)
 
     return path
 
@@ -1253,8 +1363,9 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
     - required_across_story: UI target nodes that should appear at least once across all positive/evaluable
       test cases of the User Story.
     - no-access permission tests are handled separately through explicit denial language;
-    - for other test cases with a reference path, missing explicit ui_node_id evidence counts as incorrect
-      instead of being silently removed from the denominator.
+    - for other test cases with a reference path, missing navigation evidence counts as incorrect instead of being silently removed
+      from the denominator. Direct relationship targets may count as reached only when an explicit
+      generated step activates that modeled transition.
 
     Backwards compatibility:
     - also supports the older "targets" format used earlier in the project.
