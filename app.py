@@ -7,6 +7,7 @@ import os
 import io
 import json
 import re
+import hashlib
 from typing import Dict, List, Any, Optional
 
 import streamlit as st
@@ -547,12 +548,18 @@ Output schema:
 def evaluate_ac_coverage(
     us_id_value: str,
     cases: List[Dict[str, Any]],
-    ac_blob: str
+    ac_blob: str,
+    bulk_checkpoint_state: Optional[Dict[str, Any]] = None,
+    bulk_checkpoint_path: Optional[str] = None,
+    bulk_run_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     AC Coverage evaluation using LLM-as-a-Judge.
-    For each acceptance criterion, the judge decides whether at least one generated
-    test case covers its intent and returns a short reason.
+
+    During a bulk run, every successfully judged acceptance criterion is written to the
+    on-disk checkpoint immediately. If the app stops, a resumed run reuses those saved
+    judge results and calls the API only for acceptance criteria that are still missing
+    or previously failed.
     """
     if not client:
         return {
@@ -573,25 +580,49 @@ def evaluate_ac_coverage(
             "note": "No acceptance criteria text provided for LLM judge."
         }
 
-    # Build a compact readable representation of the test cases
+    # Build a compact readable representation of the test cases.
     tc_text_parts = []
     for tc in cases:
         parts = [f"[{tc.get('id','')}] {tc.get('title','')}"]
-        for s in tc.get("steps", []) or []:
-            if isinstance(s, dict):
-                parts.append(f"  Step: {s.get('step','')}")
-                parts.append(f"  Expected: {s.get('expected','')}")
+        for step in tc.get("steps", []) or []:
+            if isinstance(step, dict):
+                parts.append(f"  Step: {step.get('step','')}")
+                parts.append(f"  Expected: {step.get('expected','')}")
         tc_text_parts.append("\n".join(parts))
     tc_text = "\n\n".join(tc_text_parts)
 
-    details = []
+    judge_cache: Dict[str, Any] = {}
+    if bulk_checkpoint_state is not None and bulk_run_key:
+        run_state = bulk_checkpoint_state.setdefault("runs", {}).setdefault(bulk_run_key, {})
+        judge_cache = run_state.setdefault("ac_judge", {}).setdefault("details", {})
+
+    details: List[Dict[str, Any]] = []
     covered_count = 0
+    failed_count = 0
 
     for idx, ac_line in enumerate(ac_lines, start=1):
         ac_id = f"AC-{idx}"
+        cached = judge_cache.get(ac_id) if judge_cache else None
+
+        # Reuse only a completed judge result. Failed/incomplete results are retried.
+        if isinstance(cached, dict) and cached.get("status") == "complete":
+            covered = bool(cached.get("covered", False))
+            reason = str(cached.get("reason", ""))
+            detail = {
+                "ac_id": ac_id,
+                "ac_text": ac_line,
+                "covered": covered,
+                "reason": reason,
+                "score": 1.0 if covered else 0.0,
+            }
+            details.append(detail)
+            if covered:
+                covered_count += 1
+            continue
+
         payload = {
             "acceptance_criterion": ac_line,
-            "generated_test_cases": tc_text
+            "generated_test_cases": tc_text,
         }
         try:
             resp = client.chat.completions.create(
@@ -601,37 +632,77 @@ def evaluate_ac_coverage(
                 messages=[
                     {"role": "system", "content": LLM_JUDGE_SYSTEM_PROMPT},
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-                ]
+                ],
             )
             raw = (resp.choices[0].message.content or "").strip()
             raw = re.sub(r"^```(json)?\s*|\s*```$", "", raw, flags=re.S).strip()
             result = json.loads(raw)
+            if "covered" not in result:
+                raise ValueError("Judge response has no 'covered' field.")
             covered = bool(result.get("covered", False))
-            reason = str(result.get("reason", ""))
+            reason = str(result.get("reason", "")).strip() or "No reason returned by judge."
+
+            if judge_cache is not None:
+                judge_cache[ac_id] = {
+                    "status": "complete",
+                    "ac_text": ac_line,
+                    "covered": covered,
+                    "reason": reason,
+                }
+                if bulk_checkpoint_state is not None and bulk_checkpoint_path:
+                    _save_bulk_checkpoint(bulk_checkpoint_path, bulk_checkpoint_state)
+
+            detail = {
+                "ac_id": ac_id,
+                "ac_text": ac_line,
+                "covered": covered,
+                "reason": reason,
+                "score": 1.0 if covered else 0.0,
+            }
+            details.append(detail)
+            if covered:
+                covered_count += 1
+
         except Exception as e:
-            covered = False
+            failed_count += 1
             reason = f"Judge call failed: {e}"
+            detail = {
+                "ac_id": ac_id,
+                "ac_text": ac_line,
+                "covered": None,
+                "reason": reason,
+                "score": None,
+            }
+            details.append(detail)
 
-        if covered:
-            covered_count += 1
-
-        details.append({
-            "ac_id": ac_id,
-            "ac_text": ac_line,
-            "covered": covered,
-            "reason": reason,
-            "score": 1.0 if covered else 0.0
-        })
+            if judge_cache is not None:
+                judge_cache[ac_id] = {
+                    "status": "failed",
+                    "ac_text": ac_line,
+                    "covered": None,
+                    "reason": reason,
+                }
+                if bulk_checkpoint_state is not None and bulk_checkpoint_path:
+                    _save_bulk_checkpoint(bulk_checkpoint_path, bulk_checkpoint_state)
 
     total = len(ac_lines)
-    overall_pct = round((covered_count / total) * 100, 2) if total else None
+    # Never silently turn API failures into "not covered". Incomplete judge runs stay
+    # incomplete and are retried on the next resume.
+    overall_pct = None if failed_count else round((covered_count / total) * 100, 2)
+    note = None
+    if failed_count:
+        note = (
+            f"AC Coverage incomplete: {failed_count} judge call(s) failed. "
+            "Successful AC judgements were checkpointed and will not be repeated; "
+            "resume the bulk evaluation to retry only the failed ACs."
+        )
 
     return {
         "overall_pct": overall_pct,
-        "covered_count": covered_count,
+        "covered_count": covered_count if not failed_count else None,
         "total_count": total,
         "details": details,
-        "note": None
+        "note": note,
     }
 
 
@@ -1602,9 +1673,19 @@ def evaluate_all(
     ac_blob: str,
     cases: List[Dict[str, Any]],
     use_ui_context: bool = True,
+    bulk_checkpoint_state: Optional[Dict[str, Any]] = None,
+    bulk_checkpoint_path: Optional[str] = None,
+    bulk_run_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     # AC Coverage is evaluated semantically with LLM-as-a-Judge for both variants.
-    ac_coverage = evaluate_ac_coverage(us_id_value, cases, ac_blob)
+    ac_coverage = evaluate_ac_coverage(
+        us_id_value,
+        cases,
+        ac_blob,
+        bulk_checkpoint_state=bulk_checkpoint_state,
+        bulk_checkpoint_path=bulk_checkpoint_path,
+        bulk_run_key=bulk_run_key,
+    )
 
     # Target Node Coverage is calculated only for the with-UI-context variant.
     target_node = (
@@ -1716,6 +1797,107 @@ def load_bulk_userstories(source: Any) -> List[Dict[str, Any]]:
     return cleaned
 
 
+BULK_CHECKPOINT_VERSION = 1
+BULK_CHECKPOINT_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    ".bulk_checkpoints",
+)
+
+
+def _bulk_checkpoint_fingerprint(userstories: List[Dict[str, Any]], repetitions: int) -> str:
+    """Stable ID so the same dataset + repetition count resumes the same run."""
+    payload = {
+        "version": BULK_CHECKPOINT_VERSION,
+        "repetitions": int(repetitions),
+        "userstories": userstories,
+        "generation_model": "gpt-5.4-mini",
+        "judge_model": "gpt-5.4-mini",
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+
+
+def _bulk_checkpoint_path(userstories: List[Dict[str, Any]], repetitions: int) -> str:
+    fp = _bulk_checkpoint_fingerprint(userstories, repetitions)
+    return os.path.join(BULK_CHECKPOINT_DIR, f"bulk_{fp}.json")
+
+
+def _new_bulk_checkpoint(userstories: List[Dict[str, Any]], repetitions: int) -> Dict[str, Any]:
+    return {
+        "checkpoint_version": BULK_CHECKPOINT_VERSION,
+        "fingerprint": _bulk_checkpoint_fingerprint(userstories, repetitions),
+        "repetitions": int(repetitions),
+        "total_runs": len(userstories) * int(repetitions) * 2,
+        "runs": {},
+    }
+
+
+def _load_bulk_checkpoint(path: str) -> Optional[Dict[str, Any]]:
+    if not path or not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict) or data.get("checkpoint_version") != BULK_CHECKPOINT_VERSION:
+            return None
+        data.setdefault("runs", {})
+        return data
+    except Exception:
+        # Keep a broken file for inspection instead of overwriting it silently.
+        return None
+
+
+def _save_bulk_checkpoint(path: str, state: Dict[str, Any]) -> None:
+    """Atomic, fsync-backed save so a crash does not leave a half-written checkpoint."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, path)
+
+
+def _delete_bulk_checkpoint(path: Optional[str]) -> None:
+    if path and os.path.exists(path):
+        os.remove(path)
+
+
+def _bulk_checkpoint_stats(state: Optional[Dict[str, Any]]) -> Dict[str, int]:
+    runs = (state or {}).get("runs", {}) if isinstance(state, dict) else {}
+    completed = 0
+    generated = 0
+    judge_done = 0
+    judge_failed = 0
+    for run in runs.values():
+        if not isinstance(run, dict):
+            continue
+        if run.get("generation_complete"):
+            generated += 1
+        if run.get("complete"):
+            completed += 1
+        details = run.get("ac_judge", {}).get("details", {})
+        if isinstance(details, dict):
+            for d in details.values():
+                if isinstance(d, dict) and d.get("status") == "complete":
+                    judge_done += 1
+                elif isinstance(d, dict) and d.get("status") == "failed":
+                    judge_failed += 1
+    return {
+        "completed": completed,
+        "generated": generated,
+        "judge_done": judge_done,
+        "judge_failed": judge_failed,
+    }
+
+
+def _generation_call_failed(open_questions: List[str]) -> bool:
+    return any(
+        str(q).strip().lower().startswith("openai call failed:")
+        for q in (open_questions or [])
+    )
+
+
 def _metric_or_none(evaluation: Dict[str, Any], section: str, key: str) -> Optional[float]:
     try:
         value = evaluation.get(section, {}).get(key)
@@ -1746,17 +1928,26 @@ def _overall_score(ac_pct: Optional[float], role_pct: Optional[float], target_pc
 
 def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> pd.DataFrame:
     """
-    For every user story and every repetition, run both variants:
-    - without UI context
-    - with UI context
+    Crash-safe bulk evaluation.
 
-    Then evaluate each output and return one result row per generated output.
-    Also stores cases + evaluations in st.session_state.bulk_runs_store for PDF export.
+    Cost-protection behavior:
+    - every finished generation is saved to disk immediately;
+    - every successful AC judge call is saved immediately;
+    - completed runs are skipped on resume;
+    - if generation is already saved but evaluation was interrupted, generation is NOT repeated;
+    - if some AC judge calls failed, only those failed/missing ACs are retried.
     """
-    rows = []
-    runs_store: Dict[str, Any] = {}   # key: "US-1|with_ui_context|rep1"
+    checkpoint_path = _bulk_checkpoint_path(userstories, repetitions)
+    checkpoint = _load_bulk_checkpoint(checkpoint_path)
+    if checkpoint is None:
+        checkpoint = _new_bulk_checkpoint(userstories, repetitions)
+        _save_bulk_checkpoint(checkpoint_path, checkpoint)
+
+    rows: List[Dict[str, Any]] = []
+    runs_store: Dict[str, Any] = {}
     total_runs = len(userstories) * repetitions * 2
     done = 0
+    api_generation_calls_this_resume = 0
 
     progress = st.progress(0)
     status = st.empty()
@@ -1769,20 +1960,95 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
     for rep in range(1, repetitions + 1):
         for item in userstories:
             for variant_name, use_ui in variants:
+                run_key = f"{item['id']}|{variant_name}|rep{rep}"
+                run_state = checkpoint.setdefault("runs", {}).setdefault(run_key, {
+                    "item": item,
+                    "variant": variant_name,
+                    "rep": rep,
+                    "use_ui_context": use_ui,
+                    "generation_complete": False,
+                    "complete": False,
+                    "cases": [],
+                    "open_q": [],
+                    "ac_judge": {"details": {}},
+                })
+
+                # Keep metadata current without throwing away saved work.
+                run_state["item"] = item
+                run_state["variant"] = variant_name
+                run_state["rep"] = rep
+                run_state["use_ui_context"] = use_ui
+                run_state.setdefault("ac_judge", {}).setdefault("details", {})
+
                 done += 1
+                progress.progress(done / total_runs)
+
+                if run_state.get("complete") and run_state.get("row") and run_state.get("evaluation"):
+                    status.write(
+                        f"Resume {done}/{total_runs}: {item['id']} — {variant_name} — repetition {rep}/{repetitions} — already complete, skipped"
+                    )
+                    rows.append(run_state["row"])
+                    runs_store[run_key] = {
+                        "item": item,
+                        "variant": variant_name,
+                        "rep": rep,
+                        "cases": run_state.get("cases", []),
+                        "open_q": run_state.get("open_q", []),
+                        "evaluation": run_state.get("evaluation"),
+                    }
+                    continue
+
                 status.write(
                     f"Bulk run {done}/{total_runs}: {item['id']} — {variant_name} — repetition {rep}/{repetitions}"
                 )
-                progress.progress(done / total_runs)
-
-                run_key = f"{item['id']}|{variant_name}|rep{rep}"
 
                 try:
-                    cases, open_q = generate_cases(
-                        story=item["story"],
-                        ac_blob=item["ac_blob"],
-                        use_ui_context=use_ui,
-                    )
+                    # Generation is the expensive part that must never be repeated after it succeeded.
+                    if run_state.get("generation_complete"):
+                        cases = run_state.get("cases", []) or []
+                        open_q = run_state.get("open_q", []) or []
+                        status.write(
+                            f"Bulk run {done}/{total_runs}: {item['id']} — {variant_name} — using saved generation; continuing evaluation"
+                        )
+                    else:
+                        cases, open_q = generate_cases(
+                            story=item["story"],
+                            ac_blob=item["ac_blob"],
+                            use_ui_context=use_ui,
+                        )
+                        api_generation_calls_this_resume += 1
+
+                        if _generation_call_failed(open_q):
+                            run_state["generation_complete"] = False
+                            run_state["cases"] = []
+                            run_state["open_q"] = open_q
+                            run_state["last_error"] = "Generation API call failed; this run will be retried on resume."
+                            _save_bulk_checkpoint(checkpoint_path, checkpoint)
+                            rows.append({
+                                "repetition": rep,
+                                "us_id": item.get("id", ""),
+                                "title": item.get("title", ""),
+                                "variant": variant_name,
+                                "use_ui_context": use_ui,
+                                "acceptance_criteria_count": item.get("acceptance_criteria_count"),
+                                "testcase_count": 0,
+                                "ac_coverage_pct": None,
+                                "role_coverage_pct": None,
+                                "target_node_coverage_pct": None,
+                                "navigation_path_correctness_pct": None,
+                                "navigation_correctness_pct": None,
+                                "overall_score_pct": None,
+                                "open_questions_count": len(open_q or []),
+                                "error": run_state["last_error"],
+                            })
+                            continue
+
+                        # Save immediately after the generation response returns, before any judge calls.
+                        run_state["generation_complete"] = True
+                        run_state["cases"] = cases
+                        run_state["open_q"] = open_q
+                        run_state["last_error"] = ""
+                        _save_bulk_checkpoint(checkpoint_path, checkpoint)
 
                     evaluation = evaluate_all(
                         us_id_value=item["id"],
@@ -1790,23 +2056,25 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                         ac_blob=item["ac_blob"],
                         cases=cases,
                         use_ui_context=use_ui,
+                        bulk_checkpoint_state=checkpoint,
+                        bulk_checkpoint_path=checkpoint_path,
+                        bulk_run_key=run_key,
                     )
 
-                    ac_pct  = _metric_or_none(evaluation, "ac", "overall_pct")
+                    ac_pct = _metric_or_none(evaluation, "ac", "overall_pct")
                     role_pct = _metric_or_none(evaluation, "role", "overall_pct")
                     target_pct = _metric_or_none(evaluation, "target_node", "coverage_pct")
-                    nav_pct  = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
+                    nav_pct = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
 
-                    runs_store[run_key] = {
-                        "item": item,
-                        "variant": variant_name,
-                        "rep": rep,
-                        "cases": cases,
-                        "open_q": open_q,
-                        "evaluation": evaluation,
-                    }
+                    ac_incomplete = ac_pct is None
+                    error_text = ""
+                    if ac_incomplete:
+                        error_text = (
+                            "AC Coverage judge incomplete. Saved successful judge calls will be reused; "
+                            "resume to retry only failed/missing AC judge calls."
+                        )
 
-                    rows.append({
+                    row = {
                         "repetition": rep,
                         "us_id": item["id"],
                         "title": item.get("title", ""),
@@ -1821,11 +2089,31 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                         "navigation_correctness_pct": nav_pct,
                         "overall_score_pct": _overall_score(ac_pct, role_pct, target_pct, nav_pct),
                         "open_questions_count": len(open_q or []),
-                        "error": "",
-                    })
+                        "error": error_text,
+                    }
+
+                    run_state["evaluation"] = evaluation
+                    run_state["row"] = row
+                    run_state["complete"] = not ac_incomplete
+                    run_state["last_error"] = error_text
+                    _save_bulk_checkpoint(checkpoint_path, checkpoint)
+
+                    rows.append(row)
+                    runs_store[run_key] = {
+                        "item": item,
+                        "variant": variant_name,
+                        "rep": rep,
+                        "cases": cases,
+                        "open_q": open_q,
+                        "evaluation": evaluation,
+                    }
 
                 except Exception as e:
-                    runs_store[run_key] = {"error": str(e)}
+                    # Save the current state before moving on. A resume will reuse any generation
+                    # and AC judge calls that already completed successfully.
+                    run_state["complete"] = False
+                    run_state["last_error"] = str(e)
+                    _save_bulk_checkpoint(checkpoint_path, checkpoint)
                     rows.append({
                         "repetition": rep,
                         "us_id": item.get("id", ""),
@@ -1833,21 +2121,31 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                         "variant": variant_name,
                         "use_ui_context": use_ui,
                         "acceptance_criteria_count": item.get("acceptance_criteria_count"),
-                        "testcase_count": 0,
+                        "testcase_count": len(run_state.get("cases", []) or []),
                         "ac_coverage_pct": None,
                         "role_coverage_pct": None,
                         "target_node_coverage_pct": None,
                         "navigation_path_correctness_pct": None,
                         "navigation_correctness_pct": None,
                         "overall_score_pct": None,
-                        "open_questions_count": 0,
+                        "open_questions_count": len(run_state.get("open_q", []) or []),
                         "error": str(e),
                     })
 
     progress.progress(1.0)
-    status.write("Bulk evaluation finished.")
+    stats = _bulk_checkpoint_stats(checkpoint)
+    if stats["completed"] == total_runs:
+        status.write("Bulk evaluation finished. All runs are checkpointed on disk.")
+    else:
+        status.write(
+            f"Bulk pass finished with {stats['completed']}/{total_runs} complete runs. "
+            "Run / resume again to retry only unfinished work."
+        )
 
     st.session_state.bulk_runs_store = runs_store
+    st.session_state.bulk_checkpoint_path = checkpoint_path
+    st.session_state.bulk_checkpoint_stats = stats
+    st.session_state.bulk_generation_calls_this_resume = api_generation_calls_this_resume
     return pd.DataFrame(rows)
 
 
@@ -2494,14 +2792,59 @@ generation_calls = len(preview_userstories) * int(bulk_repetitions) * 2
 judge_calls = sum(item.get("acceptance_criteria_count", 0) for item in preview_userstories) * int(bulk_repetitions) * 2
 estimated_calls = generation_calls + judge_calls
 st.caption(
-    f"Estimated LLM calls: {estimated_calls} total "
-    f"({generation_calls} generation + {judge_calls} AC Coverage judge calls)."
+    f"Maximum calls for a completely new run: {estimated_calls} "
+    f"({generation_calls} generation + {judge_calls} AC Coverage judge calls). "
+    "Resume mode does not repeat already checkpointed work."
 )
 
-run_bulk_button = st.button(
-    "Run bulk evaluation",
-    disabled=not (client and preview_userstories),
+current_checkpoint_path = (
+    _bulk_checkpoint_path(preview_userstories, int(bulk_repetitions))
+    if preview_userstories else None
 )
+current_checkpoint = _load_bulk_checkpoint(current_checkpoint_path) if current_checkpoint_path else None
+checkpoint_stats = _bulk_checkpoint_stats(current_checkpoint)
+total_expected_runs = len(preview_userstories) * int(bulk_repetitions) * 2
+
+if current_checkpoint:
+    st.success(
+        f"Saved checkpoint found: {checkpoint_stats['completed']}/{total_expected_runs} runs complete; "
+        f"{checkpoint_stats['generated']} generations already saved; "
+        f"{checkpoint_stats['judge_done']} AC judge decisions already saved. "
+        "Starting again will resume from this checkpoint instead of paying for those calls again."
+    )
+    if checkpoint_stats["judge_failed"]:
+        st.warning(
+            f"{checkpoint_stats['judge_failed']} AC judge call(s) previously failed. "
+            "Only those failed/missing judge calls will be retried."
+        )
+
+bulk_btn_col1, bulk_btn_col2 = st.columns([2, 1])
+with bulk_btn_col1:
+    run_bulk_button = st.button(
+        "Run / resume bulk evaluation",
+        disabled=not (client and preview_userstories),
+        type="primary",
+    )
+with bulk_btn_col2:
+    clear_checkpoint_button = st.button(
+        "Clear saved checkpoint",
+        disabled=not bool(current_checkpoint),
+        help="Deletes saved bulk progress for the currently selected dataset and repetition count. Use only when you intentionally want to start from scratch.",
+    )
+
+if clear_checkpoint_button and current_checkpoint_path:
+    _delete_bulk_checkpoint(current_checkpoint_path)
+    for key in [
+        "bulk_results_df",
+        "bulk_summary_df",
+        "bulk_by_us_df",
+        "bulk_runs_store",
+        "bulk_checkpoint_path",
+        "bulk_checkpoint_stats",
+    ]:
+        st.session_state.pop(key, None)
+    st.success("Saved checkpoint cleared. The next run will start from scratch.")
+    st.rerun()
 
 if run_bulk_button:
     try:
@@ -2512,7 +2855,9 @@ if run_bulk_button:
         else:
             bulk_userstories = load_bulk_userstories(BULK_USERSTORIES_PATH)
 
-        with st.spinner("Running bulk evaluation. This may take several minutes..."):
+        with st.spinner(
+            "Running/resuming bulk evaluation. Completed generations and AC judge calls are reused from disk."
+        ):
             results_df = run_bulk_evaluation(bulk_userstories, int(bulk_repetitions))
             summary_df = summarize_bulk_results(results_df)
             by_us_df = summarize_bulk_by_user_story(results_df)
@@ -2521,8 +2866,18 @@ if run_bulk_button:
         st.session_state.bulk_summary_df = summary_df
         st.session_state.bulk_by_us_df = by_us_df
 
+        stats = st.session_state.get("bulk_checkpoint_stats", {})
+        if stats:
+            st.success(
+                f"Checkpoint saved: {stats.get('completed', 0)}/{len(bulk_userstories) * int(bulk_repetitions) * 2} runs complete. "
+                "If the app stops, rerun with the same dataset and repetition count and press Run / resume."
+            )
+
     except Exception as e:
-        st.error(f"Bulk evaluation failed: {e}")
+        st.error(
+            f"Bulk evaluation stopped: {e}. Progress already written to the checkpoint remains available. "
+            "Press Run / resume bulk evaluation to continue without repeating completed work."
+        )
 
 if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_df.empty:
     st.subheader("Bulk Summary")
@@ -2598,6 +2953,20 @@ if "bulk_by_us_df" in st.session_state and not st.session_state.bulk_by_us_df.em
             file_name="bulk_evaluation_by_user_story.csv",
             mime="text/csv",
         )
+
+if st.session_state.get("bulk_checkpoint_path") and os.path.exists(st.session_state.bulk_checkpoint_path):
+    try:
+        with open(st.session_state.bulk_checkpoint_path, "rb") as checkpoint_file:
+            checkpoint_bytes = checkpoint_file.read()
+        st.download_button(
+            "Download bulk checkpoint backup",
+            data=checkpoint_bytes,
+            file_name=os.path.basename(st.session_state.bulk_checkpoint_path),
+            mime="application/json",
+            help="Optional backup of all saved generations and AC judge decisions from the current bulk run.",
+        )
+    except Exception as e:
+        st.warning(f"Could not prepare checkpoint download: {e}")
 
 if "bulk_results_df" in st.session_state and not st.session_state.bulk_results_df.empty:
     with st.expander("Raw bulk result rows"):
