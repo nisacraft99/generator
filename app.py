@@ -6,6 +6,7 @@
 import os
 import io
 import json
+import ast
 import re
 import hashlib
 from typing import Dict, List, Any, Optional
@@ -408,19 +409,74 @@ SYSTEM_PROMPT_WITH_UI = SYSTEM_PROMPT_BASE
 SYSTEM_PROMPT_NO_UI = SYSTEM_PROMPT_BASE
 
 # ======================= GENERATOR HELPERS =======================
+def _extract_first_balanced_json_object(text: str) -> Optional[str]:
+    """Return the first balanced {...} block while respecting JSON string literals."""
+    start = text.find("{")
+    if start < 0:
+        return None
+
+    depth = 0
+    in_string = False
+    escaped = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+
+        if ch == '"':
+            in_string = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1]
+    return None
+
+
 def _json_from_text(txt: str) -> dict:
+    """Parse model output locally and salvage common formatting mistakes without another API call."""
     txt = (txt or "").strip()
     if txt.startswith("```"):
-        txt = re.sub(r"^```(json)?\s*|\s*```$", "", txt, flags=re.S).strip()
-    try:
-        return json.loads(txt)
-    except Exception:
-        m = re.search(r"\{.*\}", txt, flags=re.S)
-        if m:
-            try:
-                return json.loads(m.group(0))
-            except Exception:
-                pass
+        txt = re.sub(r"^```(?:json)?\s*|\s*```$", "", txt, flags=re.S | re.I).strip()
+
+    candidates = [txt]
+    balanced = _extract_first_balanced_json_object(txt)
+    if balanced and balanced != txt:
+        candidates.append(balanced)
+
+    # First try strict JSON, then a tiny deterministic repair for trailing commas.
+    for candidate in candidates:
+        try:
+            data = json.loads(candidate)
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            pass
+
+        repaired = re.sub(r",\s*([}\]])", r"\1", candidate)
+        try:
+            data = json.loads(repaired)
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            pass
+
+        # Some models occasionally emit Python-style dict literals (single quotes / True / None).
+        # literal_eval is local and safe for literals only; no code is executed.
+        try:
+            data = ast.literal_eval(candidate)
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            pass
+
     return {"test_cases": [], "open_questions": ["Model response was not valid JSON."]}
 
 def _normalize_step(step_obj):
@@ -1895,11 +1951,22 @@ def _bulk_checkpoint_stats(state: Optional[Dict[str, Any]]) -> Dict[str, int]:
     }
 
 
-def _generation_call_failed(open_questions: List[str]) -> bool:
-    return any(
-        str(q).strip().lower().startswith("openai call failed:")
-        for q in (open_questions or [])
-    )
+def _generation_failure_reason(cases: List[Dict[str, Any]], open_questions: List[str]) -> str:
+    """Return a technical generation failure reason that must not be scored as test quality."""
+    notes = [str(q).strip() for q in (open_questions or [])]
+    lowered = [q.lower() for q in notes]
+
+    for original, low in zip(notes, lowered):
+        if low.startswith("openai call failed:"):
+            return original
+        if "model response was not valid json" in low:
+            return "Model response was not valid JSON."
+        if "openai client not initialized" in low:
+            return original
+
+    # An empty, valid JSON test_cases list is not automatically classified as a technical failure.
+    # It remains a model output and can be evaluated as such.
+    return ""
 
 
 def _metric_or_none(evaluation: Dict[str, Any], section: str, key: str) -> Optional[float]:
@@ -1939,7 +2006,8 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
     - every successful AC judge call is saved immediately;
     - completed runs are skipped on resume;
     - if generation is already saved but evaluation was interrupted, generation is NOT repeated;
-    - if some AC judge calls failed, only those failed/missing ACs are retried.
+    - if some AC judge calls failed, only those failed/missing ACs are retried;
+    - invalid JSON is regenerated immediately (up to 2 automatic retries) and is never scored as 0%.
     """
     checkpoint_path = _bulk_checkpoint_path(userstories, repetitions)
     checkpoint = _load_bulk_checkpoint(checkpoint_path)
@@ -1987,6 +2055,26 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                 done += 1
                 progress.progress(done / total_runs)
 
+                # Repair checkpoints created by older versions that accidentally treated invalid JSON
+                # as a real 0% result. Such a run is a technical generation failure, not a quality score.
+                cached_failure = _generation_failure_reason(
+                    run_state.get("cases", []) or [],
+                    run_state.get("open_q", []) or [],
+                )
+                if cached_failure:
+                    run_state["generation_complete"] = False
+                    run_state["complete"] = False
+                    run_state["cases"] = []
+                    run_state["evaluation"] = None
+                    run_state["row"] = None
+                    # Any judge decisions from the invalid/empty generation belong to the bad output
+                    # and must not be reused after regeneration.
+                    run_state["ac_judge"] = {"details": {}}
+                    run_state["last_error"] = (
+                        f"{cached_failure} Previous 0% result invalidated; this run will be regenerated on resume."
+                    )
+                    _save_bulk_checkpoint(checkpoint_path, checkpoint)
+
                 if run_state.get("complete") and run_state.get("row") and run_state.get("evaluation"):
                     # Recompute the deterministic Role Coverage from the saved test cases.
                     # This is free (no API call) and also repairs checkpoints created with
@@ -2030,18 +2118,64 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                             f"Bulk run {done}/{total_runs}: {item['id']} — {variant_name} — using saved generation; continuing evaluation"
                         )
                     else:
-                        cases, open_q = generate_cases(
-                            story=item["story"],
-                            ac_blob=item["ac_blob"],
-                            use_ui_context=use_ui,
-                        )
-                        api_generation_calls_this_resume += 1
+                        # Invalid JSON is a technical generation failure, not a test-quality result.
+                        # Retry it immediately so the bulk run can continue without waiting for a manual resume.
+                        # The cap prevents an endless loop / uncontrolled API costs if the model repeatedly
+                        # returns malformed output. Local JSON repair in _json_from_text() is attempted first.
+                        max_invalid_json_retries = 2  # 1 initial call + up to 2 automatic re-generations
+                        generation_attempt = 0
 
-                        if _generation_call_failed(open_q):
+                        while True:
+                            generation_attempt += 1
+                            cases, open_q = generate_cases(
+                                story=item["story"],
+                                ac_blob=item["ac_blob"],
+                                use_ui_context=use_ui,
+                            )
+                            api_generation_calls_this_resume += 1
+
+                            generation_failure = _generation_failure_reason(cases, open_q)
+                            invalid_json = generation_failure == "Model response was not valid JSON."
+
+                            if invalid_json and generation_attempt <= max_invalid_json_retries:
+                                run_state["generation_complete"] = False
+                                run_state["complete"] = False
+                                run_state["cases"] = []
+                                run_state["open_q"] = open_q
+                                run_state["evaluation"] = None
+                                run_state["row"] = None
+                                run_state["ac_judge"] = {"details": {}}
+                                run_state["last_error"] = (
+                                    f"Invalid JSON on generation attempt {generation_attempt}; "
+                                    f"automatically regenerating ({generation_attempt}/{max_invalid_json_retries} retries used)."
+                                )
+                                _save_bulk_checkpoint(checkpoint_path, checkpoint)
+                                status.write(
+                                    f"Bulk run {done}/{total_runs}: {item['id']} — {variant_name} — "
+                                    f"invalid JSON on attempt {generation_attempt}; regenerating automatically..."
+                                )
+                                continue
+
+                            break
+
+                        if generation_failure:
                             run_state["generation_complete"] = False
+                            run_state["complete"] = False
                             run_state["cases"] = []
                             run_state["open_q"] = open_q
-                            run_state["last_error"] = "Generation API call failed; this run will be retried on resume."
+                            run_state["evaluation"] = None
+                            run_state["row"] = None
+                            run_state["ac_judge"] = {"details": {}}
+                            if generation_failure == "Model response was not valid JSON.":
+                                failure_suffix = (
+                                    f" Automatic regeneration also failed after {generation_attempt} total attempts; "
+                                    "excluded from all metric averages and left unfinished for a later resume."
+                                )
+                            else:
+                                failure_suffix = (
+                                    " Technical generation failure; excluded from all metric averages and retried on resume."
+                                )
+                            run_state["last_error"] = f"{generation_failure}{failure_suffix}"
                             _save_bulk_checkpoint(checkpoint_path, checkpoint)
                             rows.append({
                                 "repetition": rep,
@@ -2062,10 +2196,13 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                             })
                             continue
 
-                        # Save immediately after the generation response returns, before any judge calls.
+                        # Save immediately after the first valid generation response returns, before any judge calls.
+                        # Judge decisions are tied to this exact generated output, so a fresh generation
+                        # starts with an empty judge cache.
                         run_state["generation_complete"] = True
                         run_state["cases"] = cases
                         run_state["open_q"] = open_q
+                        run_state["ac_judge"] = {"details": {}}
                         run_state["last_error"] = ""
                         _save_bulk_checkpoint(checkpoint_path, checkpoint)
 
@@ -2173,7 +2310,8 @@ def summarize_bulk_results(results_df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     agg_dict = dict(
-        runs=("variant", "count"),
+        attempted_runs=("variant", "count"),
+        valid_runs=("ac_coverage_pct", "count"),
         user_stories=("us_id", "nunique"),
         avg_testcase_count=("testcase_count", "mean"),
         avg_ac_coverage_pct=("ac_coverage_pct", "mean"),
@@ -2200,7 +2338,8 @@ def summarize_bulk_by_user_story(results_df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     agg_dict = dict(
-        runs=("variant", "count"),
+        attempted_runs=("variant", "count"),
+        valid_runs=("ac_coverage_pct", "count"),
         avg_testcase_count=("testcase_count", "mean"),
         avg_ac_coverage_pct=("ac_coverage_pct", "mean"),
         avg_role_coverage_pct=("role_coverage_pct", "mean"),
@@ -2918,6 +3057,18 @@ if "bulk_summary_df" in st.session_state and not st.session_state.bulk_summary_d
 
     with_ui = _row_or_none(with_ui_row)
     without_ui = _row_or_none(without_ui_row)
+
+    failed_total = 0
+    if "failed_runs" in summary_for_metrics.columns:
+        try:
+            failed_total = int(summary_for_metrics["failed_runs"].fillna(0).sum())
+        except Exception:
+            failed_total = 0
+    if failed_total:
+        st.warning(
+            f"{failed_total} technical/incomplete bulk run(s) are excluded from metric averages. "
+            "Use Run / resume bulk evaluation to retry only those unfinished runs. Invalid JSON is never counted as 0% quality."
+        )
 
     st.markdown("### Variant comparison")
     left_col, right_col = st.columns(2)
