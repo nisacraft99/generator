@@ -1,6 +1,6 @@
 # app.py
 # Run:
-#   pip install streamlit python-dotenv reportlab openai
+#   pip install -U streamlit python-dotenv reportlab openai
 #   streamlit run app.py
 
 import os
@@ -586,7 +586,13 @@ def testcase_full_text(tc: Dict[str, Any]) -> str:
 
 # ======================= LLM-AS-A-JUDGE AC EVALUATION =======================
 
+# Judge configuration. GPT-5.6 Luna defaults to medium reasoning; for this short,
+# schema-constrained binary judgement we explicitly disable reasoning so the
+# completion budget is used for the JSON answer itself.
 AC_JUDGE_VERSION = "strict_v2"
+AC_JUDGE_MODEL = "gpt-5.6-luna"
+AC_JUDGE_REASONING_EFFORT = "none"
+AC_JUDGE_MAX_COMPLETION_TOKENS = 500
 
 LLM_JUDGE_SYSTEM_PROMPT = """
 You are a strict QA expert evaluating acceptance-criterion coverage.
@@ -698,9 +704,10 @@ def evaluate_ac_coverage(
         }
         try:
             resp = client.chat.completions.create(
-                model="gpt-5.6-luna",
-                temperature=0,
-                max_completion_tokens=150,
+                model=AC_JUDGE_MODEL,
+                reasoning_effort=AC_JUDGE_REASONING_EFFORT,
+                max_completion_tokens=AC_JUDGE_MAX_COMPLETION_TOKENS,
+                response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": LLM_JUDGE_SYSTEM_PROMPT},
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
@@ -718,6 +725,7 @@ def evaluate_ac_coverage(
                 judge_cache[ac_id] = {
                     "status": "complete",
                     "judge_version": AC_JUDGE_VERSION,
+                    "judge_model": AC_JUDGE_MODEL,
                     "ac_text": ac_line,
                     "covered": covered,
                     "reason": reason,
@@ -752,6 +760,7 @@ def evaluate_ac_coverage(
                 judge_cache[ac_id] = {
                     "status": "failed",
                     "judge_version": AC_JUDGE_VERSION,
+                    "judge_model": AC_JUDGE_MODEL,
                     "ac_text": ac_line,
                     "covered": None,
                     "reason": reason,
@@ -1997,6 +2006,9 @@ def _bulk_checkpoint_fingerprint(userstories: List[Dict[str, Any]], repetitions:
         "repetitions": int(repetitions),
         "userstories": userstories,
         "generation_model": "gpt-5.4-mini",
+        # Intentionally kept as the legacy fingerprint value so changing only the
+        # judge configuration does not create a new checkpoint and regenerate paid outputs.
+        # AC_JUDGE_VERSION controls judge-cache compatibility separately.
         "judge_model": "gpt-5.4-mini",
     }
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
