@@ -324,6 +324,11 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
 
+# Models used in the experiment. Keep these centralized so generation,
+# evaluation and checkpoint fingerprints always stay consistent.
+GENERATOR_MODEL = "gpt-5.6-terra"
+GENERATOR_REASONING_EFFORT = "none"
+
 SYSTEM_PROMPT_BASE = """
 You are a senior test engineer.
 Return ONLY valid JSON (no markdown, no prose).
@@ -516,8 +521,10 @@ def generate_cases(story: str, ac_blob: str, use_ui_context: bool = True):
 
     try:
         resp = client.chat.completions.create(
-            model="gpt-5.6-terra",
+            model=GENERATOR_MODEL,
+            reasoning_effort=GENERATOR_REASONING_EFFORT,
             temperature=1,
+            response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
@@ -1635,36 +1642,54 @@ def extract_required_roles(story: str, ac_blob: str) -> List[str]:
 
     return sorted(found)
 
-def step_implies_role(step_text: str, expected_text: str, role: str) -> bool:
-    """Return True when a generated step explicitly refers to a user role.
+def step_implies_role(step_text: str, role: str) -> bool:
+    """Return True when THIS ONE generated action step explicitly logs in with ``role``.
 
-    Accepts natural English articles, e.g. "Log in as a Manager" and
-    "Log in as an Agent". The previous implementation only handled
-    "as a <role>", so grammatically correct "as an Agent" was missed.
+    Flexible wording between the login phrase and the role is allowed, e.g.:
+    - "Log in as Agent"
+    - "Log in as an Agent"
+    - "Log in as the assigned Agent"
+    - "Login as a user with the role Agent"
+
+    The wildcard is deliberately bounded: it may consume arbitrary wording inside
+    this single step, but it may NOT jump across another known role name first.
+    Therefore "Log in as Manager and review data for Agent" counts only Manager,
+    not Agent. Expected-result text and other test steps are never included.
     """
-    combined = normalize_text(f"{step_text} {expected_text}")
-    role_re = re.escape(role.lower())
-    patterns = [
-        rf"\blogin\s+(?:as|with)\s+(?:(?:a|an)\s+)?{role_re}\b",
-        rf"\blog\s+in\s+(?:as|with)\s+(?:(?:a|an)\s+)?{role_re}\b",
-        rf"\blogged\s+in\s+as\s+(?:(?:a|an)\s+)?{role_re}\b",
-        rf"\bas\s+(?:(?:a|an)\s+)?{role_re}\b",
-    ]
-    return any(re.search(pattern, combined) for pattern in patterns)
+    text = normalize_text(step_text)
+    if not text:
+        return False
+
+    wanted_role = re.escape(str(role).lower())
+    all_roles = "|".join(re.escape(r.lower()) for r in ROLE_WORDS)
+
+    pattern = re.compile(
+        rf"\b(?:log\s*in|login|logged\s*in|sign\s*in|signed\s*in)\s+"
+        rf"(?:as|with)\s+"
+        rf"(?:(?!\b(?:{all_roles})\b).)*?"
+        rf"\b{wanted_role}\b",
+        flags=re.IGNORECASE,
+    )
+    return bool(pattern.search(text))
+
 
 def extract_generated_roles(cases: List[Dict[str, Any]]) -> List[str]:
     found = set()
 
     for tc in cases:
         for s in tc.get("steps", []) or []:
-            step_text = s.get("step", "")
-            expected_text = s.get("expected", "")
+            if not isinstance(s, dict):
+                continue
+
+            # Intentionally inspect ONLY the action text of this single step.
+            # Do not concatenate expected-result text or neighboring steps.
+            step_text = str(s.get("step", ""))
 
             for role in ROLE_WORDS:
-                if step_implies_role(step_text, expected_text, role):
+                if step_implies_role(step_text, role):
                     found.add(role)
 
-    return sorted(list(found))
+    return sorted(found)
 
 def evaluate_role_coverage(story: str, ac_blob: str, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     required = extract_required_roles(story, ac_blob)
@@ -2005,11 +2030,8 @@ def _bulk_checkpoint_fingerprint(userstories: List[Dict[str, Any]], repetitions:
         "version": BULK_CHECKPOINT_VERSION,
         "repetitions": int(repetitions),
         "userstories": userstories,
-        "generation_model": "gpt-5.4-mini",
-        # Intentionally kept as the legacy fingerprint value so changing only the
-        # judge configuration does not create a new checkpoint and regenerate paid outputs.
-        # AC_JUDGE_VERSION controls judge-cache compatibility separately.
-        "judge_model": "gpt-5.4-mini",
+        "generation_model": GENERATOR_MODEL,
+        "judge_model": AC_JUDGE_MODEL,
     }
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
