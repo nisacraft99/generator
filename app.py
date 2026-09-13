@@ -1363,126 +1363,150 @@ def is_negative_permission_or_access_test(tc: Dict[str, Any]) -> bool:
     return navigation_negative_mode(tc) in {"base_only", "no_access"}
 
 
-def _ui_path_adjacency() -> Dict[str, set]:
-    """Build a directed UI graph from parent links and explicit relationships.
+def _invalid_explicit_ui_node_ids(tc: Dict[str, Any]) -> List[str]:
+    """Return explicit ui_node_id values that do not exist in ui_context.json.
 
-    Edges describe valid forward movement through the UI.  Parent links add
-    ``parent -> child``.  Relationship records add ``from -> via -> to`` (or
-    ``from -> to`` when ``via`` is null).  The navigation evaluator may skip
-    intermediate NON-required nodes by checking reachability instead of only
-    direct adjacency.
+    Navigation Path Correctness deliberately does NOT validate every direct UI
+    transition. Repeated interaction on the same screen (for example search ->
+    edit search -> search again) is valid and should not be rejected merely
+    because two consecutive emitted nodes are not parent/child neighbours.
+
+    Unknown/invented ui_node_id values are still treated as invalid evidence.
     """
     valid_ids = _node_ids()
-    adjacency: Dict[str, set] = {node_id: set() for node_id in valid_ids}
+    invalid: List[str] = []
 
-    # Hierarchical structure from nodes[].parent.
-    for node in _ui_nodes():
-        child = str(node.get("id") or "").strip()
-        parent = str(node.get("parent") or "").strip()
-        if child in valid_ids and parent in valid_ids:
-            adjacency[parent].add(child)
+    all_steps: List[Any] = []
+    all_steps.extend(tc.get("navigation_steps", []) or [])
+    all_steps.extend(tc.get("steps_only", []) or [])
+    if not all_steps:
+        all_steps.extend(tc.get("steps", []) or [])
 
-    # Explicit UI transitions.  ``via`` is treated as the control used for the
-    # transition, so the forward path is from -> via -> to.
-    for rel in _relationship_records():
-        source = str(rel.get("from") or "").strip()
-        via = str(rel.get("via") or "").strip()
-        target = str(rel.get("to") or "").strip()
-
-        if source not in valid_ids or target not in valid_ids:
+    for s in all_steps:
+        if not isinstance(s, dict):
             continue
+        explicit = s.get("ui_node_id")
+        if explicit in (None, "", "LOGIN"):
+            continue
+        node_id = str(explicit).strip()
+        if node_id and node_id not in valid_ids and node_id not in invalid:
+            invalid.append(node_id)
 
-        if via and via in valid_ids:
-            adjacency[source].add(via)
-            adjacency[via].add(target)
-        else:
-            adjacency[source].add(target)
-
-    return adjacency
+    return invalid
 
 
-def _ui_reachable(start_node: str, end_node: str, adjacency: Optional[Dict[str, set]] = None) -> bool:
-    """Return True if end_node can be reached forward from start_node.
 
-    Reachability is intentionally transitive.  Therefore a generated path may
-    omit intermediate UI nodes when those omitted nodes are not required by
-    ``required_per_testcase``.
-    """
-    start_node = str(start_node or "").strip()
-    end_node = str(end_node or "").strip()
-    if not start_node or not end_node:
-        return False
-    if start_node == end_node:
-        return True
+def _is_ancestor_node(ancestor: str, node: str) -> bool:
+    """Return True when ``ancestor`` is a parent/ancestor of ``node`` in ui_context."""
+    parents = _parent_map()
+    current = str(node or "").strip()
+    target = str(ancestor or "").strip()
+    seen = set()
 
-    graph = adjacency if adjacency is not None else _ui_path_adjacency()
-    if start_node not in graph or end_node not in graph:
-        return False
-
-    queue = [start_node]
-    seen = {start_node}
-    while queue:
-        current = queue.pop(0)
-        for nxt in graph.get(current, set()):
-            if nxt == end_node:
-                return True
-            if nxt not in seen:
-                seen.add(nxt)
-                queue.append(nxt)
+    while current and current not in seen:
+        seen.add(current)
+        current = str(parents.get(current) or "").strip()
+        if current == target:
+            return True
     return False
 
 
-def _validate_generated_ui_path(actual: List[str]) -> Dict[str, Any]:
-    """Validate the emitted node order against ui_context.json.
+def _is_explicit_relationship_transition(source: str, target: str) -> bool:
+    """Return True when ui_context.relationships explicitly permits source -> target.
 
-    Every emitted successor must be reachable from the previously emitted node.
-    Intermediate UI nodes may be omitted because reachability is transitive.
-    A node that is not on any valid forward route from its predecessor makes the
-    path invalid.  This catches invented/wrong hierarchical detours without
-    requiring the model to spell out every optional intermediate node.
+    A relationship may be represented as from -> via -> to.  Because optional
+    intermediate UI nodes are allowed to be omitted for Navigation Path
+    Correctness, from -> to is accepted as well.
     """
-    graph = _ui_path_adjacency()
-    invalid_transitions: List[Dict[str, str]] = []
+    source = str(source or "").strip()
+    target = str(target or "").strip()
 
-    for previous, current in zip(actual, actual[1:]):
-        if not _ui_reachable(previous, current, graph):
-            invalid_transitions.append({"from": previous, "to": current})
+    for rel in _relationship_records():
+        rel_from = str(rel.get("from") or "").strip()
+        rel_via = str(rel.get("via") or "").strip()
+        rel_to = str(rel.get("to") or "").strip()
 
-    return {
-        "is_valid": len(invalid_transitions) == 0,
-        "invalid_transitions": invalid_transitions,
-        "end_node": actual[-1] if actual else None,
-    }
+        if rel_from and rel_via and source == rel_from and target == rel_via:
+            return True
+        if rel_via and rel_to and source == rel_via and target == rel_to:
+            return True
+        if rel_from and rel_to and source == rel_from and target == rel_to:
+            return True
+
+    return False
+
+
+def _ui_transition_is_valid(source: str, target: str) -> bool:
+    """Validate one emitted UI-path transition against ui_context.
+
+    Allowed transitions:
+    - same node (defensive; consecutive duplicates are normally collapsed),
+    - ancestor <-> descendant (optional intermediate hierarchy nodes may be skipped),
+    - sibling <-> sibling when both nodes have the same parent,
+    - an explicit relationship transition from ui_context.json.
+
+    This lets a test interact repeatedly with controls inside the same UI branch
+    (for example Search Bar <-> Search Button) without treating that as an
+    invalid navigation path, while still rejecting jumps to unrelated branches.
+    """
+    source = str(source or "").strip()
+    target = str(target or "").strip()
+    valid_ids = _node_ids()
+
+    if not source or not target:
+        return True
+    if source == target:
+        return True
+    if source not in valid_ids or target not in valid_ids:
+        return False
+
+    # Moving down or back up the same hierarchy branch is valid. Intermediate
+    # non-required nodes may be omitted from the generated path.
+    if _is_ancestor_node(source, target) or _is_ancestor_node(target, source):
+        return True
+
+    # Two controls/components under the exact same parent belong to the same UI
+    # context and may be used in either order.
+    parents = _parent_map()
+    source_parent = str(parents.get(source) or "").strip()
+    target_parent = str(parents.get(target) or "").strip()
+    if source_parent and source_parent == target_parent:
+        return True
+
+    if _is_explicit_relationship_transition(source, target):
+        return True
+
+    return False
+
+
+def _invalid_ui_path_transitions(path: List[str]) -> List[Dict[str, str]]:
+    """Return invalid consecutive transitions in the generated UI path."""
+    invalid: List[Dict[str, str]] = []
+    for source, target in zip(path, path[1:]):
+        if not _ui_transition_is_valid(source, target):
+            invalid.append({"from": source, "to": target})
+    return invalid
 
 
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
-    """Evaluate Navigation Path Correctness independently from Target Node Coverage.
+    """Evaluate Navigation Path Correctness from required per-testcase nodes.
 
-    Current two-level format example::
+    For the current two-level navigation target format, a positive/evaluable
+    test case is correct when:
 
-        "US-14": {
-          "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DASHBOARD"],
-          "required_across_story": ["COMP-TM-LIST", "EL-TM-SEARCH-BAR", ...]
-        }
+    1. every node in ``required_per_testcase`` occurs in the generated path;
+    2. those required nodes occur in the defined order;
+    3. the model did not emit an unknown/invented ``ui_node_id``; and
+    4. every consecutive emitted UI transition is compatible with ui_context.
 
-    A positive/evaluable test case is correct when BOTH conditions hold:
+    A transition is compatible when the two nodes are on the same hierarchy
+    branch (ancestor/descendant, with optional intermediate nodes allowed), are
+    siblings with the same parent, or are connected by an explicit relationship.
+    This permits legitimate repeated interaction such as Search Bar -> Search
+    Button -> Search Bar while still rejecting jumps to unrelated UI branches.
 
-    1. Every node in ``required_per_testcase`` occurs in the generated path and
-       those required nodes occur in the defined order.
-    2. The complete sequence of emitted ``ui_node_id`` values is compatible with
-       ``ui_context.json``.  For each consecutive pair, the latter node must be
-       reachable forward from the former node through parent links and/or explicit
-       relationships.  Intermediate non-required nodes may therefore be omitted.
-
-    Example: if the UI path is A -> B -> C -> D and required_per_testcase is
-    [A, C], then A -> C -> D is valid.  A -> D is invalid because required C is
-    missing.  A -> X -> C is invalid when X is not on a valid forward route in
-    the UI graph.
-
-    ``required_across_story`` does NOT add points to Navigation Path Correctness.
-    Those nodes remain part of the separate Target Node Coverage metric.  If such
-    a node appears in a generated test case, however, its position is naturally
-    validated as part of the emitted UI path.
+    ``required_across_story`` does not contribute points to this metric. Those
+    nodes are evaluated separately under Target Node Coverage.
 
     Formula:
         correct evaluable test cases / all evaluable test cases * 100
@@ -1524,11 +1548,12 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
 
     for tc in cases:
         actual = extract_actual_nav_path(tc, allow_text_inference=False)
+        invalid_ui_node_ids = _invalid_explicit_ui_node_ids(tc)
         neg_mode = navigation_negative_mode(tc)
 
         if uses_two_level_format:
             # A real no-access permission test intentionally does not navigate to
-            # the feature.  Role/access correctness is measured elsewhere, so it
+            # the feature. Role/access correctness is measured elsewhere, so it
             # is excluded from this path metric.
             if neg_mode == "no_access":
                 skipped_cases += 1
@@ -1548,6 +1573,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
                     "order_ok": False,
                     "ui_path_ok": False,
                     "invalid_transitions": [],
+                    "invalid_ui_node_ids": invalid_ui_node_ids,
                     "end_node": actual[-1] if actual else None,
                     "match_score": 0.0,
                     "skip_reason": "No-access permission test: no path to the feature is expected."
@@ -1581,6 +1607,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
                     "order_ok": False,
                     "ui_path_ok": False,
                     "invalid_transitions": [],
+                    "invalid_ui_node_ids": invalid_ui_node_ids,
                     "end_node": actual[-1] if actual else None,
                     "match_score": 0.0,
                     "skip_reason": "Negative permission/access test with legacy target format."
@@ -1593,7 +1620,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             selected_target = _target_label(target, ref)
 
         # A defined reference makes the case evaluable even when the model emitted
-        # no ui_node_id.  Missing evidence then counts as an incorrect path.
+        # no ui_node_id. Missing required evidence then counts as incorrect.
         can_evaluate = bool(required_nodes)
 
         module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
@@ -1601,11 +1628,9 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         required_order_ok = _is_ordered_subsequence(required_nodes, actual)
         required_ok = required_present_ok and required_order_ok
 
-        # New rule: validate the full emitted sequence against the directed UI
-        # structure.  Optional intermediate nodes may be skipped, but emitted nodes
-        # may not jump through an impossible/wrong route.
-        ui_path_validation = _validate_generated_ui_path(actual)
-        ui_path_ok = bool(actual) and ui_path_validation["is_valid"]
+        known_ids_ok = len(invalid_ui_node_ids) == 0
+        invalid_transitions = _invalid_ui_path_transitions(actual) if known_ids_ok else []
+        ui_path_ok = known_ids_ok and len(invalid_transitions) == 0
 
         forbidden_hit = any(node in actual for node in forbidden_nodes)
         denial_ok = _target_access_denial_ok(target) and _contains_denial_language(tc)
@@ -1635,15 +1660,13 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "denial_ok": denial_ok,
             "order_ok": required_order_ok,
             "ui_path_ok": ui_path_ok,
-            "invalid_transitions": ui_path_validation["invalid_transitions"],
-            "end_node": ui_path_validation["end_node"],
+            "invalid_transitions": invalid_transitions,
+            "invalid_ui_node_ids": invalid_ui_node_ids,
+            "end_node": actual[-1] if actual else None,
             "match_score": round((len(required_nodes) - len(missing_nodes)) / len(required_nodes), 2) if required_nodes else 0.0,
             "skip_reason": "" if can_evaluate else "No per-testcase navigation path is defined."
         })
 
-    # required_across_story is intentionally NOT added to this score.  It is
-    # evaluated by Target Node Coverage; when such nodes are emitted, their order
-    # still participates in ui_path_ok above.
     correctness_pct = (
         round((correct_cases / evaluated_cases) * 100, 2)
         if evaluated_cases else None
@@ -1668,6 +1691,7 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         "details": details,
         "note": note
     }
+
 
 def extract_required_roles(story: str, ac_blob: str) -> List[str]:
     """
@@ -2859,8 +2883,9 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
         )
         st.caption(
             "Each test case must contain all required_per_testcase nodes in the correct order. "
-            "Additional emitted UI nodes are allowed only when they form a valid forward path in ui_context.json; "
-            "non-required intermediate nodes may be skipped. required_across_story is scored separately under Target Node Coverage."
+            "Additional nodes are allowed when they stay on the same UI hierarchy branch, are siblings with the same parent, "
+            "or follow an explicit relationship in ui_context.json. Non-required intermediate nodes may be skipped. "
+            "required_across_story is scored separately under Target Node Coverage."
         )
         with st.expander("Navigation Path Correctness details and reasons"):
             for d in nav.get("details", []):
@@ -2878,19 +2903,21 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
                 actual = d.get("actual", []) or []
                 missing = d.get("missing_nodes", []) or []
 
+                invalid_ui_node_ids = d.get("invalid_ui_node_ids", []) or []
                 invalid_transitions = d.get("invalid_transitions", []) or []
                 if is_correct:
                     reason = (
-                        "All required_per_testcase nodes occur in the correct order and every emitted UI-node transition "
-                        "is compatible with ui_context.json. Non-required intermediate nodes may be omitted."
+                        "All required_per_testcase nodes occur in the correct order and all emitted UI transitions are compatible with ui_context.json."
                     )
                 elif missing:
                     reason = f"Required per-testcase nodes are missing: {_path_str(missing)}."
+                elif invalid_ui_node_ids:
+                    reason = f"Unknown ui_node_id value(s) not found in ui_context.json: {', '.join(invalid_ui_node_ids)}."
                 elif invalid_transitions:
-                    pairs = ", ".join(
-                        f"{x.get('from', '?')} -> {x.get('to', '?')}" for x in invalid_transitions
+                    rendered = ", ".join(
+                        f"{t.get('from', '')} -> {t.get('to', '')}" for t in invalid_transitions
                     )
-                    reason = f"Invalid UI path transition(s) according to ui_context.json: {pairs}."
+                    reason = f"Invalid UI path transition(s) according to ui_context.json: {rendered}."
                 else:
                     reason = "The required per-testcase nodes are present but do not occur in the required order."
 
