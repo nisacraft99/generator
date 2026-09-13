@@ -1489,21 +1489,20 @@ def _invalid_ui_path_transitions(path: List[str]) -> List[Dict[str, str]]:
 
 
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
-    """Evaluate Navigation Path Correctness from required per-testcase nodes.
+    """Evaluate Navigation Path Correctness from the required base path.
 
     For the current two-level navigation target format, a positive/evaluable
     test case is correct when:
 
     1. every node in ``required_per_testcase`` occurs in the generated path;
-    2. those required nodes occur in the defined order;
-    3. the model did not emit an unknown/invented ``ui_node_id``; and
-    4. every consecutive emitted UI transition is compatible with ui_context.
+    2. those required nodes occur in the defined order; and
+    3. the model did not emit an unknown/invented ``ui_node_id``.
 
-    A transition is compatible when the two nodes are on the same hierarchy
-    branch (ancestor/descendant, with optional intermediate nodes allowed), are
-    siblings with the same parent, or are connected by an explicit relationship.
-    This permits legitimate repeated interaction such as Search Bar -> Search
-    Button -> Search Bar while still rejecting jumps to unrelated UI branches.
+    Additional known UI nodes may occur before, between, or after the required
+    nodes and may be repeated. They are not checked as direct transitions for
+    this metric. This intentionally keeps Navigation Path Correctness focused on
+    the mandatory base path and avoids false negatives caused by legitimate
+    repeated interaction inside the same screen or modal.
 
     ``required_across_story`` does not contribute points to this metric. Those
     nodes are evaluated separately under Target Node Coverage.
@@ -1629,8 +1628,11 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
         required_ok = required_present_ok and required_order_ok
 
         known_ids_ok = len(invalid_ui_node_ids) == 0
-        invalid_transitions = _invalid_ui_path_transitions(actual) if known_ids_ok else []
-        ui_path_ok = known_ids_ok and len(invalid_transitions) == 0
+        # Navigation Path Correctness intentionally does not validate every
+        # consecutive transition. Additional/repeated known UI nodes are allowed;
+        # only the required base path and known node IDs are evaluated here.
+        invalid_transitions: List[Dict[str, str]] = []
+        ui_path_ok = known_ids_ok
 
         forbidden_hit = any(node in actual for node in forbidden_nodes)
         denial_ok = _target_access_denial_ok(target) and _contains_denial_language(tc)
@@ -2883,8 +2885,7 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
         )
         st.caption(
             "Each test case must contain all required_per_testcase nodes in the correct order. "
-            "Additional nodes are allowed when they stay on the same UI hierarchy branch, are siblings with the same parent, "
-            "or follow an explicit relationship in ui_context.json. Non-required intermediate nodes may be skipped. "
+            "Additional or repeated known UI nodes are allowed and are not evaluated as direct transitions. "
             "required_across_story is scored separately under Target Node Coverage."
         )
         with st.expander("Navigation Path Correctness details and reasons"):
@@ -2907,17 +2908,12 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
                 invalid_transitions = d.get("invalid_transitions", []) or []
                 if is_correct:
                     reason = (
-                        "All required_per_testcase nodes occur in the correct order and all emitted UI transitions are compatible with ui_context.json."
+                        "All required_per_testcase nodes occur in the required order. Additional or repeated known UI nodes are allowed."
                     )
                 elif missing:
                     reason = f"Required per-testcase nodes are missing: {_path_str(missing)}."
                 elif invalid_ui_node_ids:
                     reason = f"Unknown ui_node_id value(s) not found in ui_context.json: {', '.join(invalid_ui_node_ids)}."
-                elif invalid_transitions:
-                    rendered = ", ".join(
-                        f"{t.get('from', '')} -> {t.get('to', '')}" for t in invalid_transitions
-                    )
-                    reason = f"Invalid UI path transition(s) according to ui_context.json: {rendered}."
                 else:
                     reason = "The required per-testcase nodes are present but do not occur in the required order."
 
