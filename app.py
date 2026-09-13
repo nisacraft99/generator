@@ -1365,26 +1365,25 @@ def is_negative_permission_or_access_test(tc: Dict[str, Any]) -> bool:
 
 def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]], story: str = "") -> Dict[str, Any]:
     """
-    Navigation evaluation with support for the simplified two-level target format.
+    Evaluate Navigation Path Correctness separately from Target Node Coverage.
 
-    Recommended navigation_targets.json format:
-      "US-6": {
-        "title": "Create Action for SM",
-        "required_per_testcase": ["CONSOLE-O", "OPT-SM", "SCR-SM-DETAIL"],
-        "required_across_story": ["MOD-SM-ACTION-CREATE", "COMP-SM-ACTION-LIST"]
+    For the current two-level navigation_targets.json format:
+      "US-14": {
+        "required_per_testcase": ["CONSOLE-C", "OPT-TM", "SCR-TM-DASHBOARD"],
+        "required_across_story": ["COMP-TM-LIST", "EL-TM-SEARCH-BAR", ...]
       }
 
-    Interpretation:
-    - required_per_testcase: minimal UI area that every positive/evaluable test case should reach.
-    - required_across_story: UI target nodes that should appear at least once across all positive/evaluable
-      test cases of the User Story.
-    - no-access permission tests are handled separately through explicit denial language;
-    - for other test cases with a reference path, missing navigation evidence counts as incorrect instead of being silently removed
-      from the denominator. Direct relationship targets may count as reached only when an explicit
-      generated step activates that modeled transition.
+    Navigation Path Correctness checks ONLY ``required_per_testcase`` for each
+    evaluable test case. The nodes in ``required_across_story`` belong to the
+    separate Target Node Coverage metric and therefore are NOT added as bonus
+    points to Navigation Path Correctness.
 
-    Backwards compatibility:
-    - also supports the older "targets" format used earlier in the project.
+    Formula:
+        correct evaluable test cases / all evaluable test cases * 100
+
+    Additional intermediate nodes are allowed as long as the required nodes occur
+    in the correct order. No-access permission tests are not navigation paths to the
+    target and are therefore skipped rather than rewarded for denial wording.
     """
     ref = find_navigation_targets(us_id_value)
     if not ref:
@@ -1399,12 +1398,12 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
 
     module_nodes = _norm_list(ref.get("module_nodes")) if isinstance(ref, dict) else []
 
-    # New two-level target format.
+    # Current two-level target format.
     required_per_testcase = _norm_list(ref.get("required_per_testcase")) if isinstance(ref, dict) else []
     required_across_story = _norm_list(ref.get("required_across_story")) if isinstance(ref, dict) else []
     uses_two_level_format = bool(required_per_testcase or required_across_story)
 
-    # Old formats remain supported.
+    # Older target formats remain supported for compatibility.
     targets = ref.get("targets", []) if isinstance(ref, dict) else []
 
     if not uses_two_level_format and not targets:
@@ -1421,81 +1420,50 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
     correct_cases = 0
     skipped_cases = 0
     details = []
-    actual_union: List[str] = []
-
-    def add_to_union(nodes: List[str]):
-        for n in nodes:
-            if n not in actual_union:
-                actual_union.append(n)
 
     for tc in cases:
         actual = extract_actual_nav_path(tc, allow_text_inference=False)
         neg_mode = navigation_negative_mode(tc)
 
-        # If the test case actually visits navigation nodes, evaluate it normally
-        # even if it also contains denial language. Only true no-access tests
-        # (where no nodes were reached at all) get the denial-language check.
-        if neg_mode == "no_access" and actual:
-            neg_mode = "none"
-
         if uses_two_level_format:
-
+            # If access to the relevant area is intentionally denied, there is no
+            # navigation path to the expected target that can meaningfully be judged.
+            # Role/access correctness is handled elsewhere, so do not mix it into
+            # Navigation Path Correctness.
             if neg_mode == "no_access":
-                # No-access cases are NOT skipped. They count as correct only if
-                # the test explicitly documents the denial/restriction.
-                evaluated_cases += 1
-                has_denial = _contains_denial_language(tc)
-                if has_denial:
-                    correct_cases += 1
+                skipped_cases += 1
                 details.append({
                     "tc_id": tc.get("id", ""),
                     "actual": actual,
-                    "expected": [],
-                    "selected_target": "no_access_denial_check",
+                    "expected": required_per_testcase,
+                    "selected_target": str(ref.get("title") or "Navigation target"),
                     "module_nodes": module_nodes,
-                    "can_evaluate": True,
-                    "is_correct": has_denial,
-                    "module_ok": True,
-                    "missing_nodes": [] if has_denial else ["denial language missing"],
+                    "can_evaluate": False,
+                    "is_correct": False,
+                    "module_ok": False,
+                    "missing_nodes": [],
                     "forbidden_nodes": [],
                     "forbidden_hit": False,
-                    "denial_ok": has_denial,
-                    "match_score": 1.0 if has_denial else 0.0,
-                    "skip_reason": "" if has_denial else "no_access test missing denial language"
+                    "denial_ok": _contains_denial_language(tc),
+                    "order_ok": False,
+                    "match_score": 0.0,
+                    "skip_reason": "No-access permission test: no navigation path to the target is expected."
                 })
                 continue
 
+            # Positive cases and base-only permission cases are checked against the
+            # common path that should be reached before the feature-specific action.
             required_nodes = required_per_testcase
             selected_target = str(ref.get("title") or "Navigation target")
             if neg_mode == "base_only":
-                selected_target = selected_target + " base navigation only"
+                selected_target += " — base navigation"
             forbidden_nodes: List[str] = []
             target = {"label": selected_target, "required_nodes": required_nodes}
 
         else:
-            if neg_mode == "no_access":
-                evaluated_cases += 1
-                has_denial = _contains_denial_language(tc)
-                if has_denial:
-                    correct_cases += 1
-                details.append({
-                    "tc_id": tc.get("id", ""),
-                    "actual": actual,
-                    "expected": [],
-                    "selected_target": "no_access_denial_check",
-                    "module_nodes": module_nodes,
-                    "can_evaluate": True,
-                    "is_correct": has_denial,
-                    "module_ok": True,
-                    "missing_nodes": [] if has_denial else ["denial language missing"],
-                    "forbidden_nodes": [],
-                    "forbidden_hit": False,
-                    "denial_ok": has_denial,
-                    "match_score": 1.0 if has_denial else 0.0,
-                    "skip_reason": "" if has_denial else "no_access test missing denial language"
-                })
-                continue
-            if neg_mode == "base_only":
+            # Compatibility behavior for legacy target files. Negative permission
+            # tests are skipped because they do not represent a normal path to a target.
+            if neg_mode in {"no_access", "base_only"}:
                 skipped_cases += 1
                 details.append({
                     "tc_id": tc.get("id", ""),
@@ -1509,25 +1477,21 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
                     "missing_nodes": [],
                     "forbidden_nodes": [],
                     "forbidden_hit": False,
-                    "denial_ok": True,
+                    "denial_ok": _contains_denial_language(tc),
+                    "order_ok": False,
                     "match_score": 0.0,
-                    "skip_reason": "negative action permission test with old target format"
+                    "skip_reason": "Negative permission/access test with legacy target format."
                 })
                 continue
+
             target = _select_best_navigation_target(tc, ref)
             required_nodes = _target_required_nodes(target)
             forbidden_nodes = _target_forbidden_nodes(target)
             selected_target = _target_label(target, ref)
 
-        # Only positive test cases contribute to story-level target coverage.
-        # Negative base-only cases often mention denied popups/buttons, so adding
-        # their inferred nodes to the union would overstate coverage.
-        if neg_mode == "none":
-            add_to_union(actual)
-
-        # If a reference path exists, the testcase is evaluable even when the model
-        # emitted no ui_node_id values. Missing explicit navigation evidence is then
-        # a failed path, not a skipped testcase.
+        # A reference path makes the test case evaluable even when the generated
+        # output contains no ui_node_id values. Missing explicit path evidence then
+        # counts as an incorrect path instead of disappearing from the denominator.
         can_evaluate = bool(required_nodes)
         module_ok = True if not module_nodes else any(m in actual for m in module_nodes)
         required_present_ok = all(node in actual for node in required_nodes)
@@ -1562,53 +1526,33 @@ def evaluate_navigation_correctness(us_id_value: str, cases: List[Dict[str, Any]
             "denial_ok": denial_ok,
             "order_ok": required_order_ok,
             "match_score": round((len(required_nodes) - len(missing_nodes)) / len(required_nodes), 2) if required_nodes else 0.0,
-            "skip_reason": "" if can_evaluate else "No actual navigation nodes extracted or no per-testcase target defined"
+            "skip_reason": "" if can_evaluate else "No per-testcase navigation path is defined."
         })
 
-    # User-story-level target coverage for the two-level format.
-    story_target_total = 0
-    story_target_correct = 0
-    if uses_two_level_format and required_across_story:
-        story_target_total = len(required_across_story)
-        story_missing = [node for node in required_across_story if node not in actual_union]
-        story_target_correct = story_target_total - len(story_missing)
+    # IMPORTANT: required_across_story is intentionally NOT part of this score.
+    # Those nodes are measured by evaluate_target_node_coverage().
+    correctness_pct = (
+        round((correct_cases / evaluated_cases) * 100, 2)
+        if evaluated_cases else None
+    )
 
-        details.append({
-            "tc_id": "STORY_TARGET_COVERAGE",
-            "actual": actual_union,
-            "expected": required_across_story,
-            "selected_target": "required_across_story",
-            "module_nodes": module_nodes,
-            "can_evaluate": bool(actual_union),
-            "is_correct": len(story_missing) == 0,
-            "module_ok": True,
-            "missing_nodes": story_missing,
-            "forbidden_nodes": [],
-            "forbidden_hit": False,
-            "denial_ok": False,
-            "match_score": round(story_target_correct / story_target_total, 2) if story_target_total else 0.0,
-            "skip_reason": ""
-        })
-
-    total_evaluated = evaluated_cases + story_target_total
-    total_correct = correct_cases + story_target_correct
-    correctness_pct = round((total_correct / total_evaluated) * 100, 2) if total_evaluated else None
-
-    if total_evaluated:
+    if evaluated_cases:
         note = None
     elif skipped_cases:
-        note = "Only negative permission/access test cases were found; Navigation Correctness was skipped."
+        note = "No evaluable navigation paths remained after excluding no-access permission tests."
     else:
         note = "No evaluable navigation test cases found."
 
     return {
         "correctness_pct": correctness_pct,
-        "correct_count": total_correct,
-        "evaluated_count": total_evaluated,
+        "correct_count": correct_cases,
+        "evaluated_count": evaluated_cases,
         "testcase_correct_count": correct_cases,
         "testcase_evaluated_count": evaluated_cases,
-        "story_target_correct_count": story_target_correct,
-        "story_target_total_count": story_target_total,
+        # Kept as zero-valued compatibility fields. Story-level targets are evaluated
+        # exclusively by Target Node Coverage and no longer affect this metric.
+        "story_target_correct_count": 0,
+        "story_target_total_count": 0,
         "skipped_count": skipped_cases,
         "details": details,
         "note": note
@@ -2798,46 +2742,43 @@ def _render_evaluation_results(ev: Dict[str, Any], header: str = "Automated Eval
     else:
         skipped = nav.get("skipped_count") or 0
         skip_note = f"; {skipped} skipped" if skipped else ""
-        st.write(f"{nav.get('correct_count', 0)}/{nav.get('evaluated_count', 0)} evaluable test cases/path requirements correct{skip_note}")
+        st.write(
+            f"{nav.get('correct_count', 0)}/{nav.get('evaluated_count', 0)} "
+            f"evaluable test-case paths correct{skip_note}"
+        )
+        st.caption(
+            "Only the per-test-case reference path is scored here. Story-level target nodes are evaluated separately under Target Node Coverage."
+        )
         with st.expander("Navigation Path Correctness details and reasons"):
             for d in nav.get("details", []):
-                is_correct = bool(d.get("is_correct"))
                 tc_id = d.get("tc_id", "")
                 target = d.get("selected_target", "")
+                can_evaluate = bool(d.get("can_evaluate"))
 
-                if target == "no_access_denial_check":
-                    denial_ok = bool(d.get("denial_ok"))
-                    reason = (
-                        "The negative access test contains explicit denial language."
-                        if denial_ok else
-                        "The negative access test does not contain the required denial language."
-                    )
-                    st.write(f"**{tc_id or 'Access-denial test'} — {'Correct' if is_correct else 'Incorrect'}**")
-                    st.caption(f"Reason: {reason}")
-                elif target == "required_across_story":
-                    missing = d.get("missing_nodes", []) or []
-                    reason = (
-                        "All story-level required nodes occur in the generated output."
-                        if not missing else
-                        f"Story-level required nodes are missing: {_path_str(missing)}."
-                    )
-                    st.write(f"**Story-level navigation requirement — {'Correct' if is_correct else 'Incorrect'}**")
-                    st.caption(f"Expected: {_path_str(d.get('expected', []))}")
-                    st.caption(f"Reason: {reason}")
+                if not can_evaluate:
+                    st.write(f"**{tc_id or 'Test case'} — Skipped**")
+                    st.caption(f"Reason: {d.get('skip_reason') or 'No evaluable navigation path.'}")
+                    continue
+
+                is_correct = bool(d.get("is_correct"))
+                expected = d.get("expected", []) or []
+                actual = d.get("actual", []) or []
+                missing = d.get("missing_nodes", []) or []
+
+                if is_correct:
+                    reason = "All expected nodes occur in the required order; additional intermediate nodes are allowed."
+                elif missing:
+                    reason = f"Required nodes are missing: {_path_str(missing)}."
                 else:
-                    expected = d.get("expected", []) or []
-                    actual = d.get("actual", []) or []
-                    missing = d.get("missing_nodes", []) or []
-                    if is_correct:
-                        reason = "All expected nodes occur in the required order; additional intermediate nodes are allowed."
-                    elif missing:
-                        reason = f"Required nodes are missing: {_path_str(missing)}."
-                    else:
-                        reason = "The expected nodes are present but do not occur in the required order."
-                    st.write(f"**{tc_id or 'Test case'} — {target or 'navigation path'} — {'Correct' if is_correct else 'Incorrect'}**")
-                    st.caption(f"Expected: {_path_str(expected)}")
-                    st.caption(f"Actual: {_path_str(actual)}")
-                    st.caption(f"Reason: {reason}")
+                    reason = "The expected nodes are present but do not occur in the required order."
+
+                st.write(
+                    f"**{tc_id or 'Test case'} — {target or 'navigation path'} — "
+                    f"{'Correct' if is_correct else 'Incorrect'}**"
+                )
+                st.caption(f"Expected: {_path_str(expected)}")
+                st.caption(f"Actual: {_path_str(actual)}")
+                st.caption(f"Reason: {reason}")
 
 
 # ======================= SESSION STATE =======================
