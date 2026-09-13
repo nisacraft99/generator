@@ -36,7 +36,7 @@
     {"id": "COMP-TM-LIST"                      , "type": "component"      , "name": "TM List"                                         , "parent": "SCR-TM-DASHBOARD"},
     {"id": "EL-TM-ID"                          , "type": "element"        , "name": "TM ID Link"                                      , "parent": "COMP-TM-LIST"},
     {"id": "EL-TM-CREATE"                      , "type": "element"        , "name": "Create TM Button"                                , "parent": "SCR-TM-DASHBOARD"},
-    {"id": "EL-TM-SEARCH-BTN"                  , "type": "element"        , "name": "TM Search Button"                                , "parent": "EL-TM-SEARCH-BAR"},
+    {"id": "EL-TM-SEARCH-BTN"                  , "type": "element"        , "name": "TM Search Button"                                , "parent": "SCR-TM-DASHBOARD"},
     {"id": "EL-TM-RESET"                       , "type": "element"        , "name": "TM Reset Button"                                 , "parent": "SCR-TM-DASHBOARD"},
     {"id": "MOD-TM-CREATE"                     , "type": "modal"          , "name": "Create TM Popup"                                 , "parent": "EL-TM-CREATE"},
     {"id": "SCR-TM-DETAIL"                     , "type": "screen"         , "name": "TM Detail"                                       , "parent": "EL-TM-ID"},
