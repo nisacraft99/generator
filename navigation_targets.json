@@ -322,12 +322,13 @@
   "US-25": {
     "title": "Navigation Bar",
     "required_per_testcase": [
+
+    ],
+    "required_across_story": [
       "CONSOLE-O",
       "CONSOLE-C",
       "CONSOLE-S",
-      "CONSOLE-P"
-    ],
-    "required_across_story": [
+      "CONSOLE-P",
       "COMP-NAVBAR",
       "OPT-SM",
       "OPT-TM",
