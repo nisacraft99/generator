@@ -4,7 +4,8 @@
     "required_per_testcase": [
       "CONSOLE-O",
       "OPT-SM",
-      "SCR-SM-DASHBOARD"
+      "SCR-SM-DASHBOARD",
+      "COMP-SM-LIST"
     ],
     "required_across_story": [
       "EL-SM-CREATE",
