@@ -16,8 +16,7 @@
       "only a user with the role director can create an SM",
       "a user with the role manager has viewing permissions",
       "a user with the role manager can not create an SM",
-      "a user with the role agent can not view the SM module",
-      "a newly created TM gets an ID and appears in the dashboard of the TM module"
+      "a user with the role agent can not view the SM module"
     ]
   },
   {
