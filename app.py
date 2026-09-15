@@ -2203,6 +2203,276 @@ def _bulk_checkpoint_stats(state: Optional[Dict[str, Any]]) -> Dict[str, int]:
     }
 
 
+
+def _load_uploaded_bulk_checkpoint(uploaded_file: Any) -> Dict[str, Any]:
+    """Read and validate a checkpoint backup uploaded in the Streamlit UI."""
+    if uploaded_file is None:
+        raise ValueError("No checkpoint file uploaded.")
+
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    try:
+        raw = uploaded_file.read()
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        data = json.loads(raw)
+    except Exception as e:
+        raise ValueError(f"Could not read checkpoint JSON: {e}") from e
+
+    # Normal app backup format.
+    if isinstance(data, dict) and isinstance(data.get("runs"), dict):
+        checkpoint = data
+    # Also accept a plain {run_key: run_state} dictionary as a convenience.
+    elif isinstance(data, dict) and data and all(isinstance(v, dict) for v in data.values()):
+        looks_like_runs = any(
+            isinstance(v, dict) and ("cases" in v or "generation_complete" in v)
+            for v in data.values()
+        )
+        if not looks_like_runs:
+            raise ValueError("JSON is not a recognizable bulk checkpoint/run file.")
+        checkpoint = {
+            "checkpoint_version": BULK_CHECKPOINT_VERSION,
+            "fingerprint": "uploaded-runs",
+            "repetitions": None,
+            "total_runs": len(data),
+            "runs": data,
+        }
+    else:
+        raise ValueError(
+            "Expected a bulk checkpoint JSON containing a top-level 'runs' object."
+        )
+
+    checkpoint.setdefault("checkpoint_version", BULK_CHECKPOINT_VERSION)
+    if checkpoint.get("checkpoint_version") != BULK_CHECKPOINT_VERSION:
+        raise ValueError(
+            f"Unsupported checkpoint version: {checkpoint.get('checkpoint_version')} "
+            f"(expected {BULK_CHECKPOINT_VERSION})."
+        )
+    checkpoint.setdefault("runs", {})
+    if not checkpoint["runs"]:
+        raise ValueError("Checkpoint contains no runs.")
+    return checkpoint
+
+
+def _imported_checkpoint_path(checkpoint: Dict[str, Any]) -> str:
+    """Stable local path for an uploaded checkpoint so re-judging can be checkpointed too."""
+    raw = json.dumps(checkpoint, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    fp = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+    return os.path.join(BULK_CHECKPOINT_DIR, f"uploaded_{fp}.json")
+
+
+def _run_key_parts(run_key: str, run_state: Dict[str, Any]) -> tuple:
+    """Best-effort extraction of id / variant / repetition from a saved run."""
+    us_id = str((run_state.get("item") or {}).get("id", "")).strip()
+    variant = str(run_state.get("variant", "")).strip()
+    rep = run_state.get("rep")
+
+    parts = str(run_key).split("|")
+    if not us_id and parts:
+        us_id = parts[0]
+    if not variant and len(parts) >= 2:
+        variant = parts[1]
+    if rep in (None, "") and len(parts) >= 3:
+        m = re.search(r"(\d+)", parts[2])
+        if m:
+            rep = int(m.group(1))
+
+    try:
+        rep = int(rep)
+    except Exception:
+        rep = 0
+    return us_id, variant, rep
+
+
+def reevaluate_uploaded_checkpoint(
+    checkpoint: Dict[str, Any],
+    checkpoint_path: str,
+    current_userstories: Optional[List[Dict[str, Any]]] = None,
+    use_current_userstories: bool = False,
+) -> pd.DataFrame:
+    """
+    Re-evaluate ONLY generations already present in an uploaded checkpoint.
+
+    Important: this function never calls generate_cases(). It therefore cannot create
+    any new test cases or fill missing runs. Local metrics are recomputed from the
+    saved cases. AC Coverage uses the normal strict LLM judge and reuses compatible
+    cached judge decisions; changed/missing AC judgements may trigger judge calls.
+    """
+    runs = checkpoint.get("runs", {}) if isinstance(checkpoint, dict) else {}
+    if not isinstance(runs, dict) or not runs:
+        raise ValueError("Checkpoint contains no runs to re-evaluate.")
+
+    current_by_id: Dict[str, Dict[str, Any]] = {}
+    if current_userstories:
+        for item in current_userstories:
+            key = normalize_us_lookup_value(item.get("id", ""))
+            if key:
+                current_by_id[key] = item
+
+    rows: List[Dict[str, Any]] = []
+    runs_store: Dict[str, Any] = {}
+    total = len(runs)
+    progress = st.progress(0)
+    status = st.empty()
+
+    for idx, (run_key, run_state) in enumerate(runs.items(), start=1):
+        if not isinstance(run_state, dict):
+            rows.append({"error": f"Invalid run object for {run_key}"})
+            progress.progress(idx / total)
+            continue
+
+        saved_item = run_state.get("item") if isinstance(run_state.get("item"), dict) else {}
+        us_id, variant_name, rep = _run_key_parts(run_key, run_state)
+        use_ui = bool(run_state.get("use_ui_context", variant_name == "with_ui_context"))
+
+        item = saved_item
+        normalized_id = normalize_us_lookup_value(us_id)
+        if use_current_userstories and normalized_id in current_by_id:
+            item = current_by_id[normalized_id]
+            # Keep the checkpoint metadata aligned with the definitions used for re-evaluation.
+            run_state["item"] = item
+
+        story = str(item.get("story", "")).strip()
+        ac_blob = str(item.get("ac_blob", "")).strip()
+        if not ac_blob and isinstance(item.get("acceptance_criteria"), list):
+            ac_blob = "\n".join(str(x).strip() for x in item["acceptance_criteria"] if str(x).strip())
+        acceptance_criteria_count = item.get("acceptance_criteria_count")
+        if acceptance_criteria_count is None:
+            acceptance_criteria_count = len([x for x in ac_blob.splitlines() if x.strip()])
+
+        cases = run_state.get("cases", []) or []
+        open_q = run_state.get("open_q", []) or []
+
+        status.write(
+            f"Re-evaluating {idx}/{total}: {us_id or run_key} — "
+            f"{variant_name or ('with_ui_context' if use_ui else 'without_ui_context')} — rep {rep or '?'}"
+        )
+
+        if not cases:
+            error_text = "No saved generated test cases in this run; skipped. No generation was performed."
+            row = {
+                "repetition": rep,
+                "us_id": us_id,
+                "title": item.get("title", ""),
+                "variant": variant_name,
+                "use_ui_context": use_ui,
+                "acceptance_criteria_count": acceptance_criteria_count,
+                "testcase_count": 0,
+                "ac_coverage_pct": None,
+                "role_coverage_pct": None,
+                "target_node_coverage_pct": None,
+                "navigation_path_correctness_pct": None,
+                "navigation_correctness_pct": None,
+                "overall_score_pct": None,
+                "open_questions_count": len(open_q),
+                "error": error_text,
+            }
+            run_state["row"] = row
+            run_state["complete"] = False
+            run_state["last_error"] = error_text
+            rows.append(row)
+            _save_bulk_checkpoint(checkpoint_path, checkpoint)
+            progress.progress(idx / total)
+            continue
+
+        if not us_id or not story or not ac_blob:
+            error_text = "Saved run is missing user-story metadata required for re-evaluation."
+            row = {
+                "repetition": rep,
+                "us_id": us_id,
+                "title": item.get("title", ""),
+                "variant": variant_name,
+                "use_ui_context": use_ui,
+                "acceptance_criteria_count": acceptance_criteria_count,
+                "testcase_count": len(cases),
+                "ac_coverage_pct": None,
+                "role_coverage_pct": None,
+                "target_node_coverage_pct": None,
+                "navigation_path_correctness_pct": None,
+                "navigation_correctness_pct": None,
+                "overall_score_pct": None,
+                "open_questions_count": len(open_q),
+                "error": error_text,
+            }
+            run_state["row"] = row
+            run_state["complete"] = False
+            run_state["last_error"] = error_text
+            rows.append(row)
+            _save_bulk_checkpoint(checkpoint_path, checkpoint)
+            progress.progress(idx / total)
+            continue
+
+        evaluation = evaluate_all(
+            us_id_value=us_id,
+            story=story,
+            ac_blob=ac_blob,
+            cases=cases,
+            use_ui_context=use_ui,
+            bulk_checkpoint_state=checkpoint,
+            bulk_checkpoint_path=checkpoint_path,
+            bulk_run_key=run_key,
+        )
+
+        ac_pct = _metric_or_none(evaluation, "ac", "overall_pct")
+        role_pct = _metric_or_none(evaluation, "role", "overall_pct")
+        target_pct = _metric_or_none(evaluation, "target_node", "coverage_pct")
+        nav_pct = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
+        error_text = "" if ac_pct is not None else (
+            "AC Coverage judge incomplete. Re-run this re-evaluation to retry only missing/failed judge calls."
+        )
+
+        row = {
+            "repetition": rep,
+            "us_id": us_id,
+            "title": item.get("title", ""),
+            "variant": variant_name or ("with_ui_context" if use_ui else "without_ui_context"),
+            "use_ui_context": use_ui,
+            "acceptance_criteria_count": acceptance_criteria_count,
+            "testcase_count": len(cases),
+            "ac_coverage_pct": ac_pct,
+            "role_coverage_pct": role_pct,
+            "target_node_coverage_pct": target_pct,
+            "navigation_path_correctness_pct": nav_pct,
+            "navigation_correctness_pct": nav_pct,
+            "overall_score_pct": _overall_score(ac_pct, role_pct, target_pct, nav_pct),
+            "open_questions_count": len(open_q),
+            "error": error_text,
+        }
+
+        run_state["evaluation"] = evaluation
+        run_state["row"] = row
+        run_state["complete"] = ac_pct is not None
+        run_state["generation_complete"] = True
+        run_state["last_error"] = error_text
+
+        rows.append(row)
+        runs_store[run_key] = {
+            "item": item,
+            "variant": row["variant"],
+            "rep": rep,
+            "cases": cases,
+            "open_q": open_q,
+            "evaluation": evaluation,
+        }
+        _save_bulk_checkpoint(checkpoint_path, checkpoint)
+        progress.progress(idx / total)
+
+    progress.progress(1.0)
+    status.write(
+        f"Re-evaluation finished for {len(rows)} saved run(s). No test cases were generated."
+    )
+
+    stats = _bulk_checkpoint_stats(checkpoint)
+    st.session_state.bulk_runs_store = runs_store
+    st.session_state.bulk_checkpoint_path = checkpoint_path
+    st.session_state.bulk_checkpoint_stats = stats
+    st.session_state.bulk_generation_calls_this_resume = 0
+    return pd.DataFrame(rows)
+
+
 def _generation_failure_reason(cases: List[Dict[str, Any]], open_questions: List[str]) -> str:
     """Return a technical generation failure reason that must not be scored as test quality."""
     notes = [str(q).strip() for q in (open_questions or [])]
@@ -3238,6 +3508,45 @@ bulk_uploaded_file = st.file_uploader(
     key="bulk_userstories_upload",
 )
 
+st.markdown("#### Re-evaluate already generated runs")
+st.caption(
+    "Use this when you already have a bulk checkpoint/run JSON and only want to recompute the evaluation. "
+    "This path NEVER generates new test cases."
+)
+existing_runs_upload = st.file_uploader(
+    "Upload existing bulk checkpoint / runs JSON",
+    type=["json"],
+    key="bulk_existing_runs_upload",
+    help="Upload a file created by 'Download bulk checkpoint backup' (or a compatible JSON containing a top-level runs object).",
+)
+use_current_userstories_for_reeval = st.checkbox(
+    "Use the currently loaded bulk_userstories definitions for re-evaluation",
+    value=False,
+    help=(
+        "Leave this OFF when you only changed navigation_targets.json or evaluation logic and want to preserve the exact original experiment input. "
+        "Turn it ON only if you intentionally want AC Coverage / Role Coverage evaluated against the currently loaded user-story definitions."
+    ),
+)
+
+uploaded_checkpoint_preview = None
+if existing_runs_upload is not None:
+    try:
+        uploaded_checkpoint_preview = _load_uploaded_bulk_checkpoint(existing_runs_upload)
+        existing_runs_upload.seek(0)
+        uploaded_stats = _bulk_checkpoint_stats(uploaded_checkpoint_preview)
+        st.info(
+            f"Uploaded checkpoint contains {len(uploaded_checkpoint_preview.get('runs', {}))} saved run(s); "
+            f"{uploaded_stats['generated']} have saved generations. No generation will be performed by the re-evaluation button."
+        )
+    except Exception as e:
+        st.error(f"Could not read uploaded checkpoint: {e}")
+
+reevaluate_uploaded_button = st.button(
+    "Re-evaluate uploaded runs only (NO generation)",
+    disabled=uploaded_checkpoint_preview is None,
+    type="secondary",
+)
+
 try:
     if bulk_uploaded_file is not None:
         preview_userstories = load_bulk_userstories(bulk_uploaded_file)
@@ -3252,6 +3561,33 @@ try:
 except Exception as e:
     preview_userstories = []
     st.error(f"Could not preview bulk user stories: {e}")
+
+if reevaluate_uploaded_button and uploaded_checkpoint_preview is not None:
+    try:
+        # Work on an imported on-disk copy so any new judge calls/results are crash-safe.
+        imported_checkpoint = uploaded_checkpoint_preview
+        imported_checkpoint_path = _imported_checkpoint_path(imported_checkpoint)
+        _save_bulk_checkpoint(imported_checkpoint_path, imported_checkpoint)
+
+        with st.spinner("Re-evaluating saved generations only. No test-case generation calls are made."):
+            reevaluated_df = reevaluate_uploaded_checkpoint(
+                checkpoint=imported_checkpoint,
+                checkpoint_path=imported_checkpoint_path,
+                current_userstories=preview_userstories,
+                use_current_userstories=use_current_userstories_for_reeval,
+            )
+            reevaluated_summary_df = summarize_bulk_results(reevaluated_df)
+            reevaluated_by_us_df = summarize_bulk_by_user_story(reevaluated_df)
+
+        st.session_state.bulk_results_df = reevaluated_df
+        st.session_state.bulk_summary_df = reevaluated_summary_df
+        st.session_state.bulk_by_us_df = reevaluated_by_us_df
+        st.success(
+            f"Re-evaluated {len(reevaluated_df)} saved run(s). No test cases were generated. "
+            "The updated checkpoint can be downloaded below."
+        )
+    except Exception as e:
+        st.error(f"Re-evaluation of uploaded runs failed: {e}")
 
 generation_calls = len(preview_userstories) * int(bulk_repetitions) * 2
 judge_calls = sum(item.get("acceptance_criteria_count", 0) for item in preview_userstories) * int(bulk_repetitions) * 2
