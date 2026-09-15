@@ -9,8 +9,7 @@
     "required_across_story": [
       "EL-SM-CREATE",
       "MOD-SM-CREATE",
-      "SCR-SM-DETAIL",
-      "COMP-SM-LIST"
+      "SCR-SM-DETAIL"
     ]
   },
   "US-2": {
