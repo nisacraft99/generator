@@ -596,7 +596,7 @@ def testcase_full_text(tc: Dict[str, Any]) -> str:
 # Judge configuration. GPT-5.6 Luna defaults to medium reasoning; for this short,
 # schema-constrained binary judgement we explicitly disable reasoning so the
 # completion budget is used for the JSON answer itself.
-AC_JUDGE_VERSION = "strict_v2"
+AC_JUDGE_VERSION = "strict_v3"
 AC_JUDGE_MODEL = "gpt-5.6-luna"
 AC_JUDGE_REASONING_EFFORT = "none"
 AC_JUDGE_MAX_COMPLETION_TOKENS = 500
