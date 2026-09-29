@@ -64,7 +64,7 @@
     "title": "SM Dashboard",
     "story": "As a Director I want to see the Strategic Meeting (SM) Dashboard so that I can search for meetings with my managers",
     "acceptance_criteria": [
-      "the SM dashboard shows all already created SM",
+      "the SM dashboard shows all already created SM the logged in user is permitted to view",
       "the SM are shown in a list, sorted by their IDs",
       "the list is in the form of a table, with the columns „ID“, „title“, „location“, „participants“ and „deadline“",
       "each SM is in a row, with the information like ID, title, participants etc. shown in each column",
@@ -145,13 +145,15 @@
     "title": "Create TM",
     "story": "As a Manager I want to create a Team Meeting (TM) so that I can plan meetings with my subordinate agents",
     "acceptance_criteria": [
-      "when clicking „create TM“ button inside TM module, a Popup appears with fields „title“, „deadline“, „location“, „subdivision“ and „participants“ which are mandatory",
+      "when clicking „create TM“ button inside TM module, a Popup appears with fields „title“, „deadline“ and „location“",
+      "exactly one of the „subdivision“ or „participants“ field must be selected"
       "title field can contain up to 50 characters",
       "deadline field can only contain a date in the format DD/MM/YYYY",
       "location field is a dropdown with options to select from",
       "subdivision field gets filtered according to which location you selected, showing a dropdown of subdivisions belonging to that location you selected",
       "participants field gets filtered according to which location you selected, showing a dropdown of participants belonging to that location you selected",
       "if you select a subdivision, the participants field gets deactivated and nothing can be filled into it",
+      "when selecting a subdivision, all agents belonging to the subdivision are participants of the newly created TM"
       "if you select a participant, the subdivision field gets deactivated and nothing can be filled into it",
       "only a deadline in the future can be selected",
       "after clicking the „create“ button within the Pop-Up, the user is redirected to a menu within the newly created TM, where he can add actions to it",
@@ -208,7 +210,7 @@
     "title": "TM Dashboard",
     "story": "As a Manager I want to see the Team Meeting (TM) Dashboard so that I can search for meetings with my subordinate agents",
     "acceptance_criteria": [
-      "the TM dashboard shows all already created TM",
+      "the TM dashboard shows all already created TM  the logged in user is permitted to view",
       "the TM are shown in a list, sorted by their IDs",
       "the list is in the form of a table, with the columns „ID“, „title“, „location“, „participants/subdivision“ and „deadline“",
       "each TM is in a row, with the information like ID, title, participants etc. shown in each column",
@@ -323,7 +325,7 @@
     "title": "Drag and Drop Meetings within Calendar View",
     "story": "As a Director/Manager I want to drag and drop meetings inside Calendar View so that I can reschedule meetings with my subordinates",
     "acceptance_criteria": [
-      "an SM or TM can only be dragged and dropped to a date that is in the futurey",
+      "an SM or TM can only be dragged and dropped to a date that is in the future",
       "a manager can not drag and drop any SM at all",
       "a manager can drag and drop any TM that he created to another day within the calendar view",
       "a director can not drag and drop any TM at all",
@@ -338,7 +340,7 @@
     "story": "As a Director/Manager/Agent I want to cancel, accept or decline meetings inside Calendar View so that I can notify other users if I can partake in meetings",
     "acceptance_criteria": [
       "in the calendar view, an SM or TM can be accepted or declined",
-      "a director can view all SM and TM, but can only cancel meetings and can not accept or decline them",
+      "a director can view all SM and TM, but can only cancel SM and TM and can not accept or decline them",
       "a manager can accept or decline SM he was assigned to, and cancel TM that he created",
       "an agent can accept or decline TM he was assigned to, and can not cancel any meeting",
       "when a user accepts a meeting, the creator of the meeting gets a notification „ACCEPTED: User [surname, first name] accepted the SM/TM with the title …“",
@@ -395,7 +397,7 @@
   {
     "id": "US-25",
     "title": "Navigation Bar",
-    "story": "As a Director/Manager/Agent, I want to see a Navigation Bar on the left of the application so that I can open any module in the application",
+    "story": "As a Director/Manager/Agent, I want to see a Navigation Bar on the left of the application so that I can open the modules permitted for my role",
     "acceptance_criteria": [
       "the navigation bar appears on the left",
       "the navigation bar is divided into 4 different consoles",
