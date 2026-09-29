@@ -144,7 +144,7 @@
     "title": "Create TM",
     "story": "As a Manager I want to create a Team Meeting (TM) so that I can plan meetings with my subordinate agents",
     "acceptance_criteria": [
-      "when clicking „create TM“ button inside TM module, a Popup appears with fields „title“, „deadline“ and „location“",
+      "when clicking „create TM“ button inside TM module, a Popup appears with the mandatory fields „title“, „deadline“ and „location“",
       "exactly one of the „subdivision“ or „participants“ field must be selected",
       "title field can contain up to 50 characters",
       "deadline field can only contain a date in the format DD/MM/YYYY",
