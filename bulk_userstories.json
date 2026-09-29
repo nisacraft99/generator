@@ -16,7 +16,8 @@
       "only a user with the role director can create an SM",
       "a user with the role manager has viewing permissions",
       "a user with the role manager can not create an SM",
-      "a user with the role agent can not view the SM module"
+      "a user with the role agent can not view the SM module",
+      "a newly created SM gets an ID and appears in the list of SM in the dashboard of the SM module"
     ]
   },
   {
@@ -158,7 +159,7 @@
       "a user with the role manager can only select participants or subdivisions of which he has permission to view",
       "a user with the role director has viewing permissions, but can not create an TM",
       "a user with the role agent can view the TM module, but can not create an TM",
-      "a newly created TM gets an ID and appears in the dashboard of the TM module"
+      "a newly created TM gets an ID and appears in the list of TM in the dashboard of the TM module"
     ]
   },
   {
@@ -322,11 +323,11 @@
     "title": "Drag and Drop Meetings within Calendar View",
     "story": "As a Director/Manager I want to drag and drop meetings inside Calendar View so that I can reschedule meetings with my subordinates",
     "acceptance_criteria": [
-      "an SM or TM can only be dragged and dropped to a date that is in the future or today",
+      "an SM or TM can only be dragged and dropped to a date that is in the futurey",
       "a manager can not drag and drop any SM at all",
-      "a manager can drag and drop an TM that he created to another day within the calendar view",
-      "a director can drag and drop TM created by any manager to another day within the calendar view",
-      "a director can drag and drop any SM he created to another day within the calendar view",
+      "a manager can drag and drop any TM that he created to another day within the calendar view",
+      "a director can not drag and drop any TM at all",
+      "a director can drag and drop any SM that he created to another day within the calendar view",
       "an agent can not drag and drop any TM at all",
       "when a meeting gets rescheduled, all participants of the meeting get a notification „RESCHEDULED: SM/TM with the title …“"
     ]
