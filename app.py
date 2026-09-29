@@ -615,6 +615,8 @@ Coverage rules:
 - For validation, limit, date, field, or boundary criteria, the relevant rule/constraint must actually be exercised and an expected outcome asserted.
 - If the generated tests only partially address the criterion, mark covered=false.
 - Judge only coverage of this acceptance criterion; do not reward general test quality.
+- Judge only what the acceptance criterion explicitly requires. Do not require additional behavior that is not stated in the criterion.
+- For role-specific criteria, judge only the role(s) named in that criterion; behavior of other roles is not contradictory evidence.
 - Return ONLY valid JSON, no markdown, no prose.
 
 Output schema:
