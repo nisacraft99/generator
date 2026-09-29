@@ -361,7 +361,7 @@
       "a manager can search for his subordinate agents and can not search for any other user",
       "a manager can only evaluate agents",
       "when manager searches for an agent that is his subordinate, he gets redirected to the evaluation page of that agent",
-      "in the evaluation page, the logged in user sees the following fields and a scale to select from: efficiency (scale 1 to 5) reliability (scale 1 to 5) communication (scale 1 to 5) comment (a mandatory free-text field with a maximum of 300 characters)",
+      "in the evaluation page, the logged in user sees the following fields and a scale to select from: efficiency (scale 1 to 5) reliability (scale 1 to 5) communication (scale 1 to 5) comment (a free-text field with a maximum of 300 characters)",
       "all fields are mandatory except the comment field",
       "if a mandatory field is not filled and the user clicks „save“ button, an error message appears saying „Please fill all mandatory fields“",
       "there is a save and cancel button at the end of the page",
