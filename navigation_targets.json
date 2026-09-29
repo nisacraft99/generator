@@ -128,8 +128,7 @@
     "required_across_story": [
       "EL-TM-CREATE",
       "MOD-TM-CREATE",
-      "SCR-TM-DETAIL",
-      "COMP-TM-LIST"
+      "SCR-TM-DETAIL"
     ]
   },
   "US-11": {
