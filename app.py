@@ -1,6 +1,6 @@
 # app.py
 # Run:
-#   pip install -U streamlit python-dotenv reportlab openai
+#   pip install -U streamlit python-dotenv reportlab openai anthropic
 #   streamlit run app.py
 
 import os
@@ -32,6 +32,11 @@ try:
     from openai import OpenAI
 except Exception:
     OpenAI = None
+
+try:
+    from anthropic import Anthropic
+except Exception:
+    Anthropic = None
 
 
 # ======================= PAGE CONFIG =======================
@@ -319,10 +324,23 @@ NAV_TARGETS = load_json_file(NAV_TARGETS_PATH, {})
 st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', [])) if isinstance(UI_CONTEXT, dict) else 0}")
 st.caption(f"Navigation targets loaded: {len(NAV_TARGETS) if isinstance(NAV_TARGETS, dict) else 0}")
 
-# ======================= OPENAI SETUP =======================
+# ======================= API CLIENT SETUP =======================
 load_dotenv()
+
+# OpenAI is used only for test-case generation.
 API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
+
+# Anthropic is used only for Acceptance Criteria Coverage (LLM-as-a-Judge).
+ANTHROPIC_API_KEY = st.secrets.get(
+    "ANTHROPIC_API_KEY",
+    os.getenv("ANTHROPIC_API_KEY", ""),
+)
+anthropic_client = (
+    Anthropic(api_key=ANTHROPIC_API_KEY)
+    if (ANTHROPIC_API_KEY and Anthropic)
+    else None
+)
 
 # Models used in the experiment. Keep these centralized so generation,
 # evaluation and checkpoint fingerprints always stay consistent.
@@ -593,13 +611,18 @@ def testcase_full_text(tc: Dict[str, Any]) -> str:
 
 # ======================= LLM-AS-A-JUDGE AC EVALUATION =======================
 
-# Judge configuration. GPT-5.6 Luna defaults to medium reasoning; for this short,
-# schema-constrained binary judgement we explicitly disable reasoning so the
-# completion budget is used for the JSON answer itself.
-AC_JUDGE_VERSION = "strict_v3"
-AC_JUDGE_MODEL = "gpt-5.6-luna"
-AC_JUDGE_REASONING_EFFORT = "none"
-AC_JUDGE_MAX_COMPLETION_TOKENS = 500
+# Judge configuration. Test-case generation remains on GPT-5.6 Terra, while
+# Acceptance Criteria Coverage is judged independently with Anthropic Claude.
+# The version string is intentionally new so old Luna judgements in an uploaded
+# checkpoint are NOT reused. Saved generations are still reused, so no test cases
+# are regenerated during re-evaluation.
+# Fixed judge model for the final experiment.
+# No ANTHROPIC_JUDGE_MODEL environment variable is needed.
+AC_JUDGE_MODEL = "claude-sonnet-5-5"
+AC_JUDGE_PROMPT_VERSION = "strict_v3"
+AC_JUDGE_VERSION = f"claude_{AC_JUDGE_PROMPT_VERSION}__{AC_JUDGE_MODEL}"
+AC_JUDGE_MAX_TOKENS = 300
+AC_JUDGE_TEMPERATURE = 0.0
 
 LLM_JUDGE_SYSTEM_PROMPT = """
 You are a strict QA expert evaluating acceptance-criterion coverage.
@@ -639,13 +662,13 @@ def evaluate_ac_coverage(
     judge results and calls the API only for acceptance criteria that are still missing
     or previously failed.
     """
-    if not client:
+    if not anthropic_client:
         return {
             "overall_pct": None,
             "covered_count": None,
             "total_count": None,
             "details": [],
-            "note": "LLM judge not available (missing API client)."
+            "note": "Claude judge not available (missing ANTHROPIC_API_KEY or anthropic package)."
         }
 
     ac_lines = [l.strip() for l in ac_blob.splitlines() if l.strip()]
@@ -712,23 +735,32 @@ def evaluate_ac_coverage(
             "generated_test_cases": tc_text,
         }
         try:
-            resp = client.chat.completions.create(
+            resp = anthropic_client.messages.create(
                 model=AC_JUDGE_MODEL,
-                reasoning_effort=AC_JUDGE_REASONING_EFFORT,
-                max_completion_tokens=AC_JUDGE_MAX_COMPLETION_TOKENS,
-                response_format={"type": "json_object"},
+                max_tokens=AC_JUDGE_MAX_TOKENS,
+                temperature=AC_JUDGE_TEMPERATURE,
+                system=LLM_JUDGE_SYSTEM_PROMPT,
                 messages=[
-                    {"role": "system", "content": LLM_JUDGE_SYSTEM_PROMPT},
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
                 ],
             )
-            raw = (resp.choices[0].message.content or "").strip()
-            raw = re.sub(r"^```(json)?\s*|\s*```$", "", raw, flags=re.S).strip()
+
+            # Anthropic returns a list of content blocks. Keep only text blocks and
+            # parse the JSON requested by the fixed judge prompt.
+            raw = "".join(
+                getattr(block, "text", "")
+                for block in (resp.content or [])
+                if getattr(block, "type", "") == "text"
+            ).strip()
+            raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.S | re.I).strip()
+            balanced = _extract_first_balanced_json_object(raw)
+            if balanced:
+                raw = balanced
             result = json.loads(raw)
             if "covered" not in result:
-                raise ValueError("Judge response has no 'covered' field.")
+                raise ValueError("Claude judge response has no 'covered' field.")
             covered = bool(result.get("covered", False))
-            reason = str(result.get("reason", "")).strip() or "No reason returned by judge."
+            reason = str(result.get("reason", "")).strip() or "No reason returned by Claude judge."
 
             if judge_cache is not None:
                 judge_cache[ac_id] = {
@@ -2300,7 +2332,7 @@ def reevaluate_uploaded_checkpoint(
 
     Important: this function never calls generate_cases(). It therefore cannot create
     any new test cases or fill missing runs. Local metrics are recomputed from the
-    saved cases. AC Coverage uses the normal strict LLM judge and reuses compatible
+    saved cases. AC Coverage uses the normal Claude LLM judge and reuses compatible
     cached judge decisions; changed/missing AC judgements may trigger judge calls.
     """
     runs = checkpoint.get("runs", {}) if isinstance(checkpoint, dict) else {}
@@ -2630,7 +2662,7 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                     error_text = ""
                     if ac_incomplete:
                         error_text = (
-                            "AC Coverage judge incomplete. Saved successful strict-judge calls will be reused; "
+                            "AC Coverage judge incomplete. Saved successful Claude-judge calls will be reused; "
                             "resume to retry only failed/missing AC judge calls."
                         )
 
