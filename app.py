@@ -612,11 +612,11 @@ Coverage rules:
 - Do not infer missing test actions or expected results from context.
 - Semantic equivalence is allowed; wording does not need to match exactly.
 - For permission criteria, the specified role must be used and the allowed/denied behavior must be verified.
+- Judge only what the acceptance criterion explicitly requires. Do not require additional behavior that is not stated in the criterion.
+- For role-specific criteria, judge only the role(s) named in that criterion; behavior of other roles is not contradictory evidence.
 - For validation, limit, date, field, or boundary criteria, the relevant rule/constraint must actually be exercised and an expected outcome asserted.
 - If the generated tests only partially address the criterion, mark covered=false.
 - Judge only coverage of this acceptance criterion; do not reward general test quality.
-- Judge only what the acceptance criterion explicitly requires. Do not require additional behavior that is not stated in the criterion.
-- For role-specific criteria, judge only the role(s) named in that criterion; behavior of other roles is not contradictory evidence.
 - Return ONLY valid JSON, no markdown, no prose.
 
 Output schema:
@@ -3566,10 +3566,17 @@ except Exception as e:
 
 if reevaluate_uploaded_button and uploaded_checkpoint_preview is not None:
     try:
-        # Work on an imported on-disk copy so any new judge calls/results are crash-safe.
-        imported_checkpoint = uploaded_checkpoint_preview
-        imported_checkpoint_path = _imported_checkpoint_path(imported_checkpoint)
-        _save_bulk_checkpoint(imported_checkpoint_path, imported_checkpoint)
+        # Work on a stable imported on-disk copy so any new judge calls/results are crash-safe.
+        # IMPORTANT: if a previous re-evaluation stopped, resume from the already updated
+        # local checkpoint instead of overwriting it with the originally uploaded JSON.
+        imported_checkpoint_path = _imported_checkpoint_path(uploaded_checkpoint_preview)
+        saved_checkpoint = _load_bulk_checkpoint(imported_checkpoint_path)
+
+        if saved_checkpoint is not None:
+            imported_checkpoint = saved_checkpoint
+        else:
+            imported_checkpoint = uploaded_checkpoint_preview
+            _save_bulk_checkpoint(imported_checkpoint_path, imported_checkpoint)
 
         with st.spinner("Re-evaluating saved generations only. No test-case generation calls are made."):
             reevaluated_df = reevaluate_uploaded_checkpoint(
