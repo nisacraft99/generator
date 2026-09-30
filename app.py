@@ -618,7 +618,7 @@ def testcase_full_text(tc: Dict[str, Any]) -> str:
 # are regenerated during re-evaluation.
 # Fixed judge model for the final experiment.
 # No ANTHROPIC_JUDGE_MODEL environment variable is needed.
-AC_JUDGE_MODEL = "claude-sonnet-5-5"
+AC_JUDGE_MODEL = "claude-haiku-4-5"
 AC_JUDGE_PROMPT_VERSION = "strict_v3"
 AC_JUDGE_VERSION = f"claude_{AC_JUDGE_PROMPT_VERSION}__{AC_JUDGE_MODEL}"
 AC_JUDGE_MAX_TOKENS = 300
