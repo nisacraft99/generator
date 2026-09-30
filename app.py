@@ -622,7 +622,7 @@ AC_JUDGE_MODEL = "claude-sonnet-5-5"
 AC_JUDGE_PROMPT_VERSION = "strict_v3"
 AC_JUDGE_VERSION = f"claude_{AC_JUDGE_PROMPT_VERSION}__{AC_JUDGE_MODEL}"
 AC_JUDGE_MAX_TOKENS = 300
-AC_JUDGE_TEMPERATURE = 0.0
+# Claude Sonnet 5.5 rejects sampling parameters such as temperature/top_p/top_k.
 
 LLM_JUDGE_SYSTEM_PROMPT = """
 You are a strict QA expert evaluating acceptance-criterion coverage.
@@ -738,7 +738,6 @@ def evaluate_ac_coverage(
             resp = anthropic_client.messages.create(
                 model=AC_JUDGE_MODEL,
                 max_tokens=AC_JUDGE_MAX_TOKENS,
-                temperature=AC_JUDGE_TEMPERATURE,
                 system=LLM_JUDGE_SYSTEM_PROMPT,
                 messages=[
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
