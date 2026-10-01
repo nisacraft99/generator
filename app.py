@@ -1,6 +1,6 @@
 # app.py
 # Run:
-#   pip install -U streamlit python-dotenv reportlab openai anthropic
+#   pip install -U streamlit python-dotenv reportlab openai
 #   streamlit run app.py
 
 import os
@@ -32,11 +32,6 @@ try:
     from openai import OpenAI
 except Exception:
     OpenAI = None
-
-try:
-    from anthropic import Anthropic
-except Exception:
-    Anthropic = None
 
 
 # ======================= PAGE CONFIG =======================
@@ -324,23 +319,10 @@ NAV_TARGETS = load_json_file(NAV_TARGETS_PATH, {})
 st.caption(f"UI context loaded nodes: {len(UI_CONTEXT.get('nodes', [])) if isinstance(UI_CONTEXT, dict) else 0}")
 st.caption(f"Navigation targets loaded: {len(NAV_TARGETS) if isinstance(NAV_TARGETS, dict) else 0}")
 
-# ======================= API CLIENT SETUP =======================
+# ======================= OPENAI SETUP =======================
 load_dotenv()
-
-# OpenAI is used only for test-case generation.
 API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=API_KEY) if (API_KEY and OpenAI) else None
-
-# Anthropic is used only for Acceptance Criteria Coverage (LLM-as-a-Judge).
-ANTHROPIC_API_KEY = st.secrets.get(
-    "ANTHROPIC_API_KEY",
-    os.getenv("ANTHROPIC_API_KEY", ""),
-)
-anthropic_client = (
-    Anthropic(api_key=ANTHROPIC_API_KEY)
-    if (ANTHROPIC_API_KEY and Anthropic)
-    else None
-)
 
 # Models used in the experiment. Keep these centralized so generation,
 # evaluation and checkpoint fingerprints always stay consistent.
@@ -611,18 +593,13 @@ def testcase_full_text(tc: Dict[str, Any]) -> str:
 
 # ======================= LLM-AS-A-JUDGE AC EVALUATION =======================
 
-# Judge configuration. Test-case generation remains on GPT-5.6 Terra, while
-# Acceptance Criteria Coverage is judged independently with Anthropic Claude.
-# The version string is intentionally new so old Luna judgements in an uploaded
-# checkpoint are NOT reused. Saved generations are still reused, so no test cases
-# are regenerated during re-evaluation.
-# Fixed judge model for the final experiment.
-# No ANTHROPIC_JUDGE_MODEL environment variable is needed.
-AC_JUDGE_MODEL = "claude-haiku-4-5"
-AC_JUDGE_PROMPT_VERSION = "strict_v3"
-AC_JUDGE_VERSION = f"claude_{AC_JUDGE_PROMPT_VERSION}__{AC_JUDGE_MODEL}"
-AC_JUDGE_MAX_TOKENS = 300
-# Claude Sonnet 5.5 rejects sampling parameters such as temperature/top_p/top_k.
+# Judge configuration. GPT-5.6 Luna defaults to medium reasoning; for this short,
+# schema-constrained binary judgement we explicitly disable reasoning so the
+# completion budget is used for the JSON answer itself.
+AC_JUDGE_VERSION = "strict_v3"
+AC_JUDGE_MODEL = "gpt-5.6-luna"
+AC_JUDGE_REASONING_EFFORT = "none"
+AC_JUDGE_MAX_COMPLETION_TOKENS = 500
 
 LLM_JUDGE_SYSTEM_PROMPT = """
 You are a strict QA expert evaluating acceptance-criterion coverage.
@@ -662,13 +639,13 @@ def evaluate_ac_coverage(
     judge results and calls the API only for acceptance criteria that are still missing
     or previously failed.
     """
-    if not anthropic_client:
+    if not client:
         return {
             "overall_pct": None,
             "covered_count": None,
             "total_count": None,
             "details": [],
-            "note": "Claude judge not available (missing ANTHROPIC_API_KEY or anthropic package)."
+            "note": "LLM judge not available (missing API client)."
         }
 
     ac_lines = [l.strip() for l in ac_blob.splitlines() if l.strip()]
@@ -735,31 +712,23 @@ def evaluate_ac_coverage(
             "generated_test_cases": tc_text,
         }
         try:
-            resp = anthropic_client.messages.create(
+            resp = client.chat.completions.create(
                 model=AC_JUDGE_MODEL,
-                max_tokens=AC_JUDGE_MAX_TOKENS,
-                system=LLM_JUDGE_SYSTEM_PROMPT,
+                reasoning_effort=AC_JUDGE_REASONING_EFFORT,
+                max_completion_tokens=AC_JUDGE_MAX_COMPLETION_TOKENS,
+                response_format={"type": "json_object"},
                 messages=[
+                    {"role": "system", "content": LLM_JUDGE_SYSTEM_PROMPT},
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
                 ],
             )
-
-            # Anthropic returns a list of content blocks. Keep only text blocks and
-            # parse the JSON requested by the fixed judge prompt.
-            raw = "".join(
-                getattr(block, "text", "")
-                for block in (resp.content or [])
-                if getattr(block, "type", "") == "text"
-            ).strip()
-            raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.S | re.I).strip()
-            balanced = _extract_first_balanced_json_object(raw)
-            if balanced:
-                raw = balanced
+            raw = (resp.choices[0].message.content or "").strip()
+            raw = re.sub(r"^```(json)?\s*|\s*```$", "", raw, flags=re.S).strip()
             result = json.loads(raw)
             if "covered" not in result:
-                raise ValueError("Claude judge response has no 'covered' field.")
+                raise ValueError("Judge response has no 'covered' field.")
             covered = bool(result.get("covered", False))
-            reason = str(result.get("reason", "")).strip() or "No reason returned by Claude judge."
+            reason = str(result.get("reason", "")).strip() or "No reason returned by judge."
 
             if judge_cache is not None:
                 judge_cache[ac_id] = {
@@ -2320,6 +2289,102 @@ def _run_key_parts(run_key: str, run_state: Dict[str, Any]) -> tuple:
     return us_id, variant, rep
 
 
+def load_saved_checkpoint_results(checkpoint: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Load the metrics/evaluations already stored inside an uploaded checkpoint.
+
+    IMPORTANT:
+    - Makes NO generation calls.
+    - Makes NO LLM-as-a-Judge calls.
+    - Does NOT recompute or overwrite saved evaluations.
+    - It only displays the results exactly as they are stored in the checkpoint.
+    """
+    runs = checkpoint.get("runs", {}) if isinstance(checkpoint, dict) else {}
+    if not isinstance(runs, dict) or not runs:
+        raise ValueError("Checkpoint contains no saved runs.")
+
+    rows: List[Dict[str, Any]] = []
+    runs_store: Dict[str, Any] = {}
+
+    for run_key, run_state in runs.items():
+        if not isinstance(run_state, dict):
+            continue
+
+        item = run_state.get("item") if isinstance(run_state.get("item"), dict) else {}
+        us_id, variant_name, rep = _run_key_parts(run_key, run_state)
+        use_ui = bool(run_state.get("use_ui_context", variant_name == "with_ui_context"))
+        cases = run_state.get("cases", []) or []
+        open_q = run_state.get("open_q", []) or []
+        evaluation = run_state.get("evaluation") if isinstance(run_state.get("evaluation"), dict) else {}
+
+        # Prefer the row that was saved at the time of the original evaluation.
+        saved_row = run_state.get("row")
+        if isinstance(saved_row, dict) and saved_row:
+            row = dict(saved_row)
+        else:
+            # Backward-compatible fallback for checkpoints that contain an evaluation
+            # but no precomputed row. This only reads saved values; it does not call a judge.
+            ac_pct = _metric_or_none(evaluation, "ac", "overall_pct")
+            role_pct = _metric_or_none(evaluation, "role", "overall_pct")
+            target_pct = _metric_or_none(evaluation, "target_node", "coverage_pct")
+            nav_pct = _metric_or_none(evaluation, "navigation_path", "correctness_pct")
+
+            ac_blob = str(item.get("ac_blob", "")).strip()
+            acceptance_criteria_count = item.get("acceptance_criteria_count")
+            if acceptance_criteria_count is None:
+                acceptance_criteria_count = len([x for x in ac_blob.splitlines() if x.strip()])
+
+            row = {
+                "repetition": rep,
+                "us_id": us_id,
+                "title": item.get("title", ""),
+                "variant": variant_name or ("with_ui_context" if use_ui else "without_ui_context"),
+                "use_ui_context": use_ui,
+                "acceptance_criteria_count": acceptance_criteria_count,
+                "testcase_count": len(cases),
+                "ac_coverage_pct": ac_pct,
+                "role_coverage_pct": role_pct,
+                "target_node_coverage_pct": target_pct,
+                "navigation_path_correctness_pct": nav_pct,
+                "navigation_correctness_pct": nav_pct,
+                "overall_score_pct": _overall_score(ac_pct, role_pct, target_pct, nav_pct),
+                "open_questions_count": len(open_q),
+                "error": str(run_state.get("last_error", "") or ""),
+            }
+
+        # Normalize a few columns expected by the summary/detail UI.
+        row.setdefault("repetition", rep)
+        row.setdefault("us_id", us_id)
+        row.setdefault("title", item.get("title", ""))
+        row.setdefault("variant", variant_name or ("with_ui_context" if use_ui else "without_ui_context"))
+        row.setdefault("use_ui_context", use_ui)
+        row.setdefault("testcase_count", len(cases))
+        row.setdefault("open_questions_count", len(open_q))
+        row.setdefault("error", str(run_state.get("last_error", "") or ""))
+
+        rows.append(row)
+
+        if cases:
+            runs_store[run_key] = {
+                "item": item,
+                "variant": row.get("variant"),
+                "rep": rep,
+                "cases": cases,
+                "open_q": open_q,
+                "evaluation": evaluation,
+            }
+
+    if not rows:
+        raise ValueError("Checkpoint contains no displayable saved result rows.")
+
+    st.session_state.bulk_runs_store = runs_store
+    # Do not set bulk_checkpoint_path here: viewing an upload must not overwrite,
+    # import, or mutate anything on disk.
+    st.session_state.bulk_checkpoint_stats = _bulk_checkpoint_stats(checkpoint)
+    st.session_state.bulk_generation_calls_this_resume = 0
+    return pd.DataFrame(rows)
+
+
 def reevaluate_uploaded_checkpoint(
     checkpoint: Dict[str, Any],
     checkpoint_path: str,
@@ -2331,7 +2396,7 @@ def reevaluate_uploaded_checkpoint(
 
     Important: this function never calls generate_cases(). It therefore cannot create
     any new test cases or fill missing runs. Local metrics are recomputed from the
-    saved cases. AC Coverage uses the normal Claude LLM judge and reuses compatible
+    saved cases. AC Coverage uses the normal strict LLM judge and reuses compatible
     cached judge decisions; changed/missing AC judgements may trigger judge calls.
     """
     runs = checkpoint.get("runs", {}) if isinstance(checkpoint, dict) else {}
@@ -2661,7 +2726,7 @@ def run_bulk_evaluation(userstories: List[Dict[str, Any]], repetitions: int) -> 
                     error_text = ""
                     if ac_incomplete:
                         error_text = (
-                            "AC Coverage judge incomplete. Saved successful Claude-judge calls will be reused; "
+                            "AC Coverage judge incomplete. Saved successful strict-judge calls will be reused; "
                             "resume to retry only failed/missing AC judge calls."
                         )
 
@@ -3574,11 +3639,27 @@ if existing_runs_upload is not None:
     except Exception as e:
         st.error(f"Could not read uploaded checkpoint: {e}")
 
-reevaluate_uploaded_button = st.button(
-    "Re-evaluate uploaded runs only (NO generation)",
-    disabled=uploaded_checkpoint_preview is None,
-    type="secondary",
-)
+show_saved_col, reeval_col = st.columns(2)
+with show_saved_col:
+    show_uploaded_results_button = st.button(
+        "Show saved results (NO API CALLS)",
+        disabled=uploaded_checkpoint_preview is None,
+        type="primary",
+        help=(
+            "Displays the metrics and judge decisions already stored in the uploaded checkpoint. "
+            "Nothing is regenerated or re-evaluated."
+        ),
+    )
+with reeval_col:
+    reevaluate_uploaded_button = st.button(
+        "Re-evaluate uploaded runs only (NO generation)",
+        disabled=uploaded_checkpoint_preview is None,
+        type="secondary",
+        help=(
+            "Recomputes the evaluation of the saved generations. "
+            "AC Coverage may call the currently configured LLM judge."
+        ),
+    )
 
 try:
     if bulk_uploaded_file is not None:
@@ -3594,6 +3675,23 @@ try:
 except Exception as e:
     preview_userstories = []
     st.error(f"Could not preview bulk user stories: {e}")
+
+if show_uploaded_results_button and uploaded_checkpoint_preview is not None:
+    try:
+        saved_results_df = load_saved_checkpoint_results(uploaded_checkpoint_preview)
+        saved_summary_df = summarize_bulk_results(saved_results_df)
+        saved_by_us_df = summarize_bulk_by_user_story(saved_results_df)
+
+        st.session_state.bulk_results_df = saved_results_df
+        st.session_state.bulk_summary_df = saved_summary_df
+        st.session_state.bulk_by_us_df = saved_by_us_df
+
+        st.success(
+            f"Loaded {len(saved_results_df)} saved run(s) exactly as stored in the uploaded checkpoint. "
+            "No API calls, no generation, and no re-evaluation were performed."
+        )
+    except Exception as e:
+        st.error(f"Could not display saved checkpoint results: {e}")
 
 if reevaluate_uploaded_button and uploaded_checkpoint_preview is not None:
     try:
