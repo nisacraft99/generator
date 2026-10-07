@@ -9,6 +9,7 @@
     "required_across_story": [
       "EL-SM-CREATE",
       "MOD-SM-CREATE",
+      "EL-SM-CREATE-SUBMIT",
       "SCR-SM-DETAIL"
     ]
   },
@@ -34,7 +35,8 @@
     ],
     "required_across_story": [
       "EL-SM-EDIT",
-      "MOD-SM-EDIT"
+      "MOD-SM-EDIT",
+      "EL-SM-EDIT-SAVE"
     ]
   },
   "US-4": {
@@ -47,6 +49,8 @@
     "required_across_story": [
       "EL-SM-DELETE",
       "MOD-SM-DELETE",
+      "EL-SM-DELETE-YES",
+      "EL-SM-DELETE-NO",
       "SCR-SM-DASHBOARD"
     ]
   },
@@ -74,6 +78,8 @@
     "required_across_story": [
       "EL-SM-ADD-ACTION",
       "MOD-SM-ACTION-CREATE",
+      "EL-SM-ACTION-CREATE-SAVE",
+      "EL-SM-ACTION-CREATE-CANCEL",
       "COMP-SM-ACTION-LIST"
     ]
   },
@@ -99,9 +105,12 @@
     ],
     "required_across_story": [
       "COMP-SM-ACTION-LIST",
+      "EL-SM-ACTION-ID",
       "SCR-SM-ACTION-DETAIL",
       "EL-SM-ACTION-EDIT",
-      "MOD-SM-ACTION-EDIT"
+      "MOD-SM-ACTION-EDIT",
+      "EL-SM-ACTION-EDIT-SAVE",
+      "EL-SM-ACTION-EDIT-CANCEL"
     ]
   },
   "US-9": {
@@ -113,9 +122,12 @@
     ],
     "required_across_story": [
       "COMP-SM-ACTION-LIST",
+      "EL-SM-ACTION-ID",
       "SCR-SM-ACTION-DETAIL",
       "EL-SM-ACTION-DELETE",
-      "MOD-SM-ACTION-DELETE"
+      "MOD-SM-ACTION-DELETE",
+      "EL-SM-ACTION-DELETE-YES",
+      "EL-SM-ACTION-DELETE-NO"
     ]
   },
   "US-10": {
@@ -128,6 +140,7 @@
     "required_across_story": [
       "EL-TM-CREATE",
       "MOD-TM-CREATE",
+      "EL-TM-CREATE-SUBMIT",
       "SCR-TM-DETAIL"
     ]
   },
@@ -153,7 +166,8 @@
     ],
     "required_across_story": [
       "EL-TM-EDIT",
-      "MOD-TM-EDIT"
+      "MOD-TM-EDIT",
+      "EL-TM-EDIT-SAVE"
     ]
   },
   "US-13": {
@@ -166,6 +180,8 @@
     "required_across_story": [
       "EL-TM-DELETE",
       "MOD-TM-DELETE",
+      "EL-TM-DELETE-YES",
+      "EL-TM-DELETE-NO",
       "SCR-TM-DASHBOARD"
     ]
   },
@@ -193,6 +209,8 @@
     "required_across_story": [
       "EL-TM-ADD-ACTION",
       "MOD-TM-ACTION-CREATE",
+      "EL-TM-ACTION-CREATE-SAVE",
+      "EL-TM-ACTION-CREATE-CANCEL",
       "COMP-TM-ACTION-LIST"
     ]
   },
@@ -218,9 +236,12 @@
     ],
     "required_across_story": [
       "COMP-TM-ACTION-LIST",
+      "EL-TM-ACTION-ID",
       "SCR-TM-ACTION-DETAIL",
       "EL-TM-ACTION-EDIT",
-      "MOD-TM-ACTION-EDIT"
+      "MOD-TM-ACTION-EDIT",
+      "EL-TM-ACTION-EDIT-SAVE",
+      "EL-TM-ACTION-EDIT-CANCEL"
     ]
   },
   "US-18": {
@@ -232,9 +253,12 @@
     ],
     "required_across_story": [
       "COMP-TM-ACTION-LIST",
+      "EL-TM-ACTION-ID",
       "SCR-TM-ACTION-DETAIL",
       "EL-TM-ACTION-DELETE",
-      "MOD-TM-ACTION-DELETE"
+      "MOD-TM-ACTION-DELETE",
+      "EL-TM-ACTION-DELETE-YES",
+      "EL-TM-ACTION-DELETE-NO"
     ]
   },
   "US-19": {
@@ -258,6 +282,7 @@
       "SCR-CALENDAR"
     ],
     "required_across_story": [
+      "EL-CALENDAR-SEARCH-BAR",
       "EL-CALENDAR-SEARCH-BTN"
     ]
   },
@@ -295,12 +320,12 @@
     "required_across_story": [
       "SCR-EVALUATE-DASHBOARD",
       "EL-EVAL-LOCATION-FILTER",
+      "EL-EVAL-SEARCH-BAR",
       "EL-EVAL-SEARCH-BTN",
       "EL-EVAL-EMPLOYEE",
       "SCR-EVALUATE-DETAIL",
       "EL-EVAL-SAVE",
       "EL-EVAL-CANCEL",
-      "EL-EVAL-SEARCH-BAR",
       "COMP-EVAL-LIST",
       "EL-EVAL-ID",
       "SCR-EVAL-CREATED-DETAIL",
@@ -315,18 +340,19 @@
     ],
     "required_across_story": [
       "SCR-MY-EVAL-DASHBOARD",
+      "COMP-MY-EVAL-LIST",
       "EL-MY-EVAL-ID",
       "SCR-MY-EVAL-DETAIL",
       "EL-MY-EVAL-BACK",
       "EL-MY-EVAL-APPEAL",
-      "MOD-EVAL-APPEAL"
+      "MOD-EVAL-APPEAL",
+      "EL-MY-EVAL-APPEAL-SAVE",
+      "EL-MY-EVAL-APPEAL-CANCEL"
     ]
   },
   "US-25": {
     "title": "Navigation Bar",
-    "required_per_testcase": [
-
-    ],
+    "required_per_testcase": [],
     "required_across_story": [
       "CONSOLE-O",
       "CONSOLE-C",
