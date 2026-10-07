@@ -299,7 +299,12 @@
       "EL-EVAL-EMPLOYEE",
       "SCR-EVALUATE-DETAIL",
       "EL-EVAL-SAVE",
-      "EL-EVAL-CANCEL"
+      "EL-EVAL-CANCEL",
+      "EL-EVAL-SEARCH-BAR",
+      "COMP-EVAL-LIST",
+      "EL-EVAL-ID",
+      "SCR-EVAL-CREATED-DETAIL",
+      "EL-EVAL-CREATED-BACK"
     ]
   },
   "US-24": {
