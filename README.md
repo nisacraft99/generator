@@ -69,8 +69,10 @@ den Text prüfen.
 ### Acceptance Criteria Coverage
 
 Ein zweites Modell (Judge) bekommt je ein Akzeptanzkriterium und alle Testfälle
-einer Ausgabe und entscheidet „abgedeckt“ oder „nicht abgedeckt“. Die Regeln
-stehen in `prompts/judge_system.txt`.
+einer Ausgabe und entscheidet „abgedeckt“ oder „nicht abgedeckt“. Die Userstory
+erhält es als Kontext, damit Abkürzungen und Rollen im Kriterium verständlich
+sind; beurteilt wird nur das eine Kriterium. Die Regeln stehen in
+`prompts/judge_system.txt`.
 
 Grenzen: Das Urteil stammt von einem Sprachmodell und kann falsch oder
 uneinheitlich sein. Schlägt ein Judge-Aufruf fehl, bleibt die Ausgabe

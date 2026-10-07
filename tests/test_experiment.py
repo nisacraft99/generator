@@ -100,3 +100,15 @@ def test_reevaluation_generates_nothing(make_resources, checkpoint_dir):
     assert client.generator_calls == 0 and client.judge_calls == 0
     assert list(result.rows["ac_coverage_pct"]) == [100.0, 100.0]
     assert experiment.load_saved_results(checkpoint).rows.equals(result.rows)
+
+
+def test_judge_receives_the_user_story_as_context(make_resources):
+    client = FakeClient([json.dumps(ANSWER)] * 2)
+    experiment.run_bulk_evaluation(make_resources(client), STORIES, repetitions=1)
+    judge_inputs = [
+        json.loads(request["messages"][1]["content"])
+        for request in client.requests
+        if request["model"] == config.JUDGE_MODEL
+    ]
+    assert {payload["user_story"] for payload in judge_inputs} == {STORIES[0]["story"]}
+    assert set(judge_inputs[0]) == {"user_story", "acceptance_criterion", "generated_test_cases"}

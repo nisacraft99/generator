@@ -9,6 +9,7 @@ from ..evaluation import evaluate_test_cases
 from ..generation import clean_open_questions, generate_test_cases
 from ..pdf_report import build_pdf
 from ..resources import Resources
+from ..user_stories import normalize_story_id
 from .common import section_label
 from .evaluation_view import render_evaluation
 
@@ -18,8 +19,9 @@ def render(resources: Resources) -> None:
     st.markdown('<div class="mock-title">User Story → Testcase Generator</div>', unsafe_allow_html=True)
 
     section_label("User Story ID (optional; required for evaluation, e.g. US-4)")
-    story_id = st.text_input(
-        "User Story ID", key="us_id_input", label_visibility="collapsed", placeholder="US-4 (optional)"
+    # Accept "4", "us-4" or "US 4" and use the spelling of the data files, "US-4".
+    story_id = normalize_story_id(
+        st.text_input("User Story ID", key="us_id_input", label_visibility="collapsed", placeholder="US-4 (optional)")
     )
 
     section_label("User Story")

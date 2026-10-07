@@ -36,7 +36,7 @@ def evaluate_test_cases(
     ID-Text Consistency need ``ui_node_id`` values and are therefore only
     computed for outputs generated with UI context.
     """
-    ac = evaluate_ac_coverage(resources.client, cases, ac_blob, judge_state, persist)
+    ac = evaluate_ac_coverage(resources.client, story, cases, ac_blob, judge_state, persist)
 
     if use_ui_context:
         target_node = evaluate_target_node_coverage(resources.ui_context, resources.navigation_targets, story_id, cases)

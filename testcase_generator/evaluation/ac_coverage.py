@@ -2,7 +2,8 @@
 
 Each acceptance criterion is judged on its own against the complete generated
 test case set. The judge sees titles, steps and expected results, but no
-``ui_node_id`` values.
+``ui_node_id`` values. It also receives the user story, so that abbreviations
+and roles in a criterion ("an SM has a delete button") are understood.
 """
 
 from __future__ import annotations
@@ -42,9 +43,9 @@ def judge_version() -> str:
     return f"{config.JUDGE_VERSION}-{hashlib.sha256(settings.encode('utf-8')).hexdigest()[:10]}"
 
 
-def judge_criterion(client: Any, criterion: str, test_cases_text: str) -> tuple[bool, str, str | None]:
+def judge_criterion(client: Any, story: str, criterion: str, test_cases_text: str) -> tuple[bool, str, str | None]:
     """Ask the judge whether one criterion is covered. Returns (covered, reason, answering model)."""
-    payload = {"acceptance_criterion": criterion, "generated_test_cases": test_cases_text}
+    payload = {"user_story": story, "acceptance_criterion": criterion, "generated_test_cases": test_cases_text}
     response = client.chat.completions.create(
         model=config.JUDGE_MODEL,
         reasoning_effort=config.JUDGE_REASONING_EFFORT,
@@ -75,6 +76,7 @@ def _is_reusable(cached: Any, criterion: str, version: str) -> bool:
 
 def evaluate_ac_coverage(
     client: Any,
+    story: str,
     cases: list[dict[str, Any]],
     ac_blob: str,
     judge_state: dict[str, Any] | None = None,
@@ -115,7 +117,7 @@ def evaluate_ac_coverage(
             covered, reason = bool(cached.get("covered", False)), str(cached.get("reason", ""))
         else:
             try:
-                covered, reason, response_model = judge_criterion(client, criterion, test_cases_text)
+                covered, reason, response_model = judge_criterion(client, story, criterion, test_cases_text)
                 status = "complete"
             except Exception as error:
                 covered, reason, response_model = None, f"Judge call failed: {error}", None
