@@ -1,0 +1,5 @@
+streamlit>=1.49
+openai
+python-dotenv
+reportlab
+pandas
