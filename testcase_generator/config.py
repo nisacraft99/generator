@@ -17,7 +17,7 @@ JUDGE_PROMPT_PATH = PROMPT_DIR / "judge_system.txt"
 STYLESHEET_PATH = ASSET_DIR / "style.css"
 
 # Test case generation.
-GENERATOR_MODEL = "gpt-5.6-terra"
+GENERATOR_MODEL = "gpt-5.6-luna"
 GENERATOR_REASONING_EFFORT = "none"
 GENERATOR_TEMPERATURE = 1
 MAX_INVALID_JSON_RETRIES = 2
@@ -25,7 +25,7 @@ MAX_INVALID_JSON_RETRIES = 2
 # LLM-as-a-Judge for Acceptance Criteria Coverage. Saved judgements are reused
 # only while this label, the judge model and the judge prompt are unchanged
 # (see evaluation.ac_coverage.judge_version).
-JUDGE_MODEL = "gpt-5.6-luna"
+JUDGE_MODEL = "gpt-6-luna"
 JUDGE_REASONING_EFFORT = "none"
 JUDGE_MAX_COMPLETION_TOKENS = 500
 JUDGE_VERSION = "v4"
