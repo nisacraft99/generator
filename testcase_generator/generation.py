@@ -5,16 +5,31 @@ from __future__ import annotations
 import ast
 import json
 import re
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from . import config
-from .resources import load_prompt
+from .resources import digest, load_prompt
 
 # Technical failures are reported through the open-questions list. The bulk run
 # recognises them by these texts and never scores them as test quality.
 CLIENT_MISSING = "OpenAI client not initialized (missing OPENAI_API_KEY or openai package)."
 INVALID_JSON = "Model response was not valid JSON."
 CALL_FAILED_PREFIX = "OpenAI call failed:"
+
+
+@dataclass
+class Generation:
+    """Result of one generation call.
+
+    ``record`` documents the call for the experiment log: time, model and
+    settings requested, the model that answered, token usage and the raw answer.
+    """
+
+    cases: list[dict[str, Any]]
+    open_questions: list[str]
+    record: dict[str, Any]
 
 
 def _first_json_object(text: str) -> str | None:
@@ -127,29 +142,60 @@ def clean_open_questions(open_questions: list[Any]) -> list[str]:
     return cleaned
 
 
+def _call_record(prompt: str, with_ui_context: bool, response: Any = None, error: str | None = None) -> dict[str, Any]:
+    usage = getattr(response, "usage", None)
+    try:
+        raw_response = response.choices[0].message.content
+    except (AttributeError, IndexError, TypeError):
+        raw_response = None
+    return {
+        "requested_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "model": config.GENERATOR_MODEL,
+        "reasoning_effort": config.GENERATOR_REASONING_EFFORT,
+        "temperature": config.GENERATOR_TEMPERATURE,
+        "prompt_sha256": digest(prompt),
+        "with_ui_context": with_ui_context,
+        "response_model": getattr(response, "model", None),
+        "system_fingerprint": getattr(response, "system_fingerprint", None),
+        "usage": {name: getattr(usage, name, None) for name in ("prompt_tokens", "completion_tokens", "total_tokens")}
+        if usage is not None
+        else None,
+        "raw_response": raw_response,
+        "error": error,
+    }
+
+
 def generate_test_cases(
     client: Any,
     story: str,
     ac_blob: str,
     ui_context: dict[str, Any] | None = None,
-) -> tuple[list[dict[str, Any]], list[str]]:
-    """Generate test cases for one user story. Returns (test cases, open questions).
+) -> Generation:
+    """Generate test cases for one user story.
 
     Both variants use the same system prompt. Passing ``ui_context`` adds the UI
     description to the model input; that is the only difference between them.
+    A technical failure is returned as an entry in ``open_questions``.
     """
+    prompt = load_prompt(config.GENERATOR_PROMPT_PATH)
+    with_ui_context = ui_context is not None
+
+    def failed(message: str, response: Any = None) -> Generation:
+        return Generation([], [message], _call_record(prompt, with_ui_context, response, error=message))
+
     if not client:
-        return [], [CLIENT_MISSING]
+        return failed(CLIENT_MISSING)
     if not story.strip():
-        return [], ["User story is empty."]
+        return failed("User story is empty.")
 
     payload: dict[str, Any] = {
         "story": story.strip(),
         "acceptance_criteria": [line.strip() for line in ac_blob.splitlines() if line.strip()],
     }
-    if ui_context is not None:
+    if with_ui_context:
         payload["ui_context"] = ui_context
 
+    response = None
     try:
         response = client.chat.completions.create(
             model=config.GENERATOR_MODEL,
@@ -157,15 +203,16 @@ def generate_test_cases(
             temperature=config.GENERATOR_TEMPERATURE,
             response_format={"type": "json_object"},
             messages=[
-                {"role": "system", "content": load_prompt(config.GENERATOR_PROMPT_PATH)},
+                {"role": "system", "content": prompt},
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
             ],
         )
         data = parse_model_json(response.choices[0].message.content)
         cases = [_normalize_test_case(raw) for raw in (data.get("test_cases", []) or [])]
-        return cases, clean_open_questions(data.get("open_questions", []) or [])
+        open_questions = clean_open_questions(data.get("open_questions", []) or [])
     except Exception as error:
-        return [], [f"{CALL_FAILED_PREFIX} {error}"]
+        return failed(f"{CALL_FAILED_PREFIX} {error}", response)
+    return Generation(cases, open_questions, _call_record(prompt, with_ui_context, response))
 
 
 def generation_failure(open_questions: list[Any]) -> str:

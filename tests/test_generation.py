@@ -38,10 +38,19 @@ def test_parse_reports_invalid_json_instead_of_raising():
 
 
 def test_generate_merges_navigation_and_test_steps():
-    cases, open_questions = generate_test_cases(FakeClient([json.dumps(ANSWER)]), "As a Director ...", "AC 1\nAC 2")
-    assert [step["step"] for step in cases[0]["steps"]] == ["Log in as Director.", "Click Create SM Button."]
-    assert cases[0]["steps_only"][0]["ui_node_id"] == "EL-SM-CREATE"
-    assert open_questions == ["Which date format?", '{"question": "Which locale?"}']
+    generation = generate_test_cases(FakeClient([json.dumps(ANSWER)]), "As a Director ...", "AC 1\nAC 2")
+    case = generation.cases[0]
+    assert [step["step"] for step in case["steps"]] == ["Log in as Director.", "Click Create SM Button."]
+    assert case["steps_only"][0]["ui_node_id"] == "EL-SM-CREATE"
+    assert generation.open_questions == ["Which date format?", '{"question": "Which locale?"}']
+
+
+def test_generate_records_the_call():
+    record = generate_test_cases(FakeClient([json.dumps(ANSWER)]), "As a Director ...", "AC 1").record
+    assert record["model"] == config.GENERATOR_MODEL and record["temperature"] == config.GENERATOR_TEMPERATURE
+    assert json.loads(record["raw_response"]) == ANSWER
+    assert record["with_ui_context"] is False and record["error"] is None
+    assert len(record["prompt_sha256"]) == 64 and record["requested_at"].endswith("+00:00")
 
 
 def test_variants_differ_only_in_the_ui_context_of_the_input():
@@ -58,5 +67,6 @@ def test_variants_differ_only_in_the_ui_context_of_the_input():
 
 
 def test_missing_client_is_a_technical_failure():
-    cases, open_questions = generate_test_cases(None, "story", "AC")
-    assert cases == [] and generation_failure(open_questions)
+    generation = generate_test_cases(None, "story", "AC")
+    assert generation.cases == [] and generation_failure(generation.open_questions)
+    assert generation.record["error"] and generation.record["raw_response"] is None

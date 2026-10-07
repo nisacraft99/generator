@@ -8,7 +8,8 @@ from .. import config
 from ..evaluation import evaluate_test_cases
 from ..generation import clean_open_questions, generate_test_cases
 from ..pdf_report import build_pdf
-from ..resources import Resources, find_user_story, load_user_stories
+from ..resources import Resources
+from ..user_stories import find_user_story, load_user_stories
 from .evaluation_view import render_evaluation
 
 _WITH_UI_LABEL = "with UI context"
@@ -79,9 +80,10 @@ def _generate(resources: Resources, lookup: str, use_ui: bool) -> None:
 
         variant = config.variant_name(use_ui)
         with st.spinner(f"Generating single export for {story['id']}..."):
-            cases, open_questions = generate_test_cases(
+            generation = generate_test_cases(
                 resources.client, story["story"], story["ac_blob"], resources.ui_context.raw if use_ui else None
             )
+            cases, open_questions = generation.cases, generation.open_questions
             pdf = build_pdf(story["story"], story["ac_blob"], cases, open_questions, story_id=story["id"])
 
         state.single_selected_item = story
@@ -94,7 +96,6 @@ def _generate(resources: Resources, lookup: str, use_ui: bool) -> None:
         state.single_export_info = (
             f"Single export ready for {story['id']} — {variant} (test cases: {len(cases)}). Evaluation not run yet."
         )
-        st.success(state.single_export_info)
     except Exception as error:
         state.single_export_pdf = None
         state.single_cases = []
@@ -103,6 +104,9 @@ def _generate(resources: Resources, lookup: str, use_ui: bool) -> None:
         state.single_selected_item = None
         state.single_variant = None
         st.error(f"Single export failed: {error}")
+        return
+    # Rebuild the page so that the evaluation button reflects the new output.
+    st.rerun()
 
 
 def _evaluate(resources: Resources) -> None:

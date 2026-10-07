@@ -7,9 +7,11 @@ test case set. The judge sees titles, steps and expected results, but no
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections.abc import Callable
+from datetime import datetime, timezone
 from typing import Any
 
 from .. import config
@@ -30,8 +32,18 @@ def format_test_cases(cases: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def judge_criterion(client: Any, criterion: str, test_cases_text: str) -> tuple[bool, str]:
-    """Ask the judge whether one criterion is covered. Returns (covered, reason)."""
+def judge_version() -> str:
+    """Identify the judge by its label, model, settings and prompt.
+
+    A saved judgement is reused only if it carries the same value, so changing
+    the judge prompt or model makes every criterion be judged again.
+    """
+    settings = "|".join([config.JUDGE_MODEL, str(config.JUDGE_REASONING_EFFORT), load_prompt(config.JUDGE_PROMPT_PATH)])
+    return f"{config.JUDGE_VERSION}-{hashlib.sha256(settings.encode('utf-8')).hexdigest()[:10]}"
+
+
+def judge_criterion(client: Any, criterion: str, test_cases_text: str) -> tuple[bool, str, str | None]:
+    """Ask the judge whether one criterion is covered. Returns (covered, reason, answering model)."""
     payload = {"acceptance_criterion": criterion, "generated_test_cases": test_cases_text}
     response = client.chat.completions.create(
         model=config.JUDGE_MODEL,
@@ -49,14 +61,14 @@ def judge_criterion(client: Any, criterion: str, test_cases_text: str) -> tuple[
     if "covered" not in result:
         raise ValueError("Judge response has no 'covered' field.")
     reason = str(result.get("reason", "")).strip() or "No reason returned by judge."
-    return bool(result.get("covered", False)), reason
+    return bool(result.get("covered", False)), reason, getattr(response, "model", None)
 
 
-def _is_reusable(cached: Any, criterion: str) -> bool:
+def _is_reusable(cached: Any, criterion: str, version: str) -> bool:
     return (
         isinstance(cached, dict)
         and cached.get("status") == "complete"
-        and cached.get("judge_version") == config.JUDGE_VERSION
+        and cached.get("judge_version") == version
         and cached.get("ac_text") == criterion
     )
 
@@ -73,8 +85,8 @@ def evaluate_ac_coverage(
     ``judge_state`` caches the judgement of every criterion (it is the
     ``ac_judge`` entry of a bulk run) and ``persist`` writes it to disk after
     each judge call. An interrupted run therefore only repeats criteria that are
-    missing or failed. Judgements made with another JUDGE_VERSION, or for a
-    criterion whose text has changed, are not reused.
+    missing or failed. Judgements made with another judge (see ``judge_version``),
+    or for a criterion whose text has changed, are not reused.
 
     If a judge call fails, the result stays incomplete (``overall_pct`` is None)
     instead of counting the criterion as not covered.
@@ -85,9 +97,10 @@ def evaluate_ac_coverage(
     if not criteria:
         return _unavailable("No acceptance criteria text provided for LLM judge.")
 
+    version = judge_version()
     cache: dict[str, Any] = {}
     if judge_state is not None:
-        judge_state["judge_version"] = config.JUDGE_VERSION
+        judge_state["judge_version"] = version
         cache = judge_state.setdefault("details", {})
 
     test_cases_text = format_test_cases(cases)
@@ -98,20 +111,22 @@ def evaluate_ac_coverage(
         ac_id = f"AC-{index}"
         cached = cache.get(ac_id)
 
-        if _is_reusable(cached, criterion):
+        if _is_reusable(cached, criterion, version):
             covered, reason = bool(cached.get("covered", False)), str(cached.get("reason", ""))
         else:
             try:
-                covered, reason = judge_criterion(client, criterion, test_cases_text)
+                covered, reason, response_model = judge_criterion(client, criterion, test_cases_text)
                 status = "complete"
             except Exception as error:
-                covered, reason = None, f"Judge call failed: {error}"
+                covered, reason, response_model = None, f"Judge call failed: {error}", None
                 status = "failed"
                 failed_count += 1
             cache[ac_id] = {
                 "status": status,
-                "judge_version": config.JUDGE_VERSION,
+                "judge_version": version,
                 "judge_model": config.JUDGE_MODEL,
+                "response_model": response_model,
+                "judged_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "ac_text": criterion,
                 "covered": covered,
                 "reason": reason,

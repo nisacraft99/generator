@@ -6,6 +6,8 @@ from conftest import FakeClient
 from test_generation import ANSWER
 
 from testcase_generator import checkpoints, config, experiment
+from testcase_generator.resources import Resources
+from testcase_generator.ui_model import UiContext
 
 STORIES = [
     {
@@ -31,7 +33,40 @@ def test_bulk_run_evaluates_both_variants(make_resources):
     assert list(result.rows["variant"]) == [config.VARIANT_WITHOUT_UI, config.VARIANT_WITH_UI]
     assert list(result.rows["ac_coverage_pct"]) == [100.0, 100.0]
     assert result.rows["navigation_path_correctness_pct"].isna().tolist() == [True, False]
+    assert result.rows["console_naming_pct"].notna().all()
+    assert result.rows["id_text_consistency_pct"].isna().tolist() == [True, False]
     assert result.stats == {"completed": 2, "generated": 2, "judge_done": 4, "judge_failed": 0}
+
+
+def test_checkpoint_documents_settings_and_every_model_call(make_resources):
+    client = FakeClient([json.dumps(ANSWER)] * 2)
+    result = experiment.run_bulk_evaluation(make_resources(client), STORIES, repetitions=1)
+    checkpoint = checkpoints.load(result.checkpoint_path)
+
+    assert checkpoint["settings"]["generator_model"] == config.GENERATOR_MODEL
+    assert checkpoint["settings"]["generator_temperature"] == config.GENERATOR_TEMPERATURE
+    assert len(checkpoint["settings"]["ui_context_sha256"]) == 64
+    for run in checkpoint["runs"].values():
+        assert json.loads(run["generation"]["raw_response"]) == ANSWER and run["generation"]["attempts"] == 1
+        assert all(judgement["judged_at"] for judgement in run["ac_judge"]["details"].values())
+
+
+def test_changed_ui_context_starts_a_new_checkpoint(make_resources, ui, navigation_targets):
+    resources = make_resources(FakeClient([]))
+    smaller_ui = UiContext({**ui.raw, "nodes": ui.raw["nodes"][:-1]})
+    changed = Resources(client=resources.client, ui_context=smaller_ui, navigation_targets=navigation_targets)
+    assert experiment.checkpoint_path(resources, STORIES, 1) != experiment.checkpoint_path(changed, STORIES, 1)
+
+
+def test_changed_judge_prompt_judges_again_without_generating(make_resources, tmp_path, monkeypatch):
+    experiment.run_bulk_evaluation(make_resources(FakeClient([json.dumps(ANSWER)] * 2)), STORIES, repetitions=1)
+
+    new_prompt = tmp_path / "judge.txt"
+    new_prompt.write_text("You are a lenient reviewer.", encoding="utf-8")
+    monkeypatch.setattr(config, "JUDGE_PROMPT_PATH", new_prompt)
+    client = FakeClient([])
+    experiment.run_bulk_evaluation(make_resources(client), STORIES, repetitions=1)
+    assert client.generator_calls == 0 and client.judge_calls == 4
 
 
 def test_resume_repeats_neither_generation_nor_judge_calls(make_resources):

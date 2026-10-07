@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .. import config
 from ..ui_model import UiContext
 from .text import case_text, normalize_text
 
@@ -93,7 +94,6 @@ _NO_VIEW_PHRASES = [
     "can not be opened",
     "not visible",
 ]
-_MODULE_WORDS = ["module", "dashboard", "strategic meeting", "team meeting", "sm module", "tm module"]
 _DENIED_ACTION_PHRASES = [
     "cannot create",
     "can not create",
@@ -228,14 +228,19 @@ def negative_test_kind(test_case: dict[str, Any]) -> str:
     * ``"base_only"``: the role reaches the feature area, but an action there is
       denied. Evaluated like a positive test against the base path.
     * ``"none"``: any other test case.
+
+    The classification looks for fixed wording (roles and area words from
+    ``config``, denial phrases from this module) and can therefore misjudge a
+    test case. ``evaluate_navigation_path`` reports its result with and without
+    the skipping so that the effect is visible.
     """
     text = case_text(test_case)
     is_negative_type = "negative" in normalize_text(str(test_case.get("type", "")))
-    names_restricted_role = any(role in text for role in ("manager", "agent"))
+    names_restricted_role = any(role in text for role in config.NO_ACCESS_ROLES)
 
     if (
         names_restricted_role
-        and any(word in text for word in _MODULE_WORDS)
+        and any(word in text for word in config.NO_ACCESS_AREA_WORDS)
         and any(phrase in text for phrase in _NO_VIEW_PHRASES)
     ):
         return "no_access"
@@ -290,6 +295,7 @@ def path_not_evaluated() -> dict[str, Any]:
         "correct_count": None,
         "evaluated_count": None,
         "skipped_count": None,
+        "correctness_pct_without_skipping": None,
         "details": [],
         "note": NOT_EVALUATED_PATH_NOTE,
     }
@@ -321,6 +327,9 @@ def evaluate_navigation_path(
     its path in the defined order and it uses no unknown ``ui_node_id``. Further
     known nodes may occur before, between or after the required ones. No-access
     permission tests are skipped; stories without a base path are not evaluable.
+
+    ``correctness_pct_without_skipping`` is the same figure over all test cases,
+    i.e. without the keyword-based skipping of no-access tests.
     """
     targets = find_targets(navigation_targets, story_id)
     if not targets:
@@ -331,13 +340,14 @@ def evaluate_navigation_path(
         return _empty_path_result(f"No target definitions found for {story_id}")
 
     title = str(targets.get("title") or "Navigation target")
-    evaluated = correct = skipped = 0
+    evaluated = correct = skipped = correct_of_all = 0
     details = []
 
     for case in cases:
         actual = navigation_path(ui, case)
         unknown = unknown_node_ids(ui, case)
         kind = negative_test_kind(case)
+        correct_of_all += bool(base_path) and is_ordered_subsequence(base_path, actual) and not unknown
         detail = {
             "tc_id": case.get("id", ""),
             "actual": actual,
@@ -383,6 +393,9 @@ def evaluate_navigation_path(
         "correct_count": correct,
         "evaluated_count": evaluated,
         "skipped_count": skipped,
+        "correctness_pct_without_skipping": round(correct_of_all / len(cases) * 100, 2)
+        if base_path and cases
+        else None,
         "details": details,
         "note": note,
     }
@@ -394,6 +407,7 @@ def _empty_path_result(note: str) -> dict[str, Any]:
         "correct_count": None,
         "evaluated_count": None,
         "skipped_count": 0,
+        "correctness_pct_without_skipping": None,
         "details": [],
         "note": note,
     }

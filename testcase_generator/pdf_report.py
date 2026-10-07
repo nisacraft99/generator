@@ -83,6 +83,16 @@ def build_pdf(
                 _fraction(evaluation["navigation_path"], "correctness_pct", "correct_count", "evaluated_count"),
             ],
             ["Role Coverage", _fraction(evaluation["role"], "overall_pct", "covered_count", "total_count")],
+            [
+                "ID-Text Consistency",
+                _fraction(
+                    evaluation.get("id_text_consistency", {}), "consistency_pct", "consistent_count", "total_count"
+                ),
+            ],
+            [
+                "Console Naming",
+                _fraction(evaluation.get("console_naming", {}), "named_pct", "named_count", "total_count"),
+            ],
             ["Test Cases", str(len(cases))],
         ]
         flow += [Paragraph("<b>Automated Evaluation</b>", heading), _table(metric_rows, [180, 260]), Spacer(1, 12)]

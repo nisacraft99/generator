@@ -10,7 +10,8 @@ import streamlit as st
 
 from .. import checkpoints, config, experiment
 from ..pdf_report import build_pdf
-from ..resources import Resources, load_user_stories
+from ..resources import Resources
+from ..user_stories import load_user_stories
 from .common import StreamlitProgress
 from .evaluation_view import render_evaluation
 
@@ -25,8 +26,10 @@ _RESULT_KEYS = (
 _SUMMARY_METRICS = (
     ("AC Coverage", "avg_ac_coverage_pct"),
     ("Role Coverage", "avg_role_coverage_pct"),
+    ("Console Naming", "avg_console_naming_pct"),
     ("Target Node Coverage", "avg_target_node_coverage_pct"),
     ("Navigation Path Correctness", "avg_navigation_path_correctness_pct"),
+    ("ID-Text Consistency", "avg_id_text_consistency_pct"),
 )
 
 
@@ -221,7 +224,7 @@ def _render_run_controls(
         "Resume mode does not repeat already checkpointed work."
     )
 
-    checkpoint_path = checkpoints.path_for(stories, repetitions) if stories else None
+    checkpoint_path = experiment.checkpoint_path(resources, stories, repetitions) if stories else None
     checkpoint = checkpoints.load(checkpoint_path)
     if checkpoint:
         stats = checkpoints.stats(checkpoint)
@@ -303,8 +306,8 @@ def _render_variant_summary(summary: pd.DataFrame, variant: str, title: str) -> 
         st.metric(label, _percent(row[column]))
     if variant == config.VARIANT_WITHOUT_UI:
         st.caption(
-            "Target Node Coverage and Navigation Path Correctness are N/A here: without UI context, "
-            "no reliable explicit ui_node_id nodes/path are generated."
+            "Target Node Coverage, Navigation Path Correctness and ID-Text Consistency are N/A here: "
+            "without UI context, no ui_node_id values are generated."
         )
     st.metric("Overall Score", _percent(row["avg_overall_score_pct"]))
 
@@ -330,10 +333,10 @@ def _render_summary() -> None:
     with without_column:
         _render_variant_summary(summary, config.VARIANT_WITHOUT_UI, "Without UI Context")
     st.info(
-        "Overall Score is calculated as the average of the available metrics. "
-        "Without UI context it includes AC Coverage and Role Coverage. "
-        "With UI context it additionally includes Target Node Coverage and Navigation Path Correctness, "
-        "because only that variant provides explicit ui_node_id nodes and paths."
+        "Overall Score is the average of AC Coverage, Role Coverage, Target Node Coverage and Navigation Path "
+        "Correctness, as far as they are available. Without UI context only the first two exist, so the score "
+        "summarises one variant and is not a basis for comparing the two. Console Naming is the navigation "
+        "metric that is computed the same way for both variants."
     )
 
     st.markdown("### Summary table")

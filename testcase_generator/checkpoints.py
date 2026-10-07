@@ -1,7 +1,8 @@
 """Checkpoint files of a bulk run.
 
-A checkpoint stores, per run, the generated test cases, every judge decision
-and the computed metrics. It is written after each generation and each judge
+A checkpoint stores the settings of the experiment and, per run, the generated
+test cases with a record of the model call, every judge decision and the
+computed metrics. It is written after each generation and each judge
 call, so an interrupted bulk run continues without repeating paid API calls.
 """
 
@@ -12,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -41,26 +43,36 @@ def _digest(payload: Any) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
 
 
-def fingerprint(stories: list[dict[str, Any]], repetitions: int) -> str:
-    """Identify a bulk run by its user stories, repetition count and models.
+# Settings that shape what the generator produces. If one of them changes, saved
+# generations no longer belong to the experiment and a new checkpoint is started.
+GENERATION_SETTINGS = (
+    "generator_model",
+    "generator_reasoning_effort",
+    "generator_temperature",
+    "generator_prompt_sha256",
+    "ui_context_sha256",
+)
 
-    The same inputs resume the same checkpoint. The UI context, the navigation
-    targets and the prompts are not part of the fingerprint: after changing
-    them, clear the checkpoint to generate from scratch.
+
+def fingerprint(stories: list[dict[str, Any]], repetitions: int, settings: dict[str, Any]) -> str:
+    """Identify a bulk run by its user stories, repetition count and generation settings.
+
+    The same inputs resume the same checkpoint. Settings that only affect the
+    evaluation (judge, navigation targets) are not part of the fingerprint: the
+    saved generations stay valid and are simply evaluated again.
     """
     return _digest(
         {
             "version": config.CHECKPOINT_VERSION,
             "repetitions": int(repetitions),
             "userstories": stories,
-            "generation_model": config.GENERATOR_MODEL,
-            "judge_model": config.JUDGE_MODEL,
+            "generation": {name: settings.get(name) for name in GENERATION_SETTINGS},
         }
     )
 
 
-def path_for(stories: list[dict[str, Any]], repetitions: int) -> Path:
-    return config.CHECKPOINT_DIR / f"bulk_{fingerprint(stories, repetitions)}.json"
+def path_for(stories: list[dict[str, Any]], repetitions: int, settings: dict[str, Any]) -> Path:
+    return config.CHECKPOINT_DIR / f"bulk_{fingerprint(stories, repetitions, settings)}.json"
 
 
 def path_for_upload(checkpoint: dict[str, Any]) -> Path:
@@ -68,10 +80,12 @@ def path_for_upload(checkpoint: dict[str, Any]) -> Path:
     return config.CHECKPOINT_DIR / f"uploaded_{_digest(checkpoint)}.json"
 
 
-def new(stories: list[dict[str, Any]], repetitions: int) -> dict[str, Any]:
+def new(stories: list[dict[str, Any]], repetitions: int, settings: dict[str, Any]) -> dict[str, Any]:
     return {
         "checkpoint_version": config.CHECKPOINT_VERSION,
-        "fingerprint": fingerprint(stories, repetitions),
+        "fingerprint": fingerprint(stories, repetitions, settings),
+        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "settings": settings,
         "repetitions": int(repetitions),
         "total_runs": len(stories) * int(repetitions) * len(config.VARIANTS),
         "runs": {},

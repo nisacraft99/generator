@@ -16,8 +16,10 @@ import pandas as pd
 
 from . import checkpoints, config
 from .evaluation import evaluate_test_cases
+from .evaluation.ac_coverage import judge_version
 from .generation import INVALID_JSON, generate_test_cases, generation_failure
-from .resources import Resources, normalize_story_id
+from .resources import Resources, digest, load_prompt
+from .user_stories import normalize_story_id
 
 JUDGE_INCOMPLETE = (
     "AC Coverage judge incomplete. Saved successful judge calls will be reused; "
@@ -30,7 +32,16 @@ _METRIC_SOURCES = {
     "role_coverage_pct": ("role", "overall_pct"),
     "target_node_coverage_pct": ("target_node", "coverage_pct"),
     "navigation_path_correctness_pct": ("navigation_path", "correctness_pct"),
+    "id_text_consistency_pct": ("id_text_consistency", "consistency_pct"),
+    "console_naming_pct": ("console_naming", "named_pct"),
 }
+# The overall score keeps its original definition: the mean of these four.
+_OVERALL_METRICS = (
+    "ac_coverage_pct",
+    "role_coverage_pct",
+    "target_node_coverage_pct",
+    "navigation_path_correctness_pct",
+)
 
 
 # Columns filled in from the run itself when a saved row lacks them.
@@ -75,8 +86,32 @@ class BulkResult:
 # ------------------------------------------------------------------- result rows
 
 
+def experiment_settings(resources: Resources) -> dict[str, Any]:
+    """Everything that defines the experiment besides the user stories.
+
+    Stored in the checkpoint so that a result can be traced back to the exact
+    models, prompts and input files it was produced with.
+    """
+    return {
+        "generator_model": config.GENERATOR_MODEL,
+        "generator_reasoning_effort": config.GENERATOR_REASONING_EFFORT,
+        "generator_temperature": config.GENERATOR_TEMPERATURE,
+        "generator_prompt_sha256": digest(load_prompt(config.GENERATOR_PROMPT_PATH)),
+        "ui_context_sha256": digest(resources.ui_context.raw),
+        "judge_model": config.JUDGE_MODEL,
+        "judge_reasoning_effort": config.JUDGE_REASONING_EFFORT,
+        "judge_version": judge_version(),
+        "judge_prompt_sha256": digest(load_prompt(config.JUDGE_PROMPT_PATH)),
+        "navigation_targets_sha256": digest(resources.navigation_targets),
+    }
+
+
+def checkpoint_path(resources: Resources, stories: list[dict[str, Any]], repetitions: int) -> Path:
+    return checkpoints.path_for(stories, repetitions, experiment_settings(resources))
+
+
 def metric_values(evaluation: dict[str, Any] | None) -> dict[str, float | None]:
-    """Read the four metric percentages from an evaluation (None where not available)."""
+    """Read the metric percentages from an evaluation (None where not available)."""
     values: dict[str, float | None] = {}
     for column, (section, key) in _METRIC_SOURCES.items():
         try:
@@ -88,12 +123,14 @@ def metric_values(evaluation: dict[str, Any] | None) -> dict[str, float | None]:
 
 
 def overall_score(metrics: dict[str, float | None]) -> float | None:
-    """Mean of the available metrics.
+    """Mean of the available metrics among the four in ``_OVERALL_METRICS``.
 
     Without UI context these are AC Coverage and Role Coverage; with UI context
-    Target Node Coverage and Navigation Path Correctness are added.
+    Target Node Coverage and Navigation Path Correctness are added. The two
+    variants therefore average different metrics, so this score is a summary of
+    one output and not a basis for comparing the variants.
     """
-    available = [value for value in metrics.values() if value is not None]
+    available = [metrics.get(name) for name in _OVERALL_METRICS if metrics.get(name) is not None]
     return round(sum(available) / len(available), 2) if available else None
 
 
@@ -170,11 +207,13 @@ def run_bulk_evaluation(
       retried on the next resume.
     """
     progress = progress or _SilentProgress()
-    path = checkpoints.path_for(stories, repetitions)
+    settings = experiment_settings(resources)
+    path = checkpoints.path_for(stories, repetitions, settings)
     checkpoint = checkpoints.load(path)
     if checkpoint is None:
-        checkpoint = checkpoints.new(stories, repetitions)
-        checkpoints.save(path, checkpoint)
+        checkpoint = checkpoints.new(stories, repetitions, settings)
+    checkpoint["settings"] = settings
+    checkpoints.save(path, checkpoint)
 
     def persist() -> None:
         checkpoints.save(path, checkpoint)
@@ -272,12 +311,14 @@ def run_bulk_evaluation(
                         attempt = 0
                         while True:
                             attempt += 1
-                            cases, open_questions = generate_test_cases(
+                            generation = generate_test_cases(
                                 resources.client,
                                 story["story"],
                                 story["ac_blob"],
                                 resources.ui_context.raw if use_ui else None,
                             )
+                            cases, open_questions = generation.cases, generation.open_questions
+                            run["generation"] = {**generation.record, "attempts": attempt}
                             failure = generation_failure(open_questions)
                             if failure != INVALID_JSON or attempt > config.MAX_INVALID_JSON_RETRIES:
                                 break
@@ -537,10 +578,17 @@ def _failed(errors) -> int:
     return sum(bool(str(error).strip()) for error in errors)
 
 
+def _with_metric_columns(results: pd.DataFrame) -> pd.DataFrame:
+    """Add metric columns a result table lacks, e.g. when it comes from an older checkpoint."""
+    missing = [column for column in (*_METRIC_SOURCES, "overall_score_pct") if column not in results.columns]
+    return results.reindex(columns=[*results.columns, *missing])
+
+
 def summarize_by_variant(results: pd.DataFrame) -> pd.DataFrame:
     """Mean and standard deviation of every metric per variant."""
     if results.empty:
         return pd.DataFrame()
+    results = _with_metric_columns(results)
     aggregations = {
         "attempted_runs": ("variant", "count"),
         "valid_runs": ("ac_coverage_pct", "count"),
@@ -558,6 +606,7 @@ def summarize_by_user_story(results: pd.DataFrame) -> pd.DataFrame:
     """Mean of every metric per user story and variant."""
     if results.empty:
         return pd.DataFrame()
+    results = _with_metric_columns(results)
     aggregations = {
         "attempted_runs": ("variant", "count"),
         "valid_runs": ("ac_coverage_pct", "count"),

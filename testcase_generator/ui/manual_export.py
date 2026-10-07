@@ -62,15 +62,19 @@ def render(resources: Resources) -> None:
 
     if clicked_without or clicked_with:
         with st.spinner("Generating test cases and building PDF..."):
-            cases, open_questions = generate_test_cases(
+            generation = generate_test_cases(
                 resources.client, story, ac_blob, resources.ui_context.raw if clicked_with else None
             )
-            state.last_pdf = build_pdf(story, ac_blob, cases, open_questions, story_id=story_id.strip())
-            state.last_open_questions = open_questions
-            state.last_cases_count = len(cases)
+            state.last_pdf = build_pdf(
+                story, ac_blob, generation.cases, generation.open_questions, story_id=story_id.strip()
+            )
+            state.last_open_questions = generation.open_questions
+            state.last_cases_count = len(generation.cases)
             state.last_variant = config.variant_name(clicked_with)
-            state.last_cases = cases
+            state.last_cases = generation.cases
             state.last_evaluation = None
+        # Rebuild the page so that the buttons above reflect the new output.
+        st.rerun()
 
     if clicked_evaluate and state.last_cases:
         state.last_evaluation = evaluate_test_cases(
