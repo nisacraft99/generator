@@ -130,9 +130,14 @@ def _normalize_test_case(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def clean_open_questions(open_questions: list[Any]) -> list[str]:
-    """Render every open question as text; the model sometimes returns objects."""
+    """Render every open question as text.
+
+    The model sometimes returns ``{"question": "..."}`` instead of a string.
+    """
     cleaned = []
     for question in open_questions:
+        if isinstance(question, dict) and isinstance(question.get("question"), str):
+            question = question["question"]
         if isinstance(question, str):
             cleaned.append(question)
         elif question is None:

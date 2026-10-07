@@ -42,7 +42,7 @@ def test_generate_merges_navigation_and_test_steps():
     case = generation.cases[0]
     assert [step["step"] for step in case["steps"]] == ["Log in as Director.", "Click Create SM Button."]
     assert case["steps_only"][0]["ui_node_id"] == "EL-SM-CREATE"
-    assert generation.open_questions == ["Which date format?", '{"question": "Which locale?"}']
+    assert generation.open_questions == ["Which date format?", "Which locale?"]
 
 
 def test_generate_records_the_call():
