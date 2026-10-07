@@ -60,6 +60,11 @@
     {"id": "EL-CALENDAR-MEETING"               , "type": "element"        , "name": "Calendar Meeting Entry"                          , "parent": "SCR-CALENDAR"},
     {"id": "SCR-EVALUATE-DASHBOARD"            , "type": "screen"         , "name": "Evaluate Employees Dashboard"                    , "parent": "OPT-EVALUATE"},
     {"id": "EL-EVAL-SEARCH-BTN"                , "type": "element"        , "name": "Employee Search Button"                          , "parent": "SCR-EVALUATE-DASHBOARD"},
+    {"id": "EL-EVAL-SEARCH-BAR"                , "type": "element"        , "name": "Employee Search Bar"                             , "parent": "SCR-EVALUATE-DASHBOARD"},
+    {"id": "COMP-EVAL-LIST"                    , "type": "component"      , "name": "Evaluation List"                                 , "parent": "SCR-EVALUATE-DASHBOARD"},
+    {"id": "EL-EVAL-ID"                        , "type": "element"        , "name": "Evaluation ID Link"                              , "parent": "COMP-EVAL-LIST"},
+    {"id": "SCR-EVAL-CREATED-DETAIL"           , "type": "screen"         , "name": "Created Evaluation Detail"                       , "parent": "EL-EVAL-ID"},
+    {"id": "EL-EVAL-CREATED-BACK"              , "type": "element"        , "name": "Created Evaluation Back Button"                  , "parent": "SCR-EVAL-CREATED-DETAIL"},
     {"id": "EL-EVAL-EMPLOYEE"                  , "type": "element"        , "name": "Employee Result Link"                            , "parent": "SCR-EVALUATE-DASHBOARD"},
     {"id": "SCR-EVALUATE-DETAIL"               , "type": "screen"         , "name": "Evaluation Page"                                 , "parent": "EL-EVAL-EMPLOYEE"},
     {"id": "SCR-MY-EVAL-DASHBOARD"             , "type": "screen"         , "name": "My Evaluations Dashboard"                        , "parent": "OPT-MY-EVAL"},
@@ -117,5 +122,7 @@
     {"type": "action"         , "from": "SCR-EVALUATE-DETAIL"                , "via": "EL-EVAL-SAVE"                           , "to": "SCR-EVALUATE-DASHBOARD"},
     {"type": "action"         , "from": "SCR-EVALUATE-DETAIL"                , "via": "EL-EVAL-CANCEL"                         , "to": "SCR-EVALUATE-DASHBOARD"},
     {"type": "action"         , "from": "SCR-MY-EVAL-DETAIL"                 , "via": "EL-MY-EVAL-BACK"                        , "to": "SCR-MY-EVAL-DASHBOARD"}
+    {"type": "navigation"     , "from": "SCR-EVALUATE-DASHBOARD"             , "via": "EL-EVAL-ID"                             , "to": "SCR-EVAL-CREATED-DETAIL"},
+    {"type": "action"         , "from": "SCR-EVAL-CREATED-DETAIL"            , "via": "EL-EVAL-CREATED-BACK"                   , "to": "SCR-EVALUATE-DASHBOARD"},
   ]
 }
