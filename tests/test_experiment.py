@@ -33,8 +33,6 @@ def test_bulk_run_evaluates_both_variants(make_resources):
     assert list(result.rows["variant"]) == [config.VARIANT_WITHOUT_UI, config.VARIANT_WITH_UI]
     assert list(result.rows["ac_coverage_pct"]) == [100.0, 100.0]
     assert result.rows["navigation_path_correctness_pct"].isna().tolist() == [True, False]
-    assert result.rows["console_naming_pct"].notna().all()
-    assert result.rows["id_text_consistency_pct"].isna().tolist() == [True, False]
     assert result.stats == {"completed": 2, "generated": 2, "judge_done": 4, "judge_failed": 0}
 
 

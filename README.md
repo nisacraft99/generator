@@ -42,7 +42,6 @@ testcase_generator/
     ac_coverage.py            Acceptance Criteria Coverage (LLM-as-a-Judge)
     role_coverage.py          Role Coverage
     navigation.py             Navigation Path Correctness, Target Node Coverage
-    text_checks.py            ID-Text Consistency, Console Naming
     text.py                   Textaufbereitung für die regelbasierten Metriken
   experiment.py               Bulk-Lauf, Neuauswertung, Zusammenfassungen
   checkpoints.py              Zwischenstände eines Bulk-Laufs
@@ -57,14 +56,12 @@ tests/                        Automatische Tests
 |---|---|---|---|
 | Acceptance Criteria Coverage | beide | Schritt-Text | abgedeckte Kriterien / alle Kriterien |
 | Role Coverage | beide | Schritt-Text | Rollen mit Login-Schritt / in der Userstory genannte Rollen |
-| Console Naming | beide | Schritt-Text | Testfälle, die die richtige Konsole nennen / alle Testfälle |
 | Navigation Path Correctness | mit UI-Kontext | `ui_node_id` | Testfälle mit korrektem Basispfad / bewertbare Testfälle |
 | Target Node Coverage | mit UI-Kontext | `ui_node_id` | erreichte Zielknoten / alle Zielknoten der Userstory |
-| ID-Text Consistency | mit UI-Kontext | `ui_node_id` und Schritt-Text | Testfälle ohne Widerspruch / Testfälle mit Knoten-ID |
 
-Die exportierten Testfälle zeigen dem Tester nur Schritt und erwartetes Ergebnis,
-nicht die `ui_node_id`. Deshalb gibt es neben den ID-basierten Metriken zwei, die
-den Text prüfen.
+Die beiden Navigationsmetriken prüfen die `ui_node_id` der Schritte, nicht den
+Schritt-Text. Ohne UI-Kontext gibt es keine `ui_node_id`, deshalb werden sie nur
+für die Variante mit UI-Kontext berechnet.
 
 ### Acceptance Criteria Coverage
 
@@ -117,37 +114,6 @@ Grenzen:
 Je Userstory legt `required_across_story` die Zielknoten fest. Ein Zielknoten
 gilt als erreicht, wenn er im Pfad mindestens eines Testfalls vorkommt, der kein
 Berechtigungstest mit verweigertem Zugriff ist.
-
-### ID-Text Consistency
-
-Ein Schritt widerspricht seiner `ui_node_id`, wenn sein Text einen Knoten einer
-anderen Konsole nennt und den eigenen nicht.
-
-| `ui_node_id` | Schritt-Text | Ergebnis |
-|---|---|---|
-| `CONSOLE-C` (Coordination) | „Open Coordination.“ | konsistent |
-| `CONSOLE-C` (Coordination) | „Open the console for team coordination.“ | konsistent, kein Knoten genannt |
-| `CONSOLE-C` (Coordination) | „Open Operations.“ | Widerspruch |
-| `EL-TM-ACTION-ID` | „Click the SM Action ID Link.“ | Widerspruch |
-
-Eine freie Umschreibung ist also nie ein Fehler. Knotennamen werden als ganze
-Wörter und mit Groß- und Kleinschreibung gesucht, weil Namen wie „Calendar“ oder
-„Performance“ auch gewöhnliche Wörter sind.
-
-Grenzen: Verwechslungen innerhalb derselben Konsole werden nicht erkannt.
-
-### Console Naming
-
-Geprüft wird, ob der Text irgendeines Schritts eines Testfalls den Namen der
-Konsole nennt, mit der der Basispfad beginnt. Die `ui_node_id` wird nicht
-gelesen. Damit ist dies die einzige Navigationsmetrik, die für beide Varianten
-gleich berechnet wird, und die Grundlage für den Vergleich der Navigation mit
-und ohne UI-Kontext.
-
-Grenzen: Der Name der Konsole steht in keiner Userstory (außer in US-25, die
-die Navigationsleiste selbst beschreibt). Ohne UI-Kontext kann das Modell ihn
-nur erraten. Die Metrik misst also genau dieses fehlende Wissen und nicht die
-Qualität der Navigation insgesamt.
 
 ## Nachvollziehbarkeit
 

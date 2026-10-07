@@ -32,16 +32,7 @@ _METRIC_SOURCES = {
     "role_coverage_pct": ("role", "overall_pct"),
     "target_node_coverage_pct": ("target_node", "coverage_pct"),
     "navigation_path_correctness_pct": ("navigation_path", "correctness_pct"),
-    "id_text_consistency_pct": ("id_text_consistency", "consistency_pct"),
-    "console_naming_pct": ("console_naming", "named_pct"),
 }
-# The overall score keeps its original definition: the mean of these four.
-_OVERALL_METRICS = (
-    "ac_coverage_pct",
-    "role_coverage_pct",
-    "target_node_coverage_pct",
-    "navigation_path_correctness_pct",
-)
 
 
 # Columns filled in from the run itself when a saved row lacks them.
@@ -123,14 +114,14 @@ def metric_values(evaluation: dict[str, Any] | None) -> dict[str, float | None]:
 
 
 def overall_score(metrics: dict[str, float | None]) -> float | None:
-    """Mean of the available metrics among the four in ``_OVERALL_METRICS``.
+    """Mean of the available metrics.
 
     Without UI context these are AC Coverage and Role Coverage; with UI context
     Target Node Coverage and Navigation Path Correctness are added. The two
     variants therefore average different metrics, so this score is a summary of
     one output and not a basis for comparing the variants.
     """
-    available = [metrics.get(name) for name in _OVERALL_METRICS if metrics.get(name) is not None]
+    available = [metrics.get(name) for name in _METRIC_SOURCES if metrics.get(name) is not None]
     return round(sum(available) / len(available), 2) if available else None
 
 

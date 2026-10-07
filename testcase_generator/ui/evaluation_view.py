@@ -23,25 +23,17 @@ def render_evaluation(ui: UiContext, evaluation: dict[str, Any], header: str = "
     target_node = evaluation.get("target_node", {})
     navigation = evaluation.get("navigation_path", {})
 
-    consistency = evaluation.get("id_text_consistency", {})
-    console_naming = evaluation.get("console_naming", {})
-
     st.subheader(header)
-    both_variants = st.columns(3)
-    both_variants[0].metric("AC Coverage", _percent(ac.get("overall_pct")))
-    both_variants[1].metric("Role Coverage", _percent(role.get("overall_pct")))
-    both_variants[2].metric("Console Naming", _percent(console_naming.get("named_pct")))
-    with_ui_only = st.columns(3)
-    with_ui_only[0].metric("Target Node Coverage", _percent(target_node.get("coverage_pct")))
-    with_ui_only[1].metric("Navigation Path Correctness", _percent(navigation.get("correctness_pct")))
-    with_ui_only[2].metric("ID-Text Consistency", _percent(consistency.get("consistency_pct")))
+    columns = st.columns(4)
+    columns[0].metric("AC Coverage", _percent(ac.get("overall_pct")))
+    columns[1].metric("Role Coverage", _percent(role.get("overall_pct")))
+    columns[2].metric("Target Node Coverage", _percent(target_node.get("coverage_pct")))
+    columns[3].metric("Navigation Path Correctness", _percent(navigation.get("correctness_pct")))
 
     _render_ac_coverage(ac)
     _render_role_coverage(role)
-    _render_console_naming(console_naming)
     _render_target_node_coverage(target_node)
     _render_navigation_path(ui, navigation)
-    _render_id_text_consistency(consistency)
 
 
 def _render_ac_coverage(ac: dict[str, Any]) -> None:
@@ -158,55 +150,3 @@ def _render_navigation_path(ui: UiContext, navigation: dict[str, Any]) -> None:
             st.caption(f"Expected: {path_text(detail.get('expected', []) or [])}")
             st.caption(f"Actual: {path_text(detail.get('actual', []) or [])}")
             st.caption(f"Reason: {reason}")
-
-
-def _render_console_naming(console_naming: dict[str, Any]) -> None:
-    st.write("**Console Naming**")
-    if not console_naming:
-        st.caption("Not available in this saved run.")
-        return
-    if console_naming.get("note"):
-        st.info(console_naming["note"])
-        return
-    st.write(
-        f"{console_naming.get('named_count', 0)}/{console_naming.get('total_count', 0)} test cases name the console "
-        f"'{console_naming.get('expected_console')}' in a step"
-    )
-    st.caption(
-        "Only the step text is read, not the ui_node_id values, so this metric is computed the same way "
-        "with and without UI context."
-    )
-    with st.expander("Console Naming details"):
-        for detail in console_naming.get("details", []):
-            named = ", ".join(detail.get("consoles_named", [])) or "no console"
-            st.write(
-                f"**{detail.get('tc_id', '') or 'Test case'} — {'Named' if detail.get('named') else 'Not named'}**"
-            )
-            st.caption(f"Consoles named in the steps: {named}")
-
-
-def _render_id_text_consistency(consistency: dict[str, Any]) -> None:
-    st.write("**ID-Text Consistency**")
-    if not consistency:
-        st.caption("Not available in this saved run.")
-        return
-    if consistency.get("note"):
-        st.info(consistency["note"])
-        return
-    st.write(
-        f"{consistency.get('consistent_count', 0)}/{consistency.get('total_count', 0)} test cases without a step "
-        "whose text contradicts its ui_node_id"
-    )
-    st.caption(
-        "A step contradicts its ui_node_id when its text names a node of another console and not its own node. "
-        "Steps that paraphrase without naming a node are not counted as contradictions."
-    )
-    with st.expander("ID-Text Consistency details"):
-        for detail in consistency.get("details", []):
-            case_id = detail.get("tc_id", "") or "Test case"
-            st.write(f"**{case_id} — {'Consistent' if detail.get('consistent') else 'Contradiction'}**")
-            for contradiction in detail.get("contradictions", []):
-                st.caption(
-                    f"{contradiction.get('ui_node_id')} ({contradiction.get('node_name')}), but the step names "
-                    f'{", ".join(contradiction.get("named_instead", []))}: "{contradiction.get("step", "")}"'
-                )
