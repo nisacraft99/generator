@@ -56,7 +56,7 @@
       "after clicking the „no“ button, the Pop-Up disappears and the user is redirected to the SM",
       "after clicking the „yes“ button, the pop-up disappears, the SM is deleted and the user is redirected to the SM dashboard",
       "only a user with the role director can delete an SM",
-      "a user with the role manager can not delete an SM"
+      "a user with the role manager can not delete an SM, and the delete button is disabled"
     ]
   },
   {
@@ -137,7 +137,7 @@
       "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the SM",
       "after clicking the „yes“ button, the pop-up disappears, the action is deleted and the action does not appear inside the SM anymore",
       "only a user with the role director can delete an action of an SM",
-      "a user with the role manager can not delete an action of an SM"
+      "a user with the role manager can not delete an action of an SM, and the delete button is disabled"
     ]
   },
   {
@@ -201,7 +201,7 @@
       "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the TM",
       "after clicking the „yes“ button, the pop-up disappears, the TM is deleted and the user is redirected to the TM dashboard",
       "a user with the role manager can delete a TM he created",
-      "a user with the role director has viewing permissions, but can not delete a TM"
+      "a user with the role director has viewing permissions, but can not delete a TM, and the delete button is disabled"
     ]
   },
   {
@@ -283,9 +283,9 @@
       "when clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this action?“ with the buttons „yes“ and „no“",
       "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the TM",
       "after clicking the „yes“ button, the pop-up disappears, the action is deleted and the action does not appear inside the TM anymore",
-      "a user with the role director can not delete any actions of any TM",
+      "a user with the role director can not delete any actions of any TM, and the delete button is disabled",
       "a user with the role manager can delete an action of an TM that he created",
-      "a user with the role agent can not delete any actions of any TM"
+      "a user with the role agent can not delete any actions of any TM, and the delete button is disabled"
     ]
   },
   {
