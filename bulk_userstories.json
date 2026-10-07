@@ -181,7 +181,6 @@
     "title": "Edit TM",
     "story": "As a Manager I want to edit a Team Meeting (TM) so that I can replan meetings with my subordinate agents",
     "acceptance_criteria": [
-      "when clicking on the ID of an existing TM inside TM module, the user is redirected to the TM of the ID he clicked on",
       "in the menu of the TM the user clicked on, there is an „edit“ button",
       "after clicking the „edit“ button, the user can change the deadline of the created TM, but only change it to another date in the future",
       "after clicking the „edit“ button, a user can change the title of the TM to another title with a maximum of 50 characters",
@@ -197,7 +196,6 @@
     "title": "Delete TM",
     "story": "As a Manager I want to delete a Team Meeting (TM) so that I can delete meetings with my subordinate agents",
     "acceptance_criteria": [
-      "when clicking on the ID of an existing TM inside TM module, the user is redirected to the TM of the ID he clicked on",
       "in the menu of the TM the user clicked on, there is a „delete“ button",
       "after clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this TM?“ with the buttons „yes“ and „no“",
       "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the TM",
