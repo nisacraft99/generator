@@ -113,7 +113,7 @@
     "story": "As a Director I want to edit an action for a Strategic Meeting (SM) so that I can change actions for meetings with my managers",
     "acceptance_criteria": [
       "when opening an existing SM, there is a list of actions that were created for it",
-      "next to every action, there is an „edit“ button that is disabled for any user without permission to edit",
+      "after clicking an ID of an action in the list, on the action detail page there is an „edit“ button that is disabled for any user without permission to edit",
       "when clicking the „edit“ button, a new window appears where you can edit the action",
       "all fields are prefilled with the information that was filled when the action was created",
       "the fields „topic“, „root cause“ and „action“ can be edited and have a maximum number of 200 characters each",
@@ -131,7 +131,7 @@
     "story": "As a Director I want to delete an action for a Strategic Meeting (SM) so that I can remove actions for meetings with my managers",
     "acceptance_criteria": [
       "when opening an existing SM, there is a list of actions that were created for it",
-      "next to every action, there is a „delete“ button that is disabled for any user without permission to delete",
+      "after clicking an ID of an action in the list, on the action detail page there is a „delete“ button that is disabled for any user without permission to delete",
       "when clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this action?“ with the buttons „yes“ and „no“",
       "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the SM",
       "after clicking the „yes“ button, the pop-up disappears, the action is deleted and the action does not appear inside the SM anymore",
@@ -260,7 +260,7 @@
     "story": "As a Manager I want to edit an action for a Team Meeting (TM) so that I can change actions for meetings with my subordinate agents",
     "acceptance_criteria": [
       "when opening an existing TM, there is a list of actions that were created for it",
-      "next to every action, there is an „edit“ button that is disabled for any user without permission to edit",
+      "after clicking an ID of an action in the list, on the action detail page there is an „edit“ button that is disabled for any user without permission to edit",
       "when clicking the „edit“ button, a new window appears where you can edit the action",
       "all fields are prefilled with the information that was filled when the action was created",
       "the fields „topic“, „root cause“ and „action“ can be edited and have a maximum number of 200 characters each",
@@ -279,7 +279,7 @@
     "story": "As a Manager I want to delete an action for a Team Meeting (TM) so that I can remove actions for meetings with my subordinate agents",
     "acceptance_criteria": [
       "when opening an existing TM, there is a list of actions that were created for it",
-      "next to every action, there is a „delete“ button that is disabled for any user without permission to delete",
+      "after clicking an ID of an action in the list, on the action detail page there is a „delete“ button that is disabled for any user without permission to delete",
       "when clicking the „delete“ button, a Pop-Up appears asking „Are you sure to delete this action?“ with the buttons „yes“ and „no“",
       "after clicking the „no“ button, the Pop-Up disappears and the user is back inside the TM",
       "after clicking the „yes“ button, the pop-up disappears, the action is deleted and the action does not appear inside the TM anymore",
