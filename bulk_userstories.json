@@ -361,8 +361,8 @@
       "a manager can NOT see the location filter",
       "a manager can see the search bar and the „search“ button",
       "a manager can search for his subordinate agents and can not search for any other user",
-      "a manager can only evaluate agents",
-      "when manager searches for an agent that is his subordinate, he gets redirected to the evaluation page of that agent",
+      "a manager can only evaluate agents, not directors or managers",
+      "when a manager clicks on an agent that is his subordinate in the search results, he gets redirected to the evaluation page of that agent",
       "in the evaluation page, the logged in user sees the following fields and a scale to select from: efficiency (scale 1 to 5) reliability (scale 1 to 5) communication (scale 1 to 5) comment (a free-text field with a maximum of 300 characters)",
       "all fields are mandatory except the comment field",
       "if a mandatory field is not filled and the user clicks „save“ button, an error message appears saying „Please fill all mandatory fields“",
@@ -371,7 +371,10 @@
       "after an evaluation was successfully saved, it gets an ID and appears in the „Evaluate Employees“ dashboard",
       "the dashboard shows a list of evaluations created by the logged in user, with the columns „ID“, „date“ and „employee“",
       "when clicking „cancel“, the user gets redirected to the „Evaluate Employees“ dashboard and the evaluation is not saved",
-      "when an evaluation was successfully saved, the evaluated user gets a notification saying „EVALUATION: A new evaluation was created for you“"
+      "when an evaluation was successfully saved, the evaluated user gets a notification saying „EVALUATION: A new evaluation was created for you“",
+      "when clicking on the ID of an evaluation in the „Evaluate Employees“ dashboard, the user gets redirected to the details of that evaluation",
+      "the details show the saved scores for efficiency, reliability and communication and the saved comment, and they can not be edited",
+      "there is a „back“ button at the end of the details page, and when clicking it the user gets redirected to the „Evaluate Employees“ dashboard"
     ]
   },
   {
