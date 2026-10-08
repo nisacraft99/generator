@@ -11,6 +11,7 @@ import contextlib
 import threading
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -97,6 +98,16 @@ def experiment_settings(resources: Resources) -> dict[str, Any]:
         "judge_prompt_sha256": digest(load_prompt(config.JUDGE_PROMPT_PATH)),
         "navigation_targets_sha256": digest(resources.navigation_targets),
     }
+
+
+# Settings that only affect the evaluation of saved generations.
+_EVALUATION_SETTINGS = (
+    "judge_model",
+    "judge_reasoning_effort",
+    "judge_version",
+    "judge_prompt_sha256",
+    "navigation_targets_sha256",
+)
 
 
 def checkpoint_path(resources: Resources, stories: list[dict[str, Any]], repetitions: int) -> Path:
@@ -514,6 +525,15 @@ def reevaluate_checkpoint(
 
     def persist() -> None:
         checkpoints.save(checkpoint_path, checkpoint)
+
+    # The generation settings stay as they were; the evaluation settings now
+    # describe the judge and navigation targets used for this re-evaluation.
+    current = experiment_settings(resources)
+    checkpoint["settings"] = {
+        **(checkpoint.get("settings") or {}),
+        **{name: current[name] for name in _EVALUATION_SETTINGS},
+    }
+    checkpoint["reevaluated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     rows: list[dict[str, Any]] = []
     details: dict[str, Any] = {}

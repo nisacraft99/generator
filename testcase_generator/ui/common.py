@@ -85,17 +85,3 @@ def require_login() -> None:
 
 def section_label(text: str) -> None:
     st.markdown(f'<div class="mock-label">{text}</div>', unsafe_allow_html=True)
-
-
-class StreamlitProgress:
-    """Progress bar plus status line for bulk operations."""
-
-    def __init__(self) -> None:
-        self._bar = st.progress(0)
-        self._status = st.empty()
-
-    def update(self, fraction: float) -> None:
-        self._bar.progress(fraction)
-
-    def message(self, text: str) -> None:
-        self._status.write(text)

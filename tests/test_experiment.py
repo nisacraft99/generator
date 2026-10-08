@@ -200,3 +200,25 @@ def test_restore_puts_a_downloaded_checkpoint_back_without_losing_progress(make_
 
     with pytest.raises(ValueError):
         checkpoints.restore({"runs": {}})
+
+
+def test_reevaluation_runs_in_the_background_and_records_the_judge(make_resources):
+    from testcase_generator import bulk_jobs
+
+    client = FakeClient([json.dumps(ANSWER)] * 2)
+    resources = make_resources(client)
+    result = experiment.run_bulk_evaluation(resources, STORIES, repetitions=1)
+    uploaded = checkpoints.load(result.checkpoint_path)
+    uploaded["settings"]["judge_reasoning_effort"] = "old setting"
+    judged_before = client.judge_calls
+
+    job = bulk_jobs.start_reevaluation(resources, uploaded, STORIES, use_current_stories=False)
+    job.thread.join(timeout=10)
+
+    assert job.kind == bulk_jobs.REEVALUATION and job.error is None
+    assert len(job.result.rows) == 2 and client.generator_calls == 2
+    assert client.judge_calls == judged_before
+    saved = checkpoints.load(job.checkpoint_path)
+    assert saved["settings"]["judge_reasoning_effort"] == config.JUDGE_REASONING_EFFORT
+    assert saved["settings"]["generator_model"] == config.GENERATOR_MODEL
+    assert "reevaluated_at" in saved

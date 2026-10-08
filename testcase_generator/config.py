@@ -23,11 +23,11 @@ GENERATOR_TEMPERATURE = 1
 MAX_INVALID_JSON_RETRIES = 2
 
 # LLM-as-a-Judge for Acceptance Criteria Coverage. Saved judgements are reused
-# only while this label, the judge model and the judge prompt are unchanged
-# (see evaluation.ac_coverage.judge_version).
+# only while this label, the judge model, its reasoning effort and the judge
+# prompt are unchanged (see evaluation.ac_coverage.judge_version).
 JUDGE_MODEL = "gpt-6-luna"
 JUDGE_REASONING_EFFORT = "low"
-JUDGE_MAX_COMPLETION_TOKENS = 4000
+JUDGE_MAX_COMPLETION_TOKENS = 4000  # includes the model's reasoning tokens
 JUDGE_VERSION = "v4"
 
 # The two experimental variants. They share one prompt; the only difference is

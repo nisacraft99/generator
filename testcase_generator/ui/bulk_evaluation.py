@@ -13,7 +13,6 @@ from .. import bulk_jobs, checkpoints, config, experiment
 from ..pdf_report import build_pdf
 from ..resources import Resources
 from ..user_stories import load_user_stories
-from .common import StreamlitProgress
 from .evaluation_view import render_evaluation
 
 _RESULT_KEYS = (
@@ -127,7 +126,7 @@ def _render_reevaluation_controls():
     with reevaluate_column:
         reevaluate = st.button(
             "Re-evaluate uploaded runs only (NO generation)",
-            disabled=checkpoint is None,
+            disabled=checkpoint is None or bulk_jobs.running() is not None,
             type="secondary",
             help=(
                 "Recomputes the evaluation of the saved generations. "
@@ -196,30 +195,11 @@ def _reevaluate(
     resources: Resources, uploaded: dict[str, Any], stories: list[dict[str, Any]], use_current_stories: bool
 ) -> None:
     try:
-        # Work on a local copy of the upload. If an earlier re-evaluation was
-        # interrupted, continue from that copy instead of starting over.
-        path = checkpoints.path_for_upload(uploaded)
-        checkpoint = checkpoints.load(path)
-        if checkpoint is None:
-            checkpoint = uploaded
-            checkpoints.save(path, checkpoint)
-
-        with st.spinner("Re-evaluating saved generations only. No test-case generation calls are made."):
-            result = experiment.reevaluate_checkpoint(
-                resources,
-                checkpoint,
-                path,
-                current_stories=stories,
-                use_current_stories=use_current_stories,
-                progress=StreamlitProgress(),
-            )
-        _store(result)
-        st.success(
-            f"Re-evaluated {len(result.rows)} saved run(s). No test cases were generated. "
-            "The updated checkpoint can be downloaded below."
-        )
+        bulk_jobs.start_reevaluation(resources, uploaded, stories, use_current_stories)
     except Exception as error:
         st.error(f"Re-evaluation of uploaded runs failed: {error}")
+        return
+    st.rerun()
 
 
 def _restore(uploaded: dict[str, Any]) -> None:
@@ -308,8 +288,7 @@ def _render_running_job() -> None:
         st.rerun()
         return
     st.info(
-        f"Bulk run in progress: {job.story_count} user stories × {job.repetitions} repetitions × "
-        f"{len(config.VARIANTS)} variants, started {job.started_at:%Y-%m-%d %H:%M} UTC. "
+        f"{job.kind.capitalize()} in progress: {job.description}, started {job.started_at:%Y-%m-%d %H:%M} UTC. "
         "It runs on the server and continues if you close or reload this page."
     )
     st.progress(job.fraction)
@@ -326,9 +305,20 @@ def _collect_finished_job() -> None:
     state.bulk_job_seen = job.job_id
     if job.result is not None:
         _store(job.result)
-        st.success(
-            f"Checkpoint saved: {job.result.stats.get('completed', 0)}/{job.total_runs} runs complete. "
-            "If runs are missing, press Run / resume bulk evaluation with the same dataset and repetition count."
+        if job.kind == bulk_jobs.REEVALUATION:
+            st.success(
+                f"Re-evaluated {len(job.result.rows)} saved run(s). No test cases were generated. "
+                "The updated checkpoint can be downloaded below."
+            )
+        else:
+            st.success(
+                f"Checkpoint saved: {job.result.stats.get('completed', 0)}/{job.total_runs} runs complete. "
+                "If runs are missing, press Run / resume bulk evaluation with the same dataset and repetition count."
+            )
+    elif job.error and job.kind == bulk_jobs.REEVALUATION:
+        st.error(
+            f"Re-evaluation stopped: {job.error}. Judge decisions made so far are saved. Upload the same file again "
+            "and press Re-evaluate to continue."
         )
     elif job.error:
         st.error(
