@@ -45,6 +45,7 @@ testcase_generator/
     text.py                   Textaufbereitung für die regelbasierten Metriken
   experiment.py               Bulk-Lauf, Neuauswertung, Zusammenfassungen
   checkpoints.py              Zwischenstände eines Bulk-Laufs
+  bulk_jobs.py                Bulk-Lauf im Hintergrund, unabhängig vom Browser
   pdf_report.py               PDF-Export
   ui/                         Abschnitte der Oberfläche
 tests/                        Automatische Tests
@@ -138,6 +139,23 @@ Ein Bulk-Lauf generiert jede Userstory je Variante mehrfach und wertet alle
 Ausgaben aus. Der Zwischenstand wird nach jeder Generierung und jedem
 Judge-Aufruf in `.bulk_checkpoints/` gespeichert. Ein abgebrochener Lauf setzt
 dort fort, ohne bezahlte Aufrufe zu wiederholen.
+
+Der Lauf arbeitet im Hintergrund auf dem Server. Er läuft weiter, wenn die
+Seite geschlossen oder neu geladen wird oder der Rechner in den Ruhezustand
+geht; beim nächsten Öffnen zeigt die App den Fortschritt und am Ende das
+Ergebnis. Ein Checkpoint wird immer nur von einem Lauf bearbeitet.
+
+Wird die App auf dem Server neu gestartet (etwa nach einem Upload neuer
+Dateien), kann der Ordner `.bulk_checkpoints/` verloren gehen. Deshalb den
+Checkpoint zwischendurch mit „Download checkpoint (current state)“ sichern. Nach
+einem Neustart lädt man ihn unter „Upload existing bulk checkpoint“ hoch und
+stellt ihn mit „Restore to continue the bulk run“ wieder her; der Lauf setzt
+dann dort fort.
+
+Ein Checkpoint gehört zu genau einer Kombination aus Userstories,
+Wiederholungszahl und Generator-Einstellungen. Passt die Auswahl nicht, nennt
+die App die vorhandenen Checkpoints und die Wiederholungszahl, mit der sich
+einer fortsetzen lässt.
 
 Was nach einer Änderung passiert:
 

@@ -1,4 +1,4 @@
-streamlit>=1.49
+streamlit>=1.65
 openai
 python-dotenv
 reportlab

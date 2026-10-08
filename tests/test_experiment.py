@@ -1,4 +1,5 @@
 import json
+import threading
 
 import pandas as pd
 import pytest
@@ -110,3 +111,92 @@ def test_judge_receives_the_user_story_as_context(make_resources):
     ]
     assert {payload["user_story"] for payload in judge_inputs} == {STORIES[0]["story"]}
     assert set(judge_inputs[0]) == {"user_story", "acceptance_criterion", "generated_test_cases"}
+
+
+def test_simultaneous_saves_of_one_checkpoint_do_not_collide(tmp_path):
+    path = tmp_path / "bulk_shared.json"
+    errors = []
+
+    def session():
+        for number in range(40):
+            try:
+                checkpoints.save(path, {"number": number, "runs": {str(key): "x" * 100 for key in range(100)}})
+            except OSError as error:
+                errors.append(error)
+
+    sessions = [threading.Thread(target=session) for _ in range(2)]
+    for thread in sessions:
+        thread.start()
+    for thread in sessions:
+        thread.join()
+
+    assert errors == []
+    assert "runs" in json.loads(path.read_text(encoding="utf-8"))
+    assert list(tmp_path.iterdir()) == [path]
+
+
+def test_a_checkpoint_is_worked_on_by_one_session_at_a_time(make_resources, monkeypatch):
+    monkeypatch.setattr(experiment, "RUN_HANDOVER_SECONDS", 0.05)
+    resources = make_resources(FakeClient([json.dumps(ANSWER)] * 2))
+    path = experiment.checkpoint_path(resources, STORIES, 1)
+
+    with experiment._exclusive_run(path, experiment._SilentProgress()), pytest.raises(experiment.BulkRunActive):
+        experiment.run_bulk_evaluation(resources, STORIES, repetitions=1)
+
+    assert resources.client.requests == []
+    assert experiment.run_bulk_evaluation(resources, STORIES, repetitions=1).stats["completed"] == 2
+
+
+def test_a_second_session_waits_and_reuses_the_finished_work(make_resources):
+    client = FakeClient([json.dumps(ANSWER)] * 2)
+    resources = make_resources(client)
+    results = []
+
+    def session():
+        results.append(experiment.run_bulk_evaluation(resources, STORIES, repetitions=1))
+
+    sessions = [threading.Thread(target=session) for _ in range(2)]
+    for thread in sessions:
+        thread.start()
+    for thread in sessions:
+        thread.join()
+
+    assert client.generator_calls == 2
+    assert [result.stats["completed"] for result in results] == [2, 2]
+
+
+def test_bulk_job_runs_in_the_background_and_is_not_started_twice(make_resources):
+    from testcase_generator import bulk_jobs
+
+    client = FakeClient([json.dumps(ANSWER)] * 2)
+    resources = make_resources(client)
+    job = bulk_jobs.start(resources, STORIES, repetitions=1)
+
+    assert bulk_jobs.start(resources, STORIES, repetitions=1) is job or not job.running
+    job.thread.join(timeout=10)
+    assert not job.running and job.error is None
+    assert job.result.stats["completed"] == 2 and job.fraction == 1.0
+    assert bulk_jobs.latest() is job and bulk_jobs.running() is None
+    assert client.generator_calls == 2
+
+
+def test_restore_puts_a_downloaded_checkpoint_back_without_losing_progress(make_resources):
+    client = FakeClient([json.dumps(ANSWER)] * 2)
+    resources = make_resources(client)
+    result = experiment.run_bulk_evaluation(resources, STORIES, repetitions=1)
+    backup = checkpoints.load(result.checkpoint_path)
+    result.checkpoint_path.unlink()
+
+    assert checkpoints.restore(backup) == result.checkpoint_path
+    saved = checkpoints.saved_bulk_runs()
+    assert [(entry["repetitions"], entry["completed"]) for entry in saved] == [(1, 2)]
+
+    partial = dict(backup, runs={})
+    checkpoints.restore(partial)
+    assert checkpoints.stats(checkpoints.load(result.checkpoint_path))["completed"] == 2
+
+    rerun = experiment.run_bulk_evaluation(resources, STORIES, repetitions=1)
+    assert rerun.stats["completed"] == 2 and client.generator_calls == 2
+
+    with pytest.raises(ValueError):
+        checkpoints.restore({"runs": {}})

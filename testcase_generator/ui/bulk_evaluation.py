@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import streamlit as st
 
-from .. import checkpoints, config, experiment
+from .. import bulk_jobs, checkpoints, config, experiment
 from ..pdf_report import build_pdf
 from ..resources import Resources
 from ..user_stories import load_user_stories
@@ -45,9 +46,9 @@ def render(resources: Resources) -> None:
             "How many repetitions per variant?",
             min_value=1,
             max_value=20,
-            value=3,
+            value=5,
             step=1,
-            help="Example: 3 repetitions with 24 user stories means 24 × 2 variants × 3 = 144 LLM calls.",
+            help="Example: 5 repetitions with 25 user stories means 25 × 2 variants × 5 = 250 generations.",
         )
     )
     stories_upload = st.file_uploader(
@@ -57,15 +58,17 @@ def render(resources: Resources) -> None:
         key="bulk_userstories_upload",
     )
 
-    uploaded_checkpoint, use_current_stories, show_saved, reevaluate = _render_reevaluation_controls()
+    uploaded_checkpoint, use_current_stories, show_saved, reevaluate, restore = _render_reevaluation_controls()
     stories = _preview_stories(stories_upload)
 
     if show_saved and uploaded_checkpoint is not None:
         _show_saved_results(uploaded_checkpoint)
     if reevaluate and uploaded_checkpoint is not None:
         _reevaluate(resources, uploaded_checkpoint, stories, use_current_stories)
+    if restore and uploaded_checkpoint is not None:
+        _restore(uploaded_checkpoint)
 
-    _render_run_controls(resources, stories, stories_upload, repetitions)
+    _render_run_controls(resources, stories, repetitions)
     _render_summary()
     _render_downloads()
     _render_run_details(resources)
@@ -110,7 +113,7 @@ def _render_reevaluation_controls():
         except Exception as error:
             st.error(f"Could not read uploaded checkpoint: {error}")
 
-    show_column, reevaluate_column = st.columns(2)
+    show_column, reevaluate_column, restore_column = st.columns(3)
     with show_column:
         show_saved = st.button(
             "Show saved results (NO API CALLS)",
@@ -131,7 +134,16 @@ def _render_reevaluation_controls():
                 "AC Coverage may call the currently configured LLM judge."
             ),
         )
-    return checkpoint, use_current_stories, show_saved, reevaluate
+    with restore_column:
+        restore = st.button(
+            "Restore to continue the bulk run",
+            disabled=checkpoint is None or bulk_jobs.running() is not None,
+            help=(
+                "Puts the uploaded checkpoint back on the server, for example after the app was restarted. "
+                "Run / resume bulk evaluation then continues it with the same user stories and repetitions."
+            ),
+        )
+    return checkpoint, use_current_stories, show_saved, reevaluate, restore
 
 
 def _preview_stories(stories_upload: Any) -> list[dict[str, Any]]:
@@ -210,9 +222,21 @@ def _reevaluate(
         st.error(f"Re-evaluation of uploaded runs failed: {error}")
 
 
-def _render_run_controls(
-    resources: Resources, stories: list[dict[str, Any]], stories_upload: Any, repetitions: int
-) -> None:
+def _restore(uploaded: dict[str, Any]) -> None:
+    try:
+        checkpoints.restore(uploaded)
+    except (OSError, ValueError) as error:
+        st.error(f"Could not restore the checkpoint: {error}")
+        return
+    stats = checkpoints.stats(uploaded)
+    st.success(
+        f"Checkpoint restored: {stats['completed']}/{uploaded.get('total_runs', '?')} runs complete. "
+        f"Select the same user stories and {uploaded.get('repetitions', '?')} repetitions, "
+        "then press Run / resume bulk evaluation."
+    )
+
+
+def _render_run_controls(resources: Resources, stories: list[dict[str, Any]], repetitions: int) -> None:
     variant_count = len(config.VARIANTS)
     generation_calls = len(stories) * repetitions * variant_count
     judge_calls = sum(story.get("acceptance_criteria_count", 0) for story in stories) * repetitions * variant_count
@@ -221,6 +245,11 @@ def _render_run_controls(
         f"({generation_calls} generation + {judge_calls} AC Coverage judge calls). "
         "Resume mode does not repeat already checkpointed work."
     )
+
+    if bulk_jobs.running() is not None:
+        _render_running_job()
+        return
+    _collect_finished_job()
 
     checkpoint_path = experiment.checkpoint_path(resources, stories, repetitions) if stories else None
     checkpoint = checkpoints.load(checkpoint_path)
@@ -237,6 +266,9 @@ def _render_run_controls(
                 f"{stats['judge_failed']} AC judge call(s) previously failed. "
                 "Only those failed/missing judge calls will be retried."
             )
+        _checkpoint_download(checkpoint_path, key="bulk_checkpoint_current")
+    elif stories:
+        _render_other_checkpoints(resources, stories)
 
     run_column, clear_column = st.columns([2, 1])
     with run_column:
@@ -260,27 +292,88 @@ def _render_run_controls(
 
     if run_clicked:
         try:
-            if stories_upload is not None:
-                stories_upload.seek(0)
-                run_stories = load_user_stories(stories_upload)
-            else:
-                run_stories = load_user_stories(config.USER_STORIES_PATH)
-
-            with st.spinner(
-                "Running/resuming bulk evaluation. Completed generations and AC judge calls are reused from disk."
-            ):
-                result = experiment.run_bulk_evaluation(resources, run_stories, repetitions, StreamlitProgress())
-            _store(result)
-            st.success(
-                f"Checkpoint saved: {result.stats.get('completed', 0)}/"
-                f"{len(run_stories) * repetitions * variant_count} runs complete. "
-                "If the app stops, rerun with the same dataset and repetition count and press Run / resume."
-            )
+            bulk_jobs.start(resources, stories, repetitions)
         except Exception as error:
-            st.error(
-                f"Bulk evaluation stopped: {error}. Progress already written to the checkpoint remains "
-                "available. Press Run / resume bulk evaluation to continue without repeating completed work."
+            st.error(f"Could not start the bulk run: {error}")
+            return
+        st.rerun()
+
+
+@st.fragment(run_every=5)
+def _render_running_job() -> None:
+    """Progress of the bulk run working in the background; refreshes itself every few seconds."""
+    job = bulk_jobs.running()
+    if job is None:
+        # Finished: rerun the whole page to show the results.
+        st.rerun()
+        return
+    st.info(
+        f"Bulk run in progress: {job.story_count} user stories × {job.repetitions} repetitions × "
+        f"{len(config.VARIANTS)} variants, started {job.started_at:%Y-%m-%d %H:%M} UTC. "
+        "It runs on the server and continues if you close or reload this page."
+    )
+    st.progress(job.fraction)
+    st.write(job.status)
+    _checkpoint_download(job.checkpoint_path, key="bulk_checkpoint_running")
+
+
+def _collect_finished_job() -> None:
+    """Show the result of the last background run once in every session that opens the app."""
+    job = bulk_jobs.latest()
+    state = st.session_state
+    if job is None or job.running or state.get("bulk_job_seen") == job.job_id:
+        return
+    state.bulk_job_seen = job.job_id
+    if job.result is not None:
+        _store(job.result)
+        st.success(
+            f"Checkpoint saved: {job.result.stats.get('completed', 0)}/{job.total_runs} runs complete. "
+            "If runs are missing, press Run / resume bulk evaluation with the same dataset and repetition count."
+        )
+    elif job.error:
+        st.error(
+            f"Bulk evaluation stopped: {job.error}. Progress already written to the checkpoint remains "
+            "available. Press Run / resume bulk evaluation to continue without repeating completed work."
+        )
+
+
+def _render_other_checkpoints(resources: Resources, stories: list[dict[str, Any]]) -> None:
+    """Explain why no checkpoint was found when others exist, e.g. after a different repetition count."""
+    saved = checkpoints.saved_bulk_runs()[:5]
+    if not saved:
+        return
+    settings = experiment.experiment_settings(resources)
+    lines = []
+    for entry in saved:
+        repetitions = entry["repetitions"]
+        progress = f"{entry['completed']}/{entry['total_runs']} runs complete"
+        if isinstance(repetitions, int) and checkpoints.path_for(stories, repetitions, settings) == entry["path"]:
+            lines.append(f"- {repetitions} repetitions, {progress}: set the repetitions to {repetitions} to resume it.")
+        else:
+            lines.append(
+                f"- {repetitions} repetitions, {progress}, started {entry['created_at'] or 'unknown'}: "
+                "made with other user stories or settings, cannot be resumed with the current ones."
             )
+    st.info("No saved checkpoint for this selection. Saved bulk checkpoints on the server:\n" + "\n".join(lines))
+
+
+def _checkpoint_download(path: Any, key: str) -> None:
+    """Download of the checkpoint as it is at the moment of the click."""
+    path = Path(path)
+
+    def read() -> bytes:
+        return path.read_bytes()
+
+    st.download_button(
+        "Download checkpoint (current state)",
+        data=read,
+        file_name=path.name,
+        mime="application/json",
+        key=key,
+        on_click="ignore",
+        help="Backup of all saved generations and judge decisions. Upload it under 'Restore to continue "
+        "the bulk run' if the app was restarted and the saved progress is gone.",
+    )
 
 
 # ----------------------------------------------------------------------- results
@@ -353,8 +446,10 @@ def _render_downloads() -> None:
             st.dataframe(by_story, width="stretch")
             _csv_download("download user-story summary CSV", by_story, "bulk_evaluation_by_user_story.csv")
 
+    # Checkpoints of bulk runs are offered next to the run controls; this is the
+    # working copy of a re-evaluated upload.
     checkpoint_path = state.get("bulk_checkpoint_path")
-    if checkpoint_path and os.path.exists(checkpoint_path):
+    if checkpoint_path and Path(checkpoint_path).name.startswith("uploaded_") and os.path.exists(checkpoint_path):
         try:
             with open(checkpoint_path, "rb") as handle:
                 st.download_button(

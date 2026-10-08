@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -108,14 +109,65 @@ def load(path: Path | str | None) -> dict[str, Any] | None:
 
 
 def save(path: Path | str, checkpoint: dict[str, Any]) -> None:
-    """Write atomically, so a crash cannot leave a half-written checkpoint."""
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    temporary = f"{path}.tmp"
-    with open(temporary, "w", encoding="utf-8") as handle:
-        json.dump(checkpoint, handle, ensure_ascii=False, indent=2)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(temporary, path)
+    """Write atomically, so a crash cannot leave a half-written checkpoint.
+
+    Every write goes to a temporary file of its own. Two sessions of the app
+    that save the same checkpoint at the same moment therefore cannot take
+    each other's temporary file away.
+    """
+    directory = os.path.dirname(path)
+    os.makedirs(directory, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(dir=directory, prefix=f"{os.path.basename(path)}.", suffix=".tmp")
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(checkpoint, handle, ensure_ascii=False, indent=2)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.remove(temporary)
+        raise
+
+
+def saved_bulk_runs() -> list[dict[str, Any]]:
+    """Summaries of the bulk checkpoints on disk, newest first."""
+    found = []
+    for path in config.CHECKPOINT_DIR.glob("bulk_*.json"):
+        checkpoint = load(path)
+        if checkpoint is None:
+            continue
+        found.append(
+            {
+                "path": path,
+                "repetitions": checkpoint.get("repetitions"),
+                "total_runs": checkpoint.get("total_runs"),
+                "created_at": str(checkpoint.get("created_at", "")),
+                "generator_model": (checkpoint.get("settings") or {}).get("generator_model"),
+                **stats(checkpoint),
+            }
+        )
+    return sorted(found, key=lambda entry: entry["created_at"], reverse=True)
+
+
+def restore(uploaded: dict[str, Any]) -> Path:
+    """Put an uploaded bulk checkpoint back on disk, so that its run can be resumed.
+
+    A checkpoint already on disk is kept if it has at least as much progress.
+    """
+    fingerprint_value = uploaded.get("fingerprint")
+    if uploaded.get("checkpoint_version") != config.CHECKPOINT_VERSION or not (
+        isinstance(fingerprint_value, str) and re.fullmatch(r"[0-9a-f]{20}", fingerprint_value)
+    ):
+        raise ValueError("This file is not a bulk checkpoint of this app and cannot be resumed.")
+    path = config.CHECKPOINT_DIR / f"bulk_{fingerprint_value}.json"
+    existing = load(path)
+    if existing is not None:
+        old, new_stats = stats(existing), stats(uploaded)
+        if old["completed"] >= new_stats["completed"] and old["generated"] >= new_stats["generated"]:
+            return path
+    save(path, uploaded)
+    return path
 
 
 def delete(path: Path | str | None) -> None:

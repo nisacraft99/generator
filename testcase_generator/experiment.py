@@ -7,7 +7,9 @@ without generating anything again.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import contextlib
+import threading
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -179,6 +181,36 @@ def _discard_generation(run: dict[str, Any], error: str) -> None:
     run["last_error"] = error
 
 
+class BulkRunActive(RuntimeError):
+    """The same bulk run is still being worked on by another session of the app."""
+
+
+# One lock per checkpoint file. All sessions of the app share one process, so a
+# lock is enough to keep two of them from working on the same checkpoint.
+_RUN_LOCKS: dict[str, threading.Lock] = {}
+_RUN_LOCKS_GUARD = threading.Lock()
+# After a page reload the previous session only stops once its current model
+# call has returned. A new run waits this long for it before giving up.
+RUN_HANDOVER_SECONDS = 120
+
+
+@contextlib.contextmanager
+def _exclusive_run(path: Path, progress: Progress) -> Iterator[None]:
+    with _RUN_LOCKS_GUARD:
+        lock = _RUN_LOCKS.setdefault(str(path), threading.Lock())
+    if not lock.acquire(blocking=False):
+        progress.message("This bulk run is still active in another session. Waiting for it to stop ...")
+        if not lock.acquire(timeout=RUN_HANDOVER_SECONDS):
+            raise BulkRunActive(
+                "This bulk run is already running in another tab or session. "
+                "Wait until it has finished, then press Run / resume bulk evaluation."
+            )
+    try:
+        yield
+    finally:
+        lock.release()
+
+
 def run_bulk_evaluation(
     resources: Resources,
     stories: list[dict[str, Any]],
@@ -200,6 +232,19 @@ def run_bulk_evaluation(
     progress = progress or _SilentProgress()
     settings = experiment_settings(resources)
     path = checkpoints.path_for(stories, repetitions, settings)
+    # The checkpoint is read only once no other session is working on it.
+    with _exclusive_run(path, progress):
+        return _run_bulk_evaluation(resources, stories, repetitions, progress, settings, path)
+
+
+def _run_bulk_evaluation(
+    resources: Resources,
+    stories: list[dict[str, Any]],
+    repetitions: int,
+    progress: Progress,
+    settings: dict[str, Any],
+    path: Path,
+) -> BulkResult:
     checkpoint = checkpoints.load(path)
     if checkpoint is None:
         checkpoint = checkpoints.new(stories, repetitions, settings)
